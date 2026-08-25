@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 
 const payouts = [
   { amt: "$8,400", name: "Dylan M.", meta: "Ohio • Aug 22", tag: "Closed" },
@@ -98,6 +98,39 @@ function CheckIcon() {
 export default function Home() {
   const [pricingOpen, setPricingOpen] = useState(false);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const [autoFlipped, setAutoFlipped] = useState<number[]>([]);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const autoDemoDone = useRef(new Set<number>());
+  const demoTimers = useRef<number[]>([]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const index = Number((entry.target as HTMLElement).dataset.index);
+          if (autoDemoDone.current.has(index)) return;
+          autoDemoDone.current.add(index);
+          observer.unobserve(entry.target);
+          const startTimer = window.setTimeout(() => {
+            setAutoFlipped((prev) => [...prev, index]);
+            const endTimer = window.setTimeout(() => {
+              setAutoFlipped((prev) => prev.filter((i) => i !== index));
+            }, 1200);
+            demoTimers.current.push(endTimer);
+          }, index * 150);
+          demoTimers.current.push(startTimer);
+        });
+      },
+      { threshold: 0.6 }
+    );
+    cardRefs.current.forEach((el) => el && observer.observe(el));
+    const timers = demoTimers.current;
+    return () => {
+      observer.disconnect();
+      timers.forEach(clearTimeout);
+    };
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -133,7 +166,7 @@ export default function Home() {
         <nav className="nav">
           <div className="shell nav-inner">
             <div className="nav-brand">
-              <div className="nav-logo">RV</div>
+              <img src="/logo.png" alt="Real Venture" width={32} height={32} style={{ borderRadius: 8 }} />
               <div className="nav-name">Real Venture</div>
             </div>
             <div className="nav-links">
@@ -176,7 +209,7 @@ export default function Home() {
             <div className="proof-item"><div className="proof-num g">3 days</div><div className="proof-lbl">Live coaching per week</div></div>
             <div className="proof-item"><div className="proof-num">200+</div><div className="proof-lbl">Active wholesalers</div></div>
             <div className="proof-item"><div className="proof-num">$0</div><div className="proof-lbl">Starting capital needed</div></div>
-            <div className="proof-item"><div className="proof-num">Beginner</div><div className="proof-lbl">No experience required</div></div>
+            <div className="proof-item"><div className="proof-num">No experience</div><div className="proof-lbl">Required</div></div>
           </div>
         </section>
 
@@ -223,16 +256,27 @@ export default function Home() {
             <div className="inc-grid">
               {incCards.map((card, i) => (
                 <div
-                  className={`inc-card${expandedCard === i ? " expanded" : ""}`}
+                  className={`inc-card${expandedCard === i || autoFlipped.includes(i) ? " flipped" : ""}`}
                   key={i}
+                  data-index={i}
+                  ref={(el) => {
+                    cardRefs.current[i] = el;
+                  }}
                   onClick={() => toggleCard(i)}
                 >
-                  <div className="inc-anim-slot"></div>
-                  <div className="inc-emoji">{card.emoji}</div>
-                  <div className="inc-title">{card.title}</div>
-                  <div className="inc-short">{card.short}</div>
-                  <div className="inc-reveal"><div className="inc-desc">{card.desc}</div></div>
-                  <div className="inc-hint">Hover<span className="dot-anim"></span></div>
+                  <div className="inc-card-inner">
+                    <div className="inc-face inc-front">
+                      <div className="inc-emoji">{card.emoji}</div>
+                      <div className="inc-title">{card.title}</div>
+                      <div className="inc-short">{card.short}</div>
+                      <div className="inc-hint">Hover<span className="dot-anim"></span></div>
+                    </div>
+                    <div className="inc-face inc-back">
+                      <div className="inc-title">{card.title}</div>
+                      <div className="inc-desc">{card.desc}</div>
+                      <div className="anim-slot"></div>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -310,7 +354,7 @@ export default function Home() {
         <footer className="footer">
           <div className="shell">
             <div className="footer-inner">
-              <div className="footer-brand"><div className="logo-mini">RV</div><span>Real Venture</span></div>
+              <div className="footer-brand"><img src="/logo.png" alt="Real Venture" width={24} height={24} style={{ borderRadius: 6 }} /><span>Real Venture</span></div>
               <div className="footer-links"><a>Studio login</a><a>Contact</a><a>Terms</a><a>Privacy</a></div>
             </div>
             <div className="footer-legal">{"©"} 2026 Real Venture. Wholesaling education. Not a get rich quick program. Results vary and depend on the effort you put in.</div>
@@ -378,7 +422,7 @@ export default function Home() {
                 <div className="ribbon coming">Coming Soon</div>
                 <div className="tier-icon"><img src="/crowns/ultra.png" alt="Ultra" width={62} height={54} /></div>
                 <div className="tier-name">Ultra</div>
-                <div className="tier-price"><span className="cur">$</span><span className="amt">199</span></div>
+                <div className="tier-price"><span className="cur">$</span><span className="amt">249</span></div>
                 <div className="tier-per">per month {"•"} 25 seats</div>
                 <div className="tier-tag">Get in the room with William.</div>
                 <div className="tier-divider"></div>
