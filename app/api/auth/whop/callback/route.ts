@@ -19,20 +19,23 @@ function clearOAuthCookies(response: NextResponse): NextResponse {
 
 // Admin read via WHOP_API_KEY, never the OAuth client secret or the user's
 // access token (spec 6.14). Plain fetch stands in for the SDK's
-// memberships.list per spec section 5; the plan and status scoping the SDK
-// call expressed as parameters is enforced on the response here.
+// memberships.list per spec section 5, matching its wire format: plural
+// array params (user_ids, product_ids, plan_ids, statuses) with company_id
+// singular; a non-empty data array means an active membership.
 async function getWhopMembershipActive(whopUserId: string): Promise<boolean> {
   const productId = process.env.WHOP_PRODUCT_ID;
   const companyId = process.env.WHOP_COMPANY_ID;
   if (!productId || !companyId) return false;
 
   try {
-    const params = new URLSearchParams({
-      user_id: whopUserId,
-      product_id: productId,
-      company_id: companyId,
-    });
-    const res = await fetch(`https://api.whop.com/api/v2/memberships?${params.toString()}`, {
+    const params = new URLSearchParams({ company_id: companyId });
+    params.append("user_ids", whopUserId);
+    params.append("product_ids", productId);
+    for (const planId of PAID_PLAN_IDS) params.append("plan_ids", planId);
+    params.append("statuses", "active");
+    params.append("statuses", "trialing");
+
+    const res = await fetch(`https://api.whop.com/api/v1/memberships?${params.toString()}`, {
       headers: {
         Authorization: `Bearer ${process.env.WHOP_API_KEY ?? ""}`,
         Accept: "application/json",
@@ -41,15 +44,7 @@ async function getWhopMembershipActive(whopUserId: string): Promise<boolean> {
     });
     if (!res.ok) return false;
     const page = await res.json();
-    const memberships: { plan_id?: string; status?: string }[] = Array.isArray(page?.data)
-      ? page.data
-      : [];
-    return memberships.some(
-      (m) =>
-        typeof m?.plan_id === "string" &&
-        PAID_PLAN_IDS.includes(m.plan_id) &&
-        (m?.status === "active" || m?.status === "trialing")
-    );
+    return Array.isArray(page?.data) && page.data.length > 0;
   } catch {
     return false;
   }
