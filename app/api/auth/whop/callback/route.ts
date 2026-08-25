@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSessionToken, SESSION_COOKIE_NAME, sessionCookieOptions } from "../../../../../lib/session";
 
-// Hardcoded plan allowlist, copied exactly from the spec. New paid plans must
-// be appended here and deployed or their subscribers are denied (spec 6.9).
-const PAID_PLAN_IDS = [
-  "plan_J8vFpCWME75W3",
-  "plan_D2DOEif6aomSK",
-  "plan_SIYHeHyFp1dbR",
-  "plan_9nyRNbuhQF0pk",
-];
-
 function clearOAuthCookies(response: NextResponse): NextResponse {
   const clear = { maxAge: 0, path: "/" };
   response.cookies.set("whop_oauth_state", "", clear);
@@ -20,8 +11,13 @@ function clearOAuthCookies(response: NextResponse): NextResponse {
 // Admin read via WHOP_API_KEY, never the OAuth client secret or the user's
 // access token (spec 6.14). Plain fetch stands in for the SDK's
 // memberships.list per spec section 5, matching its wire format: plural
-// array params (user_ids, product_ids, plan_ids, statuses) with company_id
-// singular; a non-empty data array means an active membership.
+// array params (user_ids, product_ids, statuses) with company_id singular;
+// a non-empty data array means an active membership. The gate is
+// product-based, not plan-based: any membership on the membership product
+// counts, so newly launched plans grant access without a deploy. Status
+// "completed" is included because one-time and lifetime purchases finish as
+// completed and stay that way; scoping to the single membership product
+// keeps unrelated one-time purchases from granting access.
 async function getWhopMembershipActive(whopUserId: string): Promise<boolean> {
   const productId = process.env.WHOP_PRODUCT_ID;
   const companyId = process.env.WHOP_COMPANY_ID;
@@ -31,9 +27,9 @@ async function getWhopMembershipActive(whopUserId: string): Promise<boolean> {
     const params = new URLSearchParams({ company_id: companyId });
     params.append("user_ids", whopUserId);
     params.append("product_ids", productId);
-    for (const planId of PAID_PLAN_IDS) params.append("plan_ids", planId);
     params.append("statuses", "active");
     params.append("statuses", "trialing");
+    params.append("statuses", "completed");
 
     const res = await fetch(`https://api.whop.com/api/v1/memberships?${params.toString()}`, {
       headers: {
