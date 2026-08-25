@@ -8,6 +8,7 @@ import DiscordCTA from "./components/DiscordCTA";
 import SprintCard from "./components/SprintCard";
 import TileList from "./components/TileList";
 import HelpFab from "./components/HelpFab";
+import HubDesktop from "./desktop/HubDesktop";
 
 type Props = {
   // Reserved for tour routing and greeting personalization (Prompts C and D).
@@ -20,7 +21,8 @@ export default function HubClient({ intakeNeed: _intakeNeed }: Props) {
 
   return (
     <div className="hub-page">
-      <div className="hub">
+      <div className="hub-mobile">
+        <div className="hub">
         <HubHeader
           onLogWin={() => console.log("TODO: Log a Win modal")}
           onTour={() => console.log("TODO: guided tour")}
@@ -50,6 +52,14 @@ export default function HubClient({ intakeNeed: _intakeNeed }: Props) {
         <TileList />
 
         <HelpFab />
+        </div>
+      </div>
+
+      <div className="hub-desktop">
+        <HubDesktop
+          sprintOpen={sprintOpen}
+          discordDismissed={discordDismissed}
+        />
       </div>
     </div>
   );
