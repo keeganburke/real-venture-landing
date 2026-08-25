@@ -5,7 +5,7 @@
 export const GREETING = {
   hi: "Hey there \u{1F44B}",
   q: "Where do you want to go?",
-  sub: "Pick a section to get started.",
+  sub: "Pick one.",
 };
 
 export const STATS = {
@@ -28,7 +28,7 @@ export const SPRINT = {
   title: "Your 14-day First Deal Sprint",
   count: "0 / 7",
   subCollapsed: "tap to see your steps →",
-  subExpanded: "Follow these in order, most members hit contract by day 14.",
+  subExpanded: "Follow in order, most members hit contract by Day 14.",
 };
 
 export const NEXT_LIVE = {
@@ -136,7 +136,7 @@ export const TILES: {
   {
     id: "tools",
     title: "Tools",
-    sub: "Analyzer, comping, buyers, contracts",
+    sub: "Analyzer, comping, buyers, contracts.",
     accent: "gold",
     href: "https://realventurestudio.com",
     external: true,
@@ -145,7 +145,7 @@ export const TILES: {
   {
     id: "sell",
     title: "Sell your deal",
-    sub: "Submit for JV review, 60/40 split",
+    sub: "Submit for JV, we help you close.",
     accent: "green",
     href: "https://realventurestudio.com/jv",
     external: true,

@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../../lib/session";
 
 export const metadata: Metadata = {
-  title: "Welcome to Real Venture",
+  title: "Real Venture · Onboarding",
 };
 
 // Gating happens here at layout level, not in middleware (spec 6.1). This

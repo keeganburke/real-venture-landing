@@ -16,7 +16,7 @@ export default function HeroBand() {
           want to go?
         </h1>
         <p className="hub-d-hero-sub">
-          {"Three ways to make progress today. Pick one and we'll route you."}
+          {"Three ways forward today. Pick one."}
         </p>
 
         <div className="hub-d-hero-tiles">
@@ -65,47 +65,6 @@ export default function HeroBand() {
               </svg>
             }
           />
-        </div>
-
-        <div className="hub-d-proof">
-          <div className="hub-d-proof-item">
-            <div className="hub-d-proof-icn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
-                <path d="M6 12v5c3 3 9 3 12 0v-5" />
-              </svg>
-            </div>
-            <div className="hub-d-proof-body">
-              <div className="hub-d-proof-eyeb">Learn</div>
-              <div className="hub-d-proof-val">Secured Wholesaling</div>
-            </div>
-          </div>
-          <div className="hub-d-proof-arrow">{"→"}</div>
-          <div className="hub-d-proof-item">
-            <div className="hub-d-proof-icn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 20V10M18 20V4M6 20v-6" />
-              </svg>
-            </div>
-            <div className="hub-d-proof-body">
-              <div className="hub-d-proof-eyeb">Scale</div>
-              <div className="hub-d-proof-val">Zero to $10k / mo</div>
-            </div>
-          </div>
-          <div className="hub-d-proof-arrow">{"→"}</div>
-          <div className="hub-d-proof-item">
-            <div className="hub-d-proof-icn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 12V8H6a2 2 0 010-4h12v4" />
-                <path d="M4 6v12c0 1.1.9 2 2 2h14v-4" />
-                <path d="M18 12a2 2 0 000 4h4v-4z" />
-              </svg>
-            </div>
-            <div className="hub-d-proof-body">
-              <div className="hub-d-proof-eyeb">Access</div>
-              <div className="hub-d-proof-val">Real founders, live</div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

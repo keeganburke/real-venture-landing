@@ -101,7 +101,7 @@ export const INTAKE_QUESTIONS: IntakeQuestion[] = [
       {
         value: "10-30k",
         icon: '<path d="M3 17l6-6 4 4 8-8M15 7h6v6"/>',
-        label: "$10k - $30k",
+        label: "$10k to $30k",
       },
       {
         value: "30k+",
