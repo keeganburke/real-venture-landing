@@ -83,12 +83,10 @@ const LP_PHASES = [
   },
 ];
 
-// TODO: placeholder wins, swap for real student data later.
-const LP_WINS = [
-  { name: "Marcus T.", loc: "Texas · 22 days in", amt: "$18k", lbl: "assignment fee" },
-  { name: "Sara R.", loc: "Florida · month 2", amt: "$12.5k", lbl: "JV closed" },
-  { name: "Devon K.", loc: "Ohio · 3 deals YTD", amt: "$56k", lbl: "since joining" },
-  { name: "Jordan L.", loc: "Georgia · month 3", amt: "$32k", lbl: "2 deals" },
+const LP_STORIES = [
+  { id: "marcus", attr: "Marcus T.", detail: "$18,000 first assignment · 22 days" }, // TODO placeholder video, swap Vimeo embed
+  { id: "sara", attr: "Sara R.", detail: "$12,500 in month 2 · closed via JV" }, // TODO placeholder video, swap Vimeo embed
+  { id: "devon", attr: "Devon K.", detail: "3 deals since joining · $56k YTD" }, // TODO placeholder video, swap Vimeo embed
 ];
 
 // TODO: placeholder reviews, swap in real Whop review pulls later.
@@ -184,7 +182,7 @@ export default function Home() {
                 onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
                 aria-label="Real Venture, back to top"
               >
-                <img src="/logo.png" alt="Real Venture" width={32} height={32} style={{ borderRadius: 8 }} />
+                <img className="lp-nav-logo" src="/logo.png" alt="Real Venture" width={44} height={44} />
               </button>
               <span className="lp-nav-divider" />
               <a className="lp-nav-segment" href="/api/auth/whop/start">
@@ -214,7 +212,11 @@ export default function Home() {
         <section className="lp-hero">
           <div className="shell">
             <div className="lp-eyebrow">Real Venture {"·"} Proven Path</div>
-            <h1 className="lp-hero-h">{"Your first real estate payday. We'll walk you there."}</h1>
+            <h1 className="lp-hero-h">
+              {"Your first real estate payday. "}
+              <br className="lp-h1-break" />
+              {"We'll walk you there."}
+            </h1>
             <p className="lp-hero-sub">{"We teach you live, hand you the tools, and send real buyers to your deals. No license, no capital, no experience needed."}</p>
             <CtaStrip onJoin={openPricing} />
             <div className="lp-trust">
@@ -328,23 +330,26 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="lp-wins">
+        <section className="lp-success-stories">
           <div className="shell">
             <SectionHead
-              eyebrow="Real wins"
-              heading={<>Students <span>closing.</span></>}
-              sub="Real deals. Real dollars. Real names."
+              eyebrow="SUCCESS STORIES"
+              heading={<>See the <span>payoff.</span></>}
+              sub="Real students. Real deals. Real dollars."
             />
-            <div className="lp-wins-grid">
-              {LP_WINS.map((win) => (
-                <div className="lp-win-card" key={win.name}>
-                  <div>
-                    <div className="lp-win-name">{win.name}</div>
-                    <div className="lp-win-loc">{win.loc}</div>
-                  </div>
-                  <div className="lp-win-r">
-                    <div className="lp-win-amt">{win.amt}</div>
-                    <div className="lp-win-lbl">{win.lbl}</div>
+            <div className="lp-vid-stack">
+              {LP_STORIES.map((story) => (
+                <div className="lp-vid-card" key={story.id}>
+                  <button
+                    className="lp-vid-thumb"
+                    onClick={() => console.log("TODO: open Vimeo modal for testimonial", story.id)}
+                    aria-label={`Play testimonial from ${story.attr}`}
+                  >
+                    <span className="lp-play" />
+                  </button>
+                  <div className="lp-vid-meta">
+                    <div className="lp-vid-attr">{story.attr}</div>
+                    <div className="lp-vid-detail">{story.detail}</div>
                   </div>
                 </div>
               ))}
