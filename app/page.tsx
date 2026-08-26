@@ -208,7 +208,7 @@ export default function Home() {
 
         <section className="lp-hero">
           <div className="shell">
-            <div className="lp-eyebrow">Real Venture {"·"} Proven Path</div>
+            <div className="lp-hero-badge">Real Venture {"·"} Proven Path</div>
             <h1 className="lp-hero-h">
               {"Your first real estate payday. "}
               <br className="lp-h1-break" />
@@ -224,21 +224,9 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="lp-payouts">
-          <div className="shell">
-            <SectionHead
-              eyebrow="THE RECEIPTS"
-              heading={<>Student <span>payouts.</span></>}
-              sub="Every dollar closed by a Real Venture student."
-            />
-          </div>
-          <PayoutCarousel />
-        </section>
-
         <section className="lp-section" id="included">
           <div className="shell">
             <SectionHead
-              eyebrow="Everything you get"
               heading={<>The full <span>toolkit.</span></>}
               sub="Every tool, every script, every step. Nothing gate-kept."
             />
@@ -263,10 +251,19 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="lp-payouts">
+          <div className="shell">
+            <SectionHead
+              heading={<>Student <span>payouts.</span></>}
+              sub="Every dollar closed by a Real Venture student."
+            />
+          </div>
+          <PayoutCarousel />
+        </section>
+
         <section className="lp-compare">
           <div className="shell">
             <SectionHead
-              eyebrow="Two paths forward"
               heading={<>Their way <span className="lp-vs-red">vs</span> our way.</>}
               sub={"Most people never make it. Here's why."}
             />
@@ -299,7 +296,6 @@ export default function Home() {
         <section className="lp-phases">
           <div className="shell">
             <SectionHead
-              eyebrow="How it works"
               heading={<>From zero to <span>first wire.</span></>}
               sub="Three phases. Fourteen days. Real deals."
             />
@@ -322,7 +318,6 @@ export default function Home() {
         <section className="lp-success-stories">
           <div className="shell">
             <SectionHead
-              eyebrow="SUCCESS STORIES"
               heading={<>See the <span>payoff.</span></>}
               sub="Real students. Real deals. Real dollars."
             />
@@ -349,7 +344,6 @@ export default function Home() {
         <section className="lp-pricing">
           <div className="shell">
             <SectionHead
-              eyebrow="Choose your plan"
               heading={<>Three ways <span>in.</span></>}
               sub="Start on Base. Upgrade to Pro when you close."
             />
@@ -401,7 +395,6 @@ export default function Home() {
         <section id="reviews" className="lp-reviews">
           <div className="shell">
             <SectionHead
-              eyebrow="Verified reviews"
               heading={<>What members <span>say.</span></>}
               sub="All reviews collected + verified by Whop."
             />
@@ -431,7 +424,6 @@ export default function Home() {
 
         <section className="lp-final">
           <div className="shell">
-            <span className="lp-section-eyebrow">Take action</span>
             <h2 className="lp-section-h2">Your first payday <span>starts today.</span></h2>
             <p className="lp-section-sub lp-final-sub">Join 300+ students who stopped watching and started closing.</p>
             <CtaStrip onJoin={openPricing} />

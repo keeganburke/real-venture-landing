@@ -472,8 +472,8 @@ body.modal-open{overflow:hidden}
 .lp-burger.open span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
 .lp-user-icn{width:16px;height:16px;flex-shrink:0}
 .lp-nav-label{font-weight:700;letter-spacing:.10em;font-size:12px}
-.lp-nav-logo{width:44px;height:44px;border-radius:10px}
-@media(max-width:640px){.lp-nav-segment{padding:8px 12px}.lp-nav-logo{width:36px;height:36px;border-radius:9px}}
+.lp-nav-logo{width:48px;height:48px;border-radius:11px;object-fit:contain}
+@media(max-width:640px){.lp-nav-segment{padding:8px 12px}.lp-nav-logo{width:48px;height:48px;border-radius:11px}}
 @media(max-width:380px){.lp-nav-label{font-size:11px}.lp-nav-segment{padding:8px 10px;gap:7px}}
 
 /* LANDING V2 PAYOUT MARQUEE (lp- prefix; replaces the removed proof-strip) */
@@ -520,6 +520,7 @@ body.modal-open{overflow:hidden}
 .lp-section-sub{color:var(--mut-dark-hi);font-size:var(--t-body);line-height:1.5}
 
 .lp-hero{padding:clamp(40px,6vh,60px) 0 clamp(32px,7vh,80px);text-align:center;position:relative}
+.lp-hero-badge,
 .lp-eyebrow{display:inline-block;color:var(--gold);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:var(--t-eyebrow);letter-spacing:.14em;text-transform:uppercase;padding:7px 16px;background:rgba(229,181,71,.06);border:1px solid rgba(229,181,71,.26);border-radius:100px;margin-bottom:24px}
 .lp-hero-h{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:var(--h-hero);line-height:1.0;letter-spacing:-.04em;margin:0 auto 24px;max-width:900px;background:linear-gradient(180deg,#FFE89A 0%,#E5B547 55%,#B8881F 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .lp-hero-sub{color:var(--mut-dark-hi);font-size:clamp(15px,1.5vw,19px);line-height:1.55;margin:0 auto 36px;max-width:640px}
@@ -651,7 +652,7 @@ body.modal-open{overflow:hidden}
 
 /* LANDING V2 SUCCESS STORIES (replaces wins) + H1 BREAK */
 .lp-h1-break{display:none}
-@media(max-width:640px){.lp-h1-break{display:inline}.lp-hero-h{font-size:32px}}
+@media(max-width:640px){.lp-h1-break{display:inline}.lp-hero-h{font-size:28px}}
 .lp-success-stories{padding:var(--sp-section) 0;background:var(--bg-deep);border-top:1px solid var(--line-dark)}
 .lp-vid-stack{display:grid;grid-template-columns:1fr;gap:14px;max-width:480px;margin:0 auto}
 @media(min-width:900px){.lp-vid-stack{grid-template-columns:repeat(3,1fr);gap:20px;max-width:1100px}}
@@ -696,3 +697,13 @@ body.modal-open{overflow:hidden}
 .lp-carousel-arrow{width:40px;height:40px;border-radius:50%;background:var(--card-dark);border:1px solid var(--line-dark-hi);color:var(--gold);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:border-color .15s ease}
 .lp-carousel-arrow:hover{border-color:var(--gold)}
 .lp-carousel-arrow svg{width:18px;height:18px}
+
+/* LANDING V2 MOBILE SPACING PASS (max-width 640px only; desktop untouched)
+   Change 4: all section vertical padding cut ~35 percent on mobile.
+   Change 5: hero bottom and payouts top cut an extra ~50 percent. */
+@media(max-width:640px){
+  :root{--sp-section:clamp(42px,6.5vh,78px)}
+  .lp-hero{padding:clamp(26px,4vh,39px) 0 clamp(10px,2.2vh,26px)}
+  .lp-payouts{padding:clamp(16px,2.6vh,26px) 0 clamp(26px,4.5vh,42px)}
+  .lp-final{padding:clamp(52px,7.8vh,91px) 0}
+}
