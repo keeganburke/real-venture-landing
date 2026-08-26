@@ -1,81 +1,83 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import NavDrawer from "./components/NavDrawer";
 
-const payouts = [
-  { amt: "$8,400", name: "Dylan M.", meta: "Ohio • Aug 22", tag: "Closed" },
-  { amt: "$6,200", name: "Jazmin R.", meta: "Texas • Aug 20", tag: "1st deal" },
-  { amt: "$12,500", name: "Marcus C.", meta: "Florida • Aug 18", tag: "JV" },
-  { amt: "$4,800", name: "Tyler W.", meta: "Georgia • Aug 17", tag: "Closed" },
-  { amt: "$15,750", name: "Sarah R.", meta: "Arizona • Aug 15", tag: "Closed" },
-  { amt: "$9,300", name: "Kyle J.", meta: "Nevada • Aug 14", tag: "JV" },
-  { amt: "$7,100", name: "Amanda L.", meta: "NC • Aug 12", tag: "1st deal" },
-  { amt: "$11,200", name: "Ryan B.", meta: "Colorado • Aug 10", tag: "Closed" },
-  { amt: "$5,600", name: "Jason P.", meta: "Michigan • Aug 8", tag: "JV" },
-  { amt: "$18,400", name: "Chris D.", meta: "Illinois • Aug 6", tag: "Closed" },
-];
-
-const incCards = [
+const LP_INCLUDED = [
   {
-    emoji: "\u{1F3A5}",
-    title: "Live coaching, 3 days a week",
-    short: "Mon Wed Fri live sessions",
-    desc: "Live with William and Keegan. Q and A, deal reviews, and we call sellers on screen. Recordings drop right after.",
+    num: "01",
+    title: "Live teaching",
+    desc: "3x/week calls with William + Keegan",
+    icon: '<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>',
   },
   {
-    emoji: "\u{1F4DA}",
-    title: "13 lesson curriculum",
-    short: "Video, workbook, quiz per lesson",
-    desc: "From orientation to case studies. Built to actually finish. Each lesson has a short video, written breakdown, and a quiz.",
+    num: "02",
+    title: "Buyer network",
+    desc: "Send deals to our vetted buyers",
+    icon: '<path d="M9 12l2 2 4-4M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>',
   },
   {
-    emoji: "\u{1F4CA}",
-    title: "Studio Deal Analyzer",
-    short: "ARV, MAO, comps in seconds",
-    desc: "Drop any address in and get an underwrite in under 10 seconds. Unlimited runs on any tier. Real time comps from public data.",
+    num: "03",
+    title: "Deal analyzer",
+    desc: "Any address, in under a minute",
+    icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/>',
   },
   {
-    emoji: "\u{1F48E}",
-    title: "Buyer CRM + Network",
-    short: "Track your buyers and their boxes",
-    desc: "Add cash buyers as you meet them. Filter by market, price band, and asset class. Plus browse our verified buyer network from day one.",
+    num: "04",
+    title: "Contracts",
+    desc: "Auto-fill or use templates",
+    icon: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/>',
   },
   {
-    emoji: "\u{1F4DD}",
-    title: "Contract templates + scripts",
-    short: "PA, assignment, cold call scripts",
-    desc: "Purchase agreements, assignment contracts, cold call scripts, follow up texts. Fill in the blanks and send. Battle tested.",
+    num: "05",
+    title: "Discord community",
+    desc: "300+ members, 24/7 wins",
+    icon: '<circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>',
   },
   {
-    emoji: "\u{1F91D}",
-    title: "Active community",
-    short: "Discord + in-app chat, always on",
-    desc: "Discord and in-app chat. Ask anything, log your wins, hang with people actually doing it. Not a graveyard, actually active daily.",
+    num: "06",
+    title: "14-day sprint",
+    desc: "Contract by day 14, most members",
+    icon: '<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>',
   },
 ];
 
-const videos = [
-  { duration: "3:42", title: "[Video 1 title from Vimeo]" },
-  { duration: "4:18", title: "[Video 2 title from Vimeo]" },
-  { duration: "5:03", title: "[Video 3 title from Vimeo]" },
+// TODO: placeholder testimonials, swap for real Vimeo embeds later.
+const LP_TESTIMONIALS = [
+  { id: "marcus", attr: "Marcus T.", detail: "$18,000 first assignment · 22 days" },
+  { id: "sara", attr: "Sara R.", detail: "$12,500 in month 2 · closed via JV" },
+  { id: "devon", attr: "Devon K.", detail: "3 deals since joining · $56k YTD" },
 ];
 
-const reviews = [
-  { date: "Aug 22", body: "[Whop review 1 - short quote pulled from Whop review page.]", name: "Dylan M." },
-  { date: "Aug 19", body: "[Whop review 2 - short quote from Whop.]", name: "Jazmin R." },
-  { date: "Aug 15", body: "[Whop review 3 - short quote from Whop.]", name: "Marcus C." },
-  { date: "Aug 12", body: "[Whop review 4 - short quote from Whop.]", name: "Sarah R." },
-  { date: "Aug 8", body: "[Whop review 5 - short quote from Whop.]", name: "Amanda L." },
-  { date: "Aug 5", body: "[Whop review 6 - short quote from Whop.]", name: "Ryan B." },
+// TODO: placeholder reviews, swap in real Whop review pulls later.
+const LP_REVIEWS = [
+  {
+    name: "jordan_l",
+    avatar: "linear-gradient(135deg,#FFE89A,#B8881F)",
+    body: '"The buyer network is the whole game. Analyzed a deal Monday, had a buyer Wednesday, closed $16k Friday."',
+  },
+  {
+    name: "alex_m",
+    avatar: "linear-gradient(135deg,#a78bfa,#7c3aed)",
+    body: '"I\'ve bought 3 other wholesaling courses. This is the only one where the founders actually respond and the tools actually work."',
+  },
+  {
+    name: "devon_k",
+    avatar: "linear-gradient(135deg,#5FB3E0,#3b82f6)",
+    body: '"Live calls with William are worth the $50 alone. Bring a deal, leave with a plan."',
+  },
 ];
 
-const marqueeItems = [
-  "Find the buyer",
-  "Match the deal",
-  "Call the seller",
-  "Lock the contract",
-  "Assign and close",
-  "Get paid",
+// TODO: all 7 payout cards below are placeholders, swap in real payout
+// screenshots and names when Keegan supplies them.
+const LP_PAYOUTS = [
+  { amt: "$18k", lbl: "assignment fee", name: "Marcus T." }, // TODO placeholder
+  { amt: "$12.5k", lbl: "month 2", name: "Sara R." }, // TODO placeholder
+  { amt: "$24k", lbl: "first wire", name: "Devon K." }, // TODO placeholder
+  { amt: "$8.2k", lbl: "first deal", name: "Alex M." }, // TODO placeholder
+  { amt: "$32k", lbl: "2 deals", name: "Jordan L." }, // TODO placeholder
+  { amt: "$9k", lbl: "first month", name: "Casey P." }, // TODO placeholder
+  { amt: "$15k", lbl: "JV split", name: "Riley B." }, // TODO placeholder
 ];
 
 function ArrowIcon() {
@@ -97,6 +99,7 @@ function CheckIcon() {
 
 export default function Home() {
   const [pricingOpen, setPricingOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
   const [autoFlipped, setAutoFlipped] = useState<number[]>([]);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -150,6 +153,9 @@ export default function Home() {
   const openPricing = () => setPricingOpen(true);
   const closePricing = () => setPricingOpen(false);
 
+  const toggleDrawer = () => setDrawerOpen((open) => !open);
+  const closeDrawer = () => setDrawerOpen(false);
+
   const scrollToSection = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
@@ -163,38 +169,91 @@ export default function Home() {
   return (
     <>
       <div className="wrap">
-        <nav className="nav">
-          <div className="shell nav-inner">
-            <div className="nav-brand">
-              <img src="/logo.png" alt="Real Venture" width={32} height={32} style={{ borderRadius: 8 }} />
-              <div className="nav-name">Real Venture</div>
-            </div>
-            <div className="nav-links">
-              <a onClick={() => scrollToSection("included")}>What is included</a>
-              <a onClick={openPricing}>Pricing</a>
-              <a onClick={() => scrollToSection("reviews")}>Reviews</a>
-            </div>
-            <div className="nav-cta">
-              <button className="nav-login">Log in</button>
-              <button className="nav-join" onClick={openPricing}>Join now {"→"}</button>
+        <nav className="lp-nav">
+          <div className="lp-nav-inner">
+            <div className="lp-nav-pill">
+              <button
+                className="lp-nav-segment"
+                onClick={toggleDrawer}
+                aria-label="Menu"
+                aria-expanded={drawerOpen}
+              >
+                <span className={`lp-burger${drawerOpen ? " open" : ""}`}>
+                  <span />
+                  <span />
+                  <span />
+                </span>
+                <span className="lp-nav-label">MENU</span>
+              </button>
+              <span className="lp-nav-divider" />
+              <button
+                className="lp-nav-segment"
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                aria-label="Real Venture, back to top"
+              >
+                <img src="/logo.png" alt="" width={30} height={30} style={{ borderRadius: 8 }} />
+                <span className="lp-nav-wordmark">
+                  REAL <b>VENTURE</b>
+                </span>
+              </button>
+              <span className="lp-nav-divider" />
+              <a className="lp-nav-segment" href="/api/auth/whop/start">
+                <svg className="lp-user-icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span className="lp-nav-label">LOG IN</span>
+              </a>
             </div>
           </div>
         </nav>
 
+        <NavDrawer
+          open={drawerOpen}
+          onClose={closeDrawer}
+          onNavigate={(id) => {
+            closeDrawer();
+            scrollToSection(id);
+          }}
+          onPricing={() => {
+            closeDrawer();
+            openPricing();
+          }}
+        />
+
         <section className="hero">
           <div className="shell">
-            <div className="hero-eyebrow"><span className="dot"></span>Now enrolling</div>
-            <h1>We teach you <em>secured wholesaling</em>. That is it.</h1>
-            <p className="hero-sub">Live coaching <b>three days a week</b>, a course you actually finish, the deal analyzer, buyer CRM, and contract templates. Everything between you and your first assignment fee.</p>
+            <div className="hero-eyebrow">REAL VENTURE: PROVEN PATH TO SUCCESS</div>
+            <h1 className="lp-hero-h">{"Your first real estate payday. We'll walk you there."}</h1>
+            <p className="hero-sub">{"We teach you live, hand you the tools, and send real buyers to your deals. Every question answered, every step covered. No license, no capital, no experience needed."}</p>
             <div className="hero-cta-row">
               <button className="btn-primary" onClick={openPricing}>
                 Join for $19.99/mo
                 <ArrowIcon />
               </button>
               <button className="btn-secondary" onClick={() => scrollToSection("included")}>
-                See everything you get
-                <ArrowIcon />
+                {"See what's inside ↓"}
               </button>
+            </div>
+            {/* TODO: Keegan drops 1.jpg, 2.jpg, 3.jpg, 4.jpg (200x200+) into /public/avatars/, CSS fallback renders gradient circles until then. */}
+            <div className="lp-social">
+              <div className="lp-avatar-stack">
+                {[
+                  "linear-gradient(135deg,#FFE89A,#B8881F)",
+                  "linear-gradient(135deg,#a78bfa,#7c3aed)",
+                  "linear-gradient(135deg,#5FB3E0,#3b82f6)",
+                  "linear-gradient(135deg,#4ade80,#16a34a)",
+                ].map((fallback, i) => (
+                  <span
+                    className="lp-avatar"
+                    key={i}
+                    style={{ background: `url(/avatars/${i + 1}.jpg) center/cover, ${fallback}` }}
+                  />
+                ))}
+              </div>
+              <div className="lp-avatar-label">
+                <b>300+</b> active students
+              </div>
             </div>
             <div className="hero-trust">
               <span><CheckIcon /><b>Cancel anytime</b></span>
@@ -204,59 +263,36 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="proof-strip">
-          <div className="shell proof-inner">
-            <div className="proof-item"><div className="proof-num g">3 days</div><div className="proof-lbl">Live coaching per week</div></div>
-            <div className="proof-item"><div className="proof-num">200+</div><div className="proof-lbl">Active wholesalers</div></div>
-            <div className="proof-item"><div className="proof-num">$0</div><div className="proof-lbl">Starting capital needed</div></div>
-            <div className="proof-item"><div className="proof-num">No experience</div><div className="proof-lbl">Required</div></div>
-          </div>
-        </section>
-
-        <div className="marquee">
-          <div className="marquee-track">
-            <span>
-              {[...marqueeItems, ...marqueeItems].map((item, i) => (
-                <Fragment key={i}>
-                  {item} <span className="sep">{"✦"}</span>
-                </Fragment>
-              ))}
-            </span>
-          </div>
-        </div>
-
-        <section className="section section-cream" id="reviews">
-          <div className="shell">
-            <div className="section-head">
-              <div className="section-eyebrow">Every payout, real time</div>
-              <h2 className="section-h2">Members are actually <em>getting paid</em></h2>
-              <p className="section-lead">Every one of these is a verified assignment fee wired to a Real Venture member. Live from the JV queue.</p>
-            </div>
-          </div>
-          <div className="payouts-strip">
-            <div className="payouts-track">
-              {[...payouts, ...payouts].map((p, i) => (
-                <div className="payout-card" key={i}>
-                  <div className="payout-amt">{p.amt}</div>
-                  <div className="payout-name">{p.name}</div>
-                  <div className="payout-meta"><span>{p.meta}</span><span className="payout-tag">{p.tag}</span></div>
+        <section className="lp-payouts">
+          <div className="lp-payouts-eyebrow">REAL STUDENT PAYOUTS</div>
+          <div className="lp-marquee">
+            <div className="lp-marquee-track">
+              {[...LP_PAYOUTS, ...LP_PAYOUTS].map((p, i) => (
+                <div
+                  className="lp-payout-card"
+                  key={i}
+                  aria-hidden={i >= LP_PAYOUTS.length || undefined}
+                >
+                  <div className="lp-payout-amt">{p.amt}</div>
+                  <div className="lp-payout-lbl">{p.lbl}</div>
+                  <div className="lp-payout-name">{p.name}</div>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section className="section" id="included">
+        <section className="lp-inc" id="included">
           <div className="shell">
-            <div className="section-head">
-              <div className="section-eyebrow">What is included</div>
-              <h2 className="section-h2">Everything you need to close your <em>first deal</em></h2>
-              <p className="section-lead">Hover any card for details. One membership, all the tools.</p>
+            <div className="lp-inc-head">
+              <div className="lp-inc-eyebrow">EVERYTHING YOU GET</div>
+              <h2 className="lp-inc-h2">The full toolkit</h2>
+              <p className="lp-inc-sub">Live teaching. Real buyers. Every tool. Every script. Every step.</p>
             </div>
-            <div className="inc-grid">
-              {incCards.map((card, i) => (
+            <div className="lp-flip-grid">
+              {LP_INCLUDED.map((card, i) => (
                 <div
-                  className={`inc-card${expandedCard === i || autoFlipped.includes(i) ? " flipped" : ""}`}
+                  className={`lp-flip-card${expandedCard === i || autoFlipped.includes(i) ? " flipped" : ""}`}
                   key={i}
                   data-index={i}
                   ref={(el) => {
@@ -264,17 +300,21 @@ export default function Home() {
                   }}
                   onClick={() => toggleCard(i)}
                 >
-                  <div className="inc-card-inner">
-                    <div className="inc-face inc-front">
-                      <div className="inc-emoji">{card.emoji}</div>
-                      <div className="inc-title">{card.title}</div>
-                      <div className="inc-short">{card.short}</div>
-                      <div className="inc-hint">Hover<span className="dot-anim"></span></div>
+                  <div className="lp-flip-inner">
+                    <div className="lp-flip-face lp-flip-front">
+                      <div className="lp-flip-num">{card.num}</div>
+                      <div
+                        className="lp-flip-icn"
+                        dangerouslySetInnerHTML={{
+                          __html: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${card.icon}</svg>`,
+                        }}
+                      />
+                      <div className="lp-flip-title">{card.title}</div>
                     </div>
-                    <div className="inc-face inc-back">
-                      <div className="inc-title">{card.title}</div>
-                      <div className="inc-desc">{card.desc}</div>
-                      <div className="anim-slot"></div>
+                    <div className="lp-flip-face lp-flip-back">
+                      <div className="lp-flip-num">{card.num}</div>
+                      <div className="lp-flip-title">{card.title}</div>
+                      <div className="lp-flip-desc">{card.desc}</div>
                     </div>
                   </div>
                 </div>
@@ -283,52 +323,78 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="section section-deep">
+        <section className="lp-pricing">
           <div className="shell">
-            <div className="section-head">
-              <div className="section-eyebrow">Member stories</div>
-              <h2 className="section-h2">Watch how members actually <em>close deals</em></h2>
-              <p className="section-lead">Full stories from real members. Three short videos, straight from the source.</p>
+            <div className="lp-sec-head">
+              <div className="lp-sec-eyebrow">CHOOSE YOUR PLAN</div>
+              <h2 className="lp-sec-h2">Three ways in.</h2>
+              <p className="lp-sec-sub">Start on Base, upgrade to Pro when you close.</p>
             </div>
-            <div className="video-grid">
-              {videos.map((video, i) => (
-                <div className="video-card" key={i}>
-                  <div className="video-player">
-                    <div className="play-btn">
-                      <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4" /></svg>
-                    </div>
-                    <div className="video-duration">{video.duration}</div>
-                  </div>
-                  <div className="video-meta">
-                    <div className="video-title">{video.title}</div>
-                    <div className="video-attr">Member name<span className="dot">{"•"}</span>State</div>
-                  </div>
-                </div>
-              ))}
+            <div className="lp-tier-stack">
+              <div className="lp-tier">
+                <div className="lp-tier-crown">{"\u{1F451}"}</div>
+                <div className="lp-tier-name">Base</div>
+                <div className="lp-tier-price"><b>$19.99</b><span> / month</span></div>
+                <ul className="lp-tier-feats">
+                  <li>Discord + community</li>
+                  <li>3x/week live calls</li>
+                  <li>Full 13-lesson curriculum</li>
+                  <li>Deal analyzer + contract templates</li>
+                  <li>14-day First Deal Sprint</li>
+                </ul>
+                <button className="lp-tier-cta" onClick={openPricing}>Get started {"→"}</button>
+              </div>
+              <div className="lp-tier pro">
+                <span className="lp-most-pop">Most Popular</span>
+                <div className="lp-tier-crown">{"\u{1F451}"}</div>
+                <div className="lp-tier-name">Pro</div>
+                <div className="lp-tier-price"><b>$49.99</b><span> / month</span></div>
+                <ul className="lp-tier-feats">
+                  <li>Everything in Base</li>
+                  <li><b>We close deals with you. 60% to you.</b></li>
+                  <li>Buyer network access</li>
+                  <li>Auto-fill contracts + Proof of Funds</li>
+                  <li>All call recordings + priority DM</li>
+                </ul>
+                <button className="lp-tier-cta" onClick={openPricing}>Join Pro {"→"}</button>
+              </div>
+              <div className="lp-tier ultra">
+                <span className="lp-soon">Coming Soon</span>
+                <div className="lp-tier-crown">{"\u{1F451}"}</div>
+                <div className="lp-tier-name">Ultra</div>
+                <div className="lp-tier-price"><b>$249</b><span> / month</span></div>
+                <ul className="lp-tier-feats">
+                  <li>{"Direct DM with William & Keegan"}</li>
+                  <li>Monthly mastermind</li>
+                  <li>Founder review of your offers</li>
+                  <li>First 10: $149/mo locked forever</li>
+                </ul>
+                <button className="lp-tier-cta" disabled>Notify me</button>
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="section section-cream">
+        <section className="lp-testimonials">
           <div className="shell">
-            <div className="section-head">
-              <div className="section-eyebrow">Whop reviews</div>
-              <h2 className="section-h2">Straight from <em>our members</em></h2>
-              <p className="section-lead">Every review below is from a paying member on Whop. Not curated. Not paid.</p>
+            <div className="lp-sec-head">
+              <div className="lp-sec-eyebrow">REAL WINS, REAL STUDENTS</div>
+              <h2 className="lp-sec-h2">See the payoff.</h2>
+              <p className="lp-sec-sub">Real students. Real deals. Real dollars.</p>
             </div>
-            <div className="reviews-grid">
-              {reviews.map((review, i) => (
-                <div className="review-card" key={i}>
-                  <div className="review-head">
-                    <div className="review-stars">{"★★★★★"}</div>
-                    <div className="review-date">{review.date}</div>
-                  </div>
-                  <div className="review-body placeholder">{review.body}</div>
-                  <div className="review-attr">
-                    <span className="review-name">{review.name}</span>
-                    <span>{"•"}</span>
-                    <span>Member</span>
-                    <span className="whop-badge">Whop</span>
+            <div className="lp-video-stack">
+              {LP_TESTIMONIALS.map((t) => (
+                <div className="lp-testimonial-card" key={t.id}>
+                  <button
+                    className="lp-video-thumb"
+                    onClick={() => console.log(`TODO: open Vimeo modal for testimonial ${t.id}`)}
+                    aria-label={`Play testimonial from ${t.attr}`}
+                  >
+                    <span className="lp-play-btn" />
+                  </button>
+                  <div className="lp-video-meta">
+                    <div className="lp-video-attr">{t.attr}</div>
+                    <div className="lp-video-detail">{t.detail}</div>
                   </div>
                 </div>
               ))}
@@ -336,17 +402,49 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="final-cta">
-          <div className="shell content">
-            <h2>Everything you need. <em>One membership.</em></h2>
-            <p>Stop watching YouTube and asking Reddit. Get the tools, the coaching, and the community that actually get you paid.</p>
-            <button className="final-btn" onClick={openPricing}>
+        <section id="reviews" className="lp-reviews">
+          <div className="shell">
+            <div className="lp-sec-head">
+              <div className="lp-sec-eyebrow">VERIFIED REVIEWS</div>
+              <h2 className="lp-sec-h2">What members say.</h2>
+              <p className="lp-sec-sub">All reviews collected + verified by Whop.</p>
+            </div>
+            <div className="lp-review-summary">
+              <div className="lp-reviews-score">4.9</div>
+              <div>
+                <div className="lp-reviews-stars">{"★★★★★"}</div>
+                <div className="lp-reviews-count">124 verified reviews</div>
+              </div>
+            </div>
+            <div className="lp-reviews-grid">
+              {LP_REVIEWS.map((review) => (
+                <div className="lp-review-card" key={review.name}>
+                  <div className="lp-review-top">
+                    <div className="lp-review-user">
+                      <span className="lp-review-avatar" style={{ background: review.avatar }} />
+                      <span className="lp-review-name">{review.name}</span>
+                    </div>
+                    <div className="lp-review-stars">{"★★★★★"}</div>
+                  </div>
+                  <div className="lp-review-body">{review.body}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="lp-final-cta">
+          <div className="shell">
+            <h2 className="lp-final-h">Your first payday <span>starts today.</span></h2>
+            <p className="lp-final-sub">Join 300+ students who stopped watching and started closing.</p>
+            <button className="btn-primary" onClick={openPricing}>
               Join for $19.99/mo
               <ArrowIcon />
             </button>
-            <div className="final-guarantee">
-              <span><CheckIcon />Cancel anytime</span>
-              <span><CheckIcon />Secured by Whop</span>
+            <div className="hero-trust">
+              <span><CheckIcon /><b>Cancel anytime</b></span>
+              <span>{"•"}</span>
+              <span><CheckIcon /><b>Secured by Whop</b></span>
             </div>
           </div>
         </section>
@@ -355,9 +453,14 @@ export default function Home() {
           <div className="shell">
             <div className="footer-inner">
               <div className="footer-brand"><img src="/logo.png" alt="Real Venture" width={24} height={24} style={{ borderRadius: 6 }} /><span>Real Venture</span></div>
-              <div className="footer-links"><a>Studio login</a><a>Contact</a><a>Terms</a><a>Privacy</a></div>
+              <div className="footer-links">
+                <a onClick={openPricing}>Pricing</a>
+                <a onClick={() => scrollToSection("included")}>What is included</a>
+                <a onClick={() => scrollToSection("reviews")}>Reviews</a>
+                <a href="/api/auth/whop/start">Log in</a>
+              </div>
             </div>
-            <div className="footer-legal">{"©"} 2026 Real Venture. Wholesaling education. Not a get rich quick program. Results vary and depend on the effort you put in.</div>
+            <div className="footer-legal">{"©"} 2026 Real Venture · realventure.io · Not financial advice. Not a license.</div>
           </div>
         </footer>
       </div>

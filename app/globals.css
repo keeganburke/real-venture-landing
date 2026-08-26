@@ -41,28 +41,9 @@ body{color:var(--txt-dark);font-family:"Inter",ui-sans-serif,-apple-system,sans-
 .shell{max-width:1240px;margin:0 auto;padding:0 24px}
 body.modal-open{overflow:hidden}
 
-/* NAV */
-.nav{position:sticky;top:0;z-index:50;padding:14px 0;backdrop-filter:blur(24px);background:rgba(20,17,24,.82);border-bottom:1px solid rgba(45,43,56,.5)}
-.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:24px}
-.nav-brand{display:flex;align-items:center;gap:11px}
-.nav-logo{width:32px;height:32px;background:linear-gradient(135deg,var(--gold-bright),var(--gold-deep));border-radius:8px;display:grid;place-items:center;font-family:"Cabinet Grotesk";font-weight:800;color:var(--cta-text);font-size:14px;box-shadow:0 6px 18px -6px rgba(229,181,71,.4)}
-.nav-name{font-family:"Cabinet Grotesk";font-weight:800;font-size:17px;letter-spacing:-.015em;color:var(--txt-dark-hi)}
-.nav-links{display:flex;gap:32px;align-items:center;font-size:13.5px;color:var(--mut-dark-hi);font-weight:500}
-.nav-links a{color:inherit;text-decoration:none;cursor:pointer;transition:color .15s ease}
-.nav-links a:hover{color:var(--txt-dark-hi)}
-.nav-cta{display:flex;gap:10px;align-items:center}
-.nav-login{background:transparent;border:1px solid var(--line-dark-hi);color:var(--txt-dark);font-family:"Cabinet Grotesk";font-size:12.5px;font-weight:700;padding:9px 16px;border-radius:8px;cursor:pointer;transition:all .15s ease}
-.nav-login:hover{background:var(--card-dark);border-color:#4a4a5a}
-.nav-join{background:var(--cta);color:var(--cta-text);border:none;font-family:"Cabinet Grotesk";font-size:12.5px;font-weight:800;padding:9px 18px;border-radius:8px;cursor:pointer;box-shadow:0 6px 16px -4px rgba(229,181,71,.35);transition:all .2s ease}
-.nav-join:hover{transform:translateY(-1px);box-shadow:0 10px 22px -4px rgba(229,181,71,.5)}
-
 /* HERO */
 .hero{position:relative;padding:48px 0 72px;text-align:center;overflow:hidden;background:radial-gradient(ellipse 900px 500px at 50% 0%,rgba(229,181,71,.09),transparent 60%),radial-gradient(ellipse 600px 400px at 15% 60%,rgba(244,233,208,.02),transparent 60%)}
 .hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(229,181,71,.08);border:1px solid rgba(229,181,71,.25);color:var(--gold-bright);font-family:"Cabinet Grotesk";font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;padding:7px 14px;border-radius:99px;margin-bottom:28px}
-.hero-eyebrow .dot{width:5px;height:5px;background:var(--green);border-radius:99px;box-shadow:0 0 8px var(--green);animation:blink 2s ease-in-out infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.55}}
-.hero h1{font-family:"Cabinet Grotesk";font-size:64px;font-weight:800;letter-spacing:-.035em;line-height:1.02;margin-bottom:24px;max-width:840px;margin-left:auto;margin-right:auto;color:var(--txt-dark-hi)}
-.hero h1 em{font-style:normal;background:var(--cta);-webkit-background-clip:text;background-clip:text;color:transparent}
 .hero-sub{font-size:17px;line-height:1.55;color:var(--mut-dark-hi);max-width:580px;margin:0 auto 36px;font-weight:400}
 .hero-sub b{color:var(--txt-dark-hi);font-weight:600}
 .hero-cta-row{display:inline-flex;align-items:center;gap:20px;flex-wrap:wrap;justify-content:center}
@@ -77,116 +58,6 @@ body.modal-open{overflow:hidden}
 .hero-trust span{display:inline-flex;align-items:center;gap:6px}
 .hero-trust svg{width:12px;height:12px;color:var(--green);flex-shrink:0}
 .hero-trust b{color:var(--txt-dark);font-weight:600}
-
-/* PROOF STRIP */
-.proof-strip{padding:38px 0;border-top:1px solid rgba(45,43,56,.6);border-bottom:1px solid rgba(45,43,56,.6);background:rgba(28,25,34,.5)}
-.proof-inner{display:flex;justify-content:space-around;align-items:center;gap:32px;flex-wrap:wrap;text-align:center}
-.proof-item{flex:1;min-width:180px}
-.proof-num{font-family:"Cabinet Grotesk";font-size:36px;font-weight:800;letter-spacing:-.03em;line-height:1;margin-bottom:6px;color:var(--txt-dark-hi)}
-.proof-num.g{background:var(--cta);-webkit-background-clip:text;background-clip:text;color:transparent}
-.proof-lbl{color:var(--mut-dark);font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.1em}
-
-/* MARQUEE */
-.marquee{padding:20px 0;background:var(--bg-elevated);overflow:hidden;position:relative}
-.marquee:before,.marquee:after{content:"";position:absolute;top:0;bottom:0;width:120px;z-index:2;pointer-events:none}
-.marquee:before{left:0;background:linear-gradient(90deg,var(--bg-elevated),transparent)}
-.marquee:after{right:0;background:linear-gradient(-90deg,var(--bg-elevated),transparent)}
-.marquee-track{display:flex;gap:56px;animation:scroll 45s linear infinite;white-space:nowrap;font-family:"Cabinet Grotesk";font-size:13.5px;font-weight:700;letter-spacing:.2em;color:var(--mut-dark);text-transform:uppercase}
-.marquee-track span{display:inline-flex;align-items:center;gap:56px}
-.marquee-track .sep{color:var(--gold);font-size:12px;opacity:.65}
-@keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-
-/* SECTIONS */
-.section{padding:88px 0;position:relative}
-.section-cream{background:var(--bg-cream);color:var(--txt-cream)}
-.section-deep{background:var(--bg-deep)}
-.section-head{text-align:center;margin-bottom:56px}
-.section-eyebrow{display:inline-block;font-family:"Cabinet Grotesk";font-size:11px;font-weight:800;letter-spacing:.18em;color:var(--gold-bright);text-transform:uppercase;margin-bottom:14px}
-.section-cream .section-eyebrow{color:var(--gold-dark)}
-.section-h2{font-family:"Cabinet Grotesk";font-size:42px;font-weight:800;letter-spacing:-.025em;line-height:1.08;margin-bottom:16px;max-width:720px;margin-left:auto;margin-right:auto;color:var(--txt-dark-hi)}
-.section-cream .section-h2{color:var(--txt-cream-hi)}
-.section-h2 em{font-style:normal;background:var(--cta);-webkit-background-clip:text;background-clip:text;color:transparent}
-.section-cream .section-h2 em{background:linear-gradient(135deg,var(--gold-deep),#8B6317);-webkit-background-clip:text;background-clip:text}
-.section-lead{color:var(--mut-dark-hi);font-size:15.5px;line-height:1.55;max-width:560px;margin:0 auto;font-weight:400}
-.section-cream .section-lead{color:var(--mut-cream)}
-
-/* PAYOUTS STRIP (fast scroll, small cards) */
-.payouts-strip{overflow:hidden;position:relative;padding:8px 0}
-.section-cream .payouts-strip:before,.section-cream .payouts-strip:after{content:"";position:absolute;top:0;bottom:0;width:120px;z-index:2;pointer-events:none}
-.section-cream .payouts-strip:before{left:0;background:linear-gradient(90deg,var(--bg-cream),transparent)}
-.section-cream .payouts-strip:after{right:0;background:linear-gradient(-90deg,var(--bg-cream),transparent)}
-.payouts-track{display:flex;gap:12px;animation:scroll-fast 30s linear infinite;width:max-content}
-@keyframes scroll-fast{from{transform:translateX(0)}to{transform:translateX(calc(-50% - 6px))}}
-.payout-card{width:220px;background:var(--card-cream);border:1px solid var(--line-cream);border-radius:12px;padding:16px 18px;flex-shrink:0;display:flex;flex-direction:column;gap:6px;box-shadow:0 6px 16px -8px rgba(0,0,0,.12)}
-.payout-amt{font-family:"Cabinet Grotesk";font-size:24px;font-weight:800;letter-spacing:-.025em;color:#15803d;line-height:1}
-.payout-name{font-family:"Cabinet Grotesk";font-size:12.5px;font-weight:700;color:var(--txt-cream-hi);margin-top:4px}
-.payout-meta{font-size:10.5px;color:var(--mut-cream);font-weight:500;display:flex;justify-content:space-between;align-items:center;margin-top:2px}
-.payout-tag{background:rgba(34,197,94,.15);color:#15803d;font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border-radius:99px}
-
-/* WHAT'S INCLUDED - 6 flip cards */
-.inc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;perspective:1400px}
-@media(max-width:900px){.inc-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:600px){.inc-grid{grid-template-columns:1fr}}
-.inc-card{position:relative;cursor:pointer;min-height:280px;background:transparent;border:none}
-.inc-card-inner{position:relative;display:grid;width:100%;min-height:280px;height:100%;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.16,1,.3,1)}
-.inc-card.flipped .inc-card-inner{transform:rotateY(180deg)}
-@media(hover:hover){.inc-card:hover .inc-card-inner{transform:rotateY(180deg)}}
-.inc-face{grid-area:1/1;width:100%;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--card-dark);border:1px solid var(--line-dark);border-radius:16px;padding:26px 24px;display:flex;flex-direction:column;overflow:hidden;position:relative}
-.inc-back{transform:rotateY(180deg);border-color:var(--gold);background:var(--card-dark-hi)}
-.inc-emoji{font-size:32px;margin-bottom:14px;display:inline-block}
-.inc-title{font-family:"Cabinet Grotesk";font-size:17px;font-weight:800;letter-spacing:-.01em;margin-bottom:6px;color:var(--txt-dark-hi)}
-.inc-short{font-size:12.5px;color:var(--mut-dark);font-weight:500}
-.inc-desc{font-size:13px;line-height:1.55;color:var(--mut-dark-hi);padding-top:12px;border-top:1px dashed var(--line-dark-hi);margin-bottom:14px}
-.anim-slot{height:80px;border-radius:12px;background:linear-gradient(135deg,rgba(229,181,71,.14),rgba(229,181,71,.04));border:1px dashed rgba(229,181,71,.28);margin-top:auto}
-.inc-hint{position:absolute;bottom:14px;right:18px;font-size:10px;color:var(--mut-dark);font-family:"Cabinet Grotesk";font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:0;transition:opacity .3s ease}
-.inc-card:not(:hover):not(.flipped) .inc-hint{opacity:1}
-.inc-hint .dot-anim{display:inline-block;width:4px;height:4px;background:var(--gold);border-radius:99px;margin-left:4px;animation:pulse-dot 1.5s ease-in-out infinite}
-@keyframes pulse-dot{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.5)}}
-
-/* VIDEO TESTIMONIALS */
-.video-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-@media(max-width:900px){.video-grid{grid-template-columns:1fr}}
-.video-card{background:var(--card-dark);border:1px solid var(--line-dark);border-radius:16px;overflow:hidden;transition:all .3s ease;cursor:pointer}
-.video-card:hover{border-color:var(--line-dark-hi);transform:translateY(-3px);box-shadow:0 24px 40px -20px rgba(0,0,0,.4)}
-.video-player{aspect-ratio:16/9;background:linear-gradient(135deg,#2a2735,#1a1720);position:relative;display:grid;place-items:center;overflow:hidden}
-.video-player:before{content:"";position:absolute;inset:0;background:radial-gradient(400px 200px at 50% 50%,rgba(229,181,71,.08),transparent 70%);pointer-events:none}
-.play-btn{width:60px;height:60px;border-radius:99px;background:rgba(255,255,255,.12);backdrop-filter:blur(10px);border:1.5px solid rgba(255,255,255,.2);display:grid;place-items:center;transition:all .25s ease;position:relative;z-index:1}
-.video-card:hover .play-btn{background:var(--gold);border-color:var(--gold-bright);transform:scale(1.08);box-shadow:0 8px 24px -6px rgba(229,181,71,.5)}
-.play-btn svg{width:22px;height:22px;color:#fff;margin-left:3px;transition:color .2s ease}
-.video-card:hover .play-btn svg{color:var(--cta-text)}
-.video-duration{position:absolute;bottom:12px;right:12px;background:rgba(0,0,0,.6);color:#fff;font-family:"Cabinet Grotesk";font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:6px;z-index:2}
-.video-meta{padding:18px 20px}
-.video-title{font-family:"Cabinet Grotesk";font-size:15px;font-weight:800;line-height:1.3;color:var(--txt-dark-hi);margin-bottom:6px}
-.video-attr{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--mut-dark)}
-.video-attr .dot{color:var(--gold);font-size:8px}
-
-/* WHOP REVIEWS */
-.reviews-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-@media(max-width:900px){.reviews-grid{grid-template-columns:1fr 1fr}}
-@media(max-width:600px){.reviews-grid{grid-template-columns:1fr}}
-.review-card{background:var(--card-cream);border:1px solid var(--line-cream);border-radius:12px;padding:20px;box-shadow:0 4px 12px -6px rgba(0,0,0,.1);display:flex;flex-direction:column;gap:10px}
-.review-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.review-stars{color:var(--gold);font-size:13px;letter-spacing:1.5px}
-.review-date{font-size:10.5px;color:var(--mut-cream);font-weight:500}
-.review-body{font-size:13px;line-height:1.5;color:var(--txt-cream);font-weight:500;min-height:60px}
-.review-body.placeholder{color:var(--mut-cream);font-style:italic;font-weight:400}
-.review-attr{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--mut-cream);font-weight:500;padding-top:8px;border-top:1px solid var(--line-cream)}
-.review-name{color:var(--txt-cream-hi);font-family:"Cabinet Grotesk";font-weight:800}
-.whop-badge{background:rgba(107,70,193,.12);color:#553c9a;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border-radius:4px;margin-left:auto}
-
-/* FINAL CTA */
-.final-cta{padding:110px 0 130px;text-align:center;position:relative;background:var(--bg-elevated);overflow:hidden}
-.final-cta:before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 800px 400px at 50% 50%,rgba(229,181,71,.09),transparent 60%);pointer-events:none}
-.final-cta .content{position:relative;z-index:1}
-.final-cta h2{font-family:"Cabinet Grotesk";font-size:52px;font-weight:800;letter-spacing:-.03em;line-height:1.03;margin-bottom:20px;max-width:720px;margin-left:auto;margin-right:auto;color:var(--txt-dark-hi)}
-.final-cta h2 em{font-style:normal;background:var(--cta);-webkit-background-clip:text;background-clip:text;color:transparent}
-.final-cta p{color:var(--mut-dark-hi);font-size:16px;line-height:1.55;max-width:500px;margin:0 auto 36px}
-.final-btn{background:var(--cta);color:var(--cta-text);border:none;font-family:"Cabinet Grotesk";font-size:16px;font-weight:800;padding:18px 44px;border-radius:12px;cursor:pointer;box-shadow:0 22px 50px -10px rgba(229,181,71,.55);letter-spacing:-.005em;display:inline-flex;align-items:center;gap:12px;transition:all .2s ease}
-.final-btn:hover{transform:translateY(-3px);box-shadow:0 30px 70px -10px rgba(229,181,71,.7)}
-.final-btn svg{width:16px;height:16px}
-.final-guarantee{margin-top:20px;font-size:12.5px;color:var(--mut-dark);display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center}
-.final-guarantee span{display:inline-flex;align-items:center;gap:6px}
-.final-guarantee svg{width:12px;height:12px;color:var(--green);flex-shrink:0}
 
 /* FOOTER */
 .footer{border-top:1px solid var(--line-dark);padding:40px 0 28px}
@@ -612,3 +483,142 @@ body.modal-open{overflow:hidden}
 .cf-modal{top:50%;left:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);max-width:480px;width:calc(100% - 48px);border-radius:20px;border:1px solid var(--line-hi);border-top:1px solid var(--line-hi);max-height:88vh;overflow-y:auto;padding:40px 36px 32px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
 .cf-modal-grabber{display:none}
 }
+
+/* LANDING V2 NAV (lp- prefix; existing blocks untouched) */
+.lp-nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:12px 16px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.lp-nav-inner{max-width:1200px;margin:0 auto}
+.lp-nav-pill{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line-dark-hi);background:rgba(20,17,24,.9);border-radius:60px;min-height:60px;padding:8px 12px;gap:4px}
+.lp-nav-segment{display:flex;align-items:center;gap:10px;background:none;border:none;color:var(--txt-dark);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:12px;letter-spacing:.08em;padding:8px 16px;border-radius:99px;cursor:pointer;text-decoration:none;transition:background .15s ease}
+.lp-nav-segment:hover{background:rgba(244,233,208,.06)}
+.lp-nav-divider{width:1px;height:24px;background:var(--line-dark);flex-shrink:0}
+.lp-nav-wordmark{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:14px;letter-spacing:.02em;color:var(--txt-dark-hi);white-space:nowrap}
+.lp-nav-wordmark b{color:var(--gold)}
+.lp-burger{display:flex;flex-direction:column;gap:4px;width:18px}
+.lp-burger span{display:block;height:2px;width:100%;background:var(--gold);border-radius:2px;transition:transform .25s ease,opacity .2s ease}
+.lp-burger.open span:nth-child(1){transform:translateY(6px) rotate(45deg)}
+.lp-burger.open span:nth-child(2){opacity:0}
+.lp-burger.open span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+.lp-user-icn{width:16px;height:16px;flex-shrink:0}
+.wrap{padding-top:84px}
+@media(max-width:640px){.lp-nav-label{display:none}.lp-nav-segment{padding:8px 12px}}
+
+/* LANDING V2 HERO (lp- prefix) */
+.lp-hero-h{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:64px;line-height:1.05;letter-spacing:-.03em;margin-bottom:24px;max-width:840px;margin-left:auto;margin-right:auto;background:linear-gradient(180deg,#FFE89A 0%,#E5B547 55%,#B8881F 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+@media(max-width:640px){.lp-hero-h{font-size:36px}}
+.lp-social{display:flex;justify-content:center;align-items:center;gap:12px;margin-top:26px}
+.lp-avatar-stack{display:flex}
+.lp-avatar{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--bg);flex-shrink:0}
+.lp-avatar + .lp-avatar{margin-left:-10px}
+.lp-avatar-label{color:var(--txt-dark);font-size:12.5px;font-weight:600}
+.lp-avatar-label b{color:var(--gold);font-family:"Cabinet Grotesk",sans-serif;font-weight:800}
+
+/* LANDING V2 PAYOUT MARQUEE (lp- prefix; replaces the removed proof-strip) */
+.lp-payouts{background:var(--bg-elevated);padding:28px 0 32px;overflow:hidden;border-top:1px solid var(--line-dark);border-bottom:1px solid var(--line-dark)}
+.lp-payouts-eyebrow{color:var(--gold);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;text-align:center;margin-bottom:16px}
+.lp-marquee{overflow:hidden}
+.lp-marquee-track{display:flex;gap:10px;width:max-content;animation:lp-scroll 40s linear infinite}
+.lp-marquee:hover .lp-marquee-track{animation-play-state:paused}
+@keyframes lp-scroll{from{transform:translateX(0)}to{transform:translateX(calc(-50% - 5px))}}
+.lp-payout-card{flex:0 0 auto;background:linear-gradient(135deg,rgba(74,222,128,.10),rgba(74,222,128,.03));border:1px solid rgba(74,222,128,.25);border-radius:12px;padding:12px 16px;min-width:140px}
+.lp-payout-amt{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;color:#4ade80;font-size:22px;letter-spacing:-.02em;line-height:1}
+.lp-payout-lbl{color:var(--mut-dark);font-size:10.5px;margin-top:4px;letter-spacing:.02em}
+.lp-payout-name{color:var(--txt-dark);font-size:11.5px;font-weight:600;margin-top:6px}
+
+/* LANDING V2 WHAT IS INCLUDED (lp- prefix; beige flip cards, replaces inc- block) */
+.lp-inc{background:var(--bg-cream);padding:64px 0;color:#3a3020}
+.lp-inc-head{text-align:center;margin-bottom:30px}
+.lp-inc-eyebrow{color:var(--gold-deep);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;margin-bottom:10px}
+.lp-inc-h2{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:30px;line-height:1.08;letter-spacing:-.02em;color:#3a3020;margin-bottom:8px}
+@media(min-width:900px){.lp-inc-h2{font-size:42px}}
+.lp-inc-sub{color:rgba(58,48,32,.7);font-size:13.5px;line-height:1.5;max-width:520px;margin:0 auto}
+.lp-flip-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;perspective:1400px;max-width:560px;margin:0 auto}
+@media(min-width:900px){.lp-flip-grid{grid-template-columns:repeat(3,1fr);gap:14px;max-width:980px}}
+.lp-flip-card{position:relative;cursor:pointer;min-height:185px}
+.lp-flip-inner{position:relative;display:grid;width:100%;height:100%;min-height:185px;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.16,1,.3,1)}
+.lp-flip-card.flipped .lp-flip-inner{transform:rotateY(180deg)}
+@media(hover:hover){.lp-flip-card:hover .lp-flip-inner{transform:rotateY(180deg)}}
+.lp-flip-face{grid-area:1/1;width:100%;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;padding:16px 14px;display:flex;flex-direction:column;overflow:hidden}
+.lp-flip-front{background:#fff;border:1px solid rgba(58,48,32,.15);box-shadow:0 2px 8px rgba(58,48,32,.06)}
+.lp-flip-back{transform:rotateY(180deg);background:var(--bg);border:1px solid var(--gold)}
+.lp-flip-num{font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:11px;color:var(--gold-deep);letter-spacing:.06em}
+.lp-flip-back .lp-flip-num{color:var(--gold)}
+.lp-flip-icn{width:32px;height:32px;background:var(--cta);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#1a1208;box-shadow:0 4px 12px rgba(229,181,71,.30);margin:10px 0 auto}
+.lp-flip-icn svg{width:16px;height:16px;stroke-width:2}
+.lp-flip-title{font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:14px;line-height:1.15;letter-spacing:-.01em;color:#3a3020;margin-top:10px}
+.lp-flip-back .lp-flip-title{color:var(--txt-dark-hi);margin-top:12px}
+.lp-flip-desc{color:var(--mut-dark-hi);font-size:12px;line-height:1.45;margin-top:6px}
+
+/* LANDING V2 SECTION HEADS + PRICING + TESTIMONIALS + REVIEWS + FINAL CTA (lp- prefix) */
+.lp-sec-head{text-align:center;margin-bottom:30px}
+.lp-sec-eyebrow{color:var(--gold);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;margin-bottom:10px}
+.lp-sec-h2{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:30px;line-height:1.08;letter-spacing:-.025em;color:var(--txt-dark-hi);margin-bottom:8px}
+@media(min-width:900px){.lp-sec-h2{font-size:42px}}
+.lp-sec-sub{color:var(--mut-dark-hi);font-size:13.5px;line-height:1.5;max-width:520px;margin:0 auto}
+
+.lp-pricing{padding:64px 0}
+.lp-tier-stack{display:flex;flex-direction:column;gap:14px;max-width:480px;margin:0 auto}
+@media(min-width:900px){.lp-tier-stack{flex-direction:row;align-items:stretch;max-width:1080px}.lp-tier{flex:1;display:flex;flex-direction:column}.lp-tier-feats{flex:1}}
+.lp-tier{background:var(--card-dark);border:1px solid var(--line-dark);border-radius:16px;padding:20px 18px;position:relative}
+.lp-tier.pro{border-color:var(--gold);background:linear-gradient(180deg,rgba(229,181,71,.06),rgba(229,181,71,.01));box-shadow:0 0 40px rgba(229,181,71,.10)}
+.lp-tier.ultra{opacity:.65}
+.lp-tier-crown{width:36px;height:36px;background:linear-gradient(135deg,#5FB3E0,#3b82f6);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:12px}
+.lp-tier.pro .lp-tier-crown{background:var(--cta);box-shadow:0 0 20px rgba(229,181,71,.35)}
+.lp-tier.ultra .lp-tier-crown{background:linear-gradient(135deg,#a78bfa,#6d28d9);box-shadow:0 0 20px rgba(139,92,246,.30)}
+.lp-tier-name{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:20px;letter-spacing:-.015em;color:var(--txt-dark-hi);margin-bottom:4px}
+.lp-tier-price{color:var(--txt-dark);font-size:14px;margin-bottom:14px}
+.lp-tier-price b{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:24px;letter-spacing:-.02em;color:var(--gold)}
+.lp-tier-price span{color:var(--mut-dark);font-weight:400;font-size:13px}
+.lp-most-pop{position:absolute;top:-10px;right:16px;background:var(--cta);color:#1a1208;font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:10px;padding:4px 10px;border-radius:6px;letter-spacing:.06em;text-transform:uppercase}
+.lp-soon{position:absolute;top:-10px;right:16px;background:#6d28d9;color:var(--txt-dark-hi);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:10px;padding:4px 10px;border-radius:6px;letter-spacing:.06em;text-transform:uppercase}
+.lp-tier-feats{list-style:none;padding:0;margin:0 0 14px;display:flex;flex-direction:column;gap:7px}
+.lp-tier-feats li{display:flex;align-items:flex-start;gap:7px;font-size:12.5px;color:var(--txt-dark);line-height:1.4}
+.lp-tier-feats li::before{content:"✓";color:var(--gold);font-weight:800;font-size:11px;margin-top:2px}
+.lp-tier-cta{background:var(--card-dark-hi);color:var(--txt-dark);border:1px solid var(--line-dark-hi);padding:13px;border-radius:10px;font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:14px;width:100%;letter-spacing:-.01em;cursor:pointer}
+.lp-tier.pro .lp-tier-cta{background:var(--cta);color:var(--cta-text);border:none;box-shadow:0 8px 22px -6px rgba(229,181,71,.5)}
+.lp-tier.ultra .lp-tier-cta{background:var(--card-dark);color:var(--mut-dark);cursor:not-allowed}
+
+.lp-testimonials{background:var(--bg-elevated);padding:64px 0;border-top:1px solid var(--line-dark)}
+.lp-video-stack{display:flex;flex-direction:column;gap:12px;max-width:480px;margin:0 auto}
+@media(min-width:900px){.lp-video-stack{flex-direction:row;max-width:1080px}.lp-testimonial-card{flex:1}}
+.lp-testimonial-card{background:var(--card-dark);border:1px solid var(--line-dark);border-radius:14px;overflow:hidden}
+.lp-video-thumb{aspect-ratio:16/10;width:100%;background:linear-gradient(135deg,#2a2834,#141118);position:relative;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;padding:0}
+.lp-video-thumb::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(229,181,71,.10),transparent 60%);pointer-events:none}
+.lp-play-btn{width:52px;height:52px;background:var(--cta);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(229,181,71,.35);position:relative;z-index:5}
+.lp-play-btn::after{content:"";width:0;height:0;border-left:16px solid #1a1208;border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:4px}
+.lp-video-meta{padding:12px 14px;text-align:left}
+.lp-video-attr{color:var(--txt-dark-hi);font-weight:700;font-size:13px}
+.lp-video-detail{color:var(--mut-dark);font-size:11.5px;margin-top:2px}
+
+.lp-reviews{padding:64px 0}
+.lp-review-summary{display:flex;justify-content:center;align-items:center;gap:14px;margin:0 auto 22px;padding:14px 16px;background:var(--card-dark);border:1px solid var(--line-dark);border-radius:12px;max-width:280px}
+.lp-reviews-score{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:32px;color:var(--gold);letter-spacing:-.02em;line-height:1}
+.lp-reviews-stars{color:var(--gold);font-size:14px;letter-spacing:2px;margin-bottom:3px}
+.lp-reviews-count{color:var(--mut-dark);font-size:11px}
+.lp-reviews-grid{display:flex;flex-direction:column;gap:10px;max-width:560px;margin:0 auto}
+@media(min-width:900px){.lp-reviews-grid{flex-direction:row;max-width:1080px;align-items:stretch}.lp-review-card{flex:1}}
+.lp-review-card{background:var(--card-dark);border:1px solid var(--line-dark);border-radius:12px;padding:14px 16px}
+.lp-review-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.lp-review-user{display:flex;align-items:center;gap:8px}
+.lp-review-avatar{width:28px;height:28px;border-radius:50%;flex-shrink:0}
+.lp-review-name{color:var(--txt-dark-hi);font-weight:700;font-size:12.5px}
+.lp-review-stars{color:var(--gold);font-size:11px;letter-spacing:1.5px}
+.lp-review-body{color:var(--txt-dark);font-size:12.5px;line-height:1.5}
+
+.lp-final-cta{padding:72px 0 90px;text-align:center;background:linear-gradient(180deg,var(--bg) 0%,var(--bg-deep) 100%);border-top:1px solid var(--line-dark)}
+.lp-final-h{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:28px;line-height:1.1;letter-spacing:-.025em;color:var(--txt-dark-hi);margin-bottom:8px}
+@media(min-width:900px){.lp-final-h{font-size:44px}}
+.lp-final-h span{color:var(--gold)}
+.lp-final-sub{color:var(--mut-dark-hi);font-size:13.5px;margin-bottom:24px;line-height:1.5}
+
+/* LANDING V2 DRAWER (lp- prefix; CSS transitions, no framer-motion) */
+.lp-drawer-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s ease}
+.lp-drawer-backdrop.open{opacity:1;pointer-events:auto}
+.lp-drawer{position:fixed;top:0;bottom:0;left:0;width:320px;max-width:85vw;background:var(--bg-elevated);border-right:1px solid var(--line-dark-hi);z-index:201;transform:translateX(-100%);transition:transform .3s cubic-bezier(.16,1,.3,1);display:flex;flex-direction:column;padding:20px}
+@media(min-width:900px){.lp-drawer{width:380px}}
+.lp-drawer.open{transform:translateX(0)}
+.lp-drawer-head{display:flex;justify-content:flex-end;margin-bottom:24px}
+.lp-drawer-close{width:36px;height:36px;border-radius:50%;background:var(--card-dark);border:1px solid var(--line-dark);color:var(--txt-dark);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.lp-drawer-items{display:flex;flex-direction:column;gap:6px}
+.lp-drawer-item{display:flex;align-items:center;gap:14px;background:none;border:none;color:var(--txt-dark-hi);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:20px;letter-spacing:-.01em;padding:14px 10px;border-radius:10px;cursor:pointer;text-align:left;transition:background .15s ease}
+.lp-drawer-item:hover{background:rgba(244,233,208,.05)}
+.lp-drawer-num{font-size:11px;color:var(--gold);letter-spacing:.08em;font-weight:800}
