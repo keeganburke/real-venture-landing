@@ -104,7 +104,8 @@ export default function CancelFlow({ open, onClose, membershipId, plan }: Props)
   };
 
   const handleFreeDaysAccept = () => {
-    track("free_days_accepted", { days: 15 });
+    // The accepted event is inserted server-side by the add-free-days route
+    // (its DB-enforced guard row), so no client-side track fire here.
     fetch("/api/whop/add-free-days", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
