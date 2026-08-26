@@ -478,14 +478,6 @@ body.modal-open{overflow:hidden}
 
 /* LANDING V2 PAYOUT MARQUEE (lp- prefix; replaces the removed proof-strip) */
 .lp-payouts{background:var(--bg-elevated);padding:clamp(48px,8vh,80px) 0 clamp(40px,7vh,64px);overflow:hidden;border-top:1px solid var(--line-dark);border-bottom:1px solid var(--line-dark)}
-.lp-marquee{overflow:hidden}
-.lp-marquee-track{display:flex;gap:10px;width:max-content;animation:lp-scroll 40s linear infinite}
-.lp-marquee:hover .lp-marquee-track{animation-play-state:paused}
-@keyframes lp-scroll{from{transform:translateX(0)}to{transform:translateX(calc(-50% - 5px))}}
-.lp-payout-card{flex:0 0 auto;background:linear-gradient(135deg,rgba(74,222,128,.10),rgba(74,222,128,.03));border:1px solid rgba(74,222,128,.25);border-radius:12px;padding:12px 16px;min-width:140px}
-.lp-payout-amt{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;color:#4ade80;font-size:22px;letter-spacing:-.02em;line-height:1}
-.lp-payout-lbl{color:var(--mut-dark);font-size:10.5px;margin-top:4px;letter-spacing:.02em}
-.lp-payout-name{color:var(--txt-dark);font-size:11.5px;font-weight:600;margin-top:6px}
 
 /* LANDING V2 DRAWER (lp- prefix; CSS transitions, no framer-motion) */
 .lp-drawer-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s ease}
@@ -659,7 +651,7 @@ body.modal-open{overflow:hidden}
 
 /* LANDING V2 SUCCESS STORIES (replaces wins) + H1 BREAK */
 .lp-h1-break{display:none}
-@media(max-width:640px){.lp-h1-break{display:inline}.lp-hero-h{font-size:28px}}
+@media(max-width:640px){.lp-h1-break{display:inline}.lp-hero-h{font-size:32px}}
 .lp-success-stories{padding:var(--sp-section) 0;background:var(--bg-deep);border-top:1px solid var(--line-dark)}
 .lp-vid-stack{display:grid;grid-template-columns:1fr;gap:14px;max-width:480px;margin:0 auto}
 @media(min-width:900px){.lp-vid-stack{grid-template-columns:repeat(3,1fr);gap:20px;max-width:1100px}}
@@ -687,3 +679,20 @@ body.modal-open{overflow:hidden}
 .lp-login-note{color:var(--mut-dark);font-size:13px;line-height:1.55;margin-top:24px;max-width:420px}
 .lp-login-join{color:var(--mut-dark);font-size:13.5px;margin-top:28px}
 .lp-login-join a{color:var(--gold);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+
+/* LANDING V2: AVATAR STACK ORDER + MOBILE SHELL PADDING + PAYOUT CAROUSEL */
+.lp-avatar{position:relative}
+.lp-avatar:nth-child(1){z-index:4}
+.lp-avatar:nth-child(2){z-index:3}
+.lp-avatar:nth-child(3){z-index:2}
+.lp-avatar:nth-child(4){z-index:1}
+
+.lp-carousel{display:flex;align-items:center;justify-content:center;gap:12px}
+.lp-carousel-frame{width:100%;max-width:340px}
+@media(min-width:900px){.lp-carousel-frame{max-width:420px}}
+.lp-carousel-card{aspect-ratio:1;background:var(--card-dark);border:1px solid rgba(229,181,71,.4);border-radius:16px;display:flex;align-items:center;justify-content:center;animation:lp-card-in .35s ease}
+@keyframes lp-card-in{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+.lp-carousel-lbl{color:var(--gold);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:12px;letter-spacing:1px;text-transform:uppercase;text-align:center;padding:0 16px}
+.lp-carousel-arrow{width:40px;height:40px;border-radius:50%;background:var(--card-dark);border:1px solid var(--line-dark-hi);color:var(--gold);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:border-color .15s ease}
+.lp-carousel-arrow:hover{border-color:var(--gold)}
+.lp-carousel-arrow svg{width:18px;height:18px}

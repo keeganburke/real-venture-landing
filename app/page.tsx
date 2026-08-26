@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import NavDrawer from "./components/NavDrawer";
 import CtaStrip from "./components/CtaStrip";
 import SectionHead from "./components/SectionHead";
+import PayoutCarousel from "./components/PayoutCarousel";
 
 const LP_TOOLKIT = [
   {
@@ -108,17 +109,6 @@ const LP_REVIEWS = [
   },
 ];
 
-// TODO: all 7 payout cards below are placeholders, swap in real payout
-// screenshots and names when Keegan supplies them.
-const LP_PAYOUTS = [
-  { amt: "$18k", lbl: "assignment fee", name: "Marcus T." }, // TODO placeholder
-  { amt: "$12.5k", lbl: "month 2", name: "Sara R." }, // TODO placeholder
-  { amt: "$24k", lbl: "first wire", name: "Devon K." }, // TODO placeholder
-  { amt: "$8.2k", lbl: "first deal", name: "Alex M." }, // TODO placeholder
-  { amt: "$32k", lbl: "2 deals", name: "Jordan L." }, // TODO placeholder
-  { amt: "$9k", lbl: "first month", name: "Casey P." }, // TODO placeholder
-  { amt: "$15k", lbl: "JV split", name: "Riley B." }, // TODO placeholder
-];
 
 function CheckIcon() {
   return (
@@ -242,21 +232,7 @@ export default function Home() {
               sub="Every dollar closed by a Real Venture student."
             />
           </div>
-          <div className="lp-marquee">
-            <div className="lp-marquee-track">
-              {[...LP_PAYOUTS, ...LP_PAYOUTS].map((p, i) => (
-                <div
-                  className="lp-payout-card"
-                  key={i}
-                  aria-hidden={i >= LP_PAYOUTS.length || undefined}
-                >
-                  <div className="lp-payout-amt">{p.amt}</div>
-                  <div className="lp-payout-lbl">{p.lbl}</div>
-                  <div className="lp-payout-name">{p.name}</div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <PayoutCarousel />
         </section>
 
         <section className="lp-section" id="included">
