@@ -132,6 +132,13 @@ export default function Home() {
   const [pricingOpen, setPricingOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  // Deep link from /login ("Join"): /?pricing=1 opens the pricing modal.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("pricing") === "1") {
+      setPricingOpen(true);
+    }
+  }, []);
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setPricingOpen(false);
@@ -185,7 +192,7 @@ export default function Home() {
                 <img className="lp-nav-logo" src="/logo.png" alt="Real Venture" width={44} height={44} />
               </button>
               <span className="lp-nav-divider" />
-              <a className="lp-nav-segment" href="/api/auth/whop/start">
+              <a className="lp-nav-segment" href="/login">
                 <svg className="lp-user-icn" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
@@ -228,7 +235,13 @@ export default function Home() {
         </section>
 
         <section className="lp-payouts">
-          <div className="lp-payouts-eyebrow">REAL STUDENT PAYOUTS</div>
+          <div className="shell">
+            <SectionHead
+              eyebrow="THE RECEIPTS"
+              heading={<>Student <span>payouts.</span></>}
+              sub="Every dollar closed by a Real Venture student."
+            />
+          </div>
           <div className="lp-marquee">
             <div className="lp-marquee-track">
               {[...LP_PAYOUTS, ...LP_PAYOUTS].map((p, i) => (
@@ -464,7 +477,7 @@ export default function Home() {
               <a onClick={openPricing}>Pricing</a>
               <a onClick={() => scrollToSection("included")}>{"What's inside"}</a>
               <a onClick={() => scrollToSection("reviews")}>Reviews</a>
-              <a href="/api/auth/whop/start">Log in</a>
+              <a href="/login">Log in</a>
             </div>
             <div className="lp-footer-site">realventure.io</div>
           </div>

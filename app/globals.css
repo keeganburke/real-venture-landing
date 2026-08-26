@@ -457,7 +457,7 @@ body.modal-open{overflow:hidden}
 }
 
 /* LANDING V2 NAV (lp- prefix; existing blocks untouched) */
-.lp-nav{position:sticky;top:0;z-index:100;padding:14px 16px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(5,5,6,.7)}
+.lp-nav{position:sticky;top:0;z-index:100;padding:14px 16px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:transparent}
 .lp-nav-inner{max-width:1200px;margin:0 auto}
 .lp-nav-pill{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line-dark-hi);background:rgba(20,17,24,.9);border-radius:60px;min-height:60px;padding:8px 12px;gap:4px}
 .lp-nav-segment{display:flex;align-items:center;gap:10px;background:none;border:none;color:var(--txt-dark);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:12px;letter-spacing:.08em;padding:8px 16px;border-radius:99px;cursor:pointer;text-decoration:none;transition:background .15s ease}
@@ -477,8 +477,7 @@ body.modal-open{overflow:hidden}
 @media(max-width:380px){.lp-nav-label{font-size:11px}.lp-nav-segment{padding:8px 10px;gap:7px}}
 
 /* LANDING V2 PAYOUT MARQUEE (lp- prefix; replaces the removed proof-strip) */
-.lp-payouts{background:var(--bg-elevated);padding:28px 0 32px;overflow:hidden;border-top:1px solid var(--line-dark);border-bottom:1px solid var(--line-dark)}
-.lp-payouts-eyebrow{color:var(--gold);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;text-align:center;margin-bottom:16px}
+.lp-payouts{background:var(--bg-elevated);padding:clamp(48px,8vh,80px) 0 clamp(40px,7vh,64px);overflow:hidden;border-top:1px solid var(--line-dark);border-bottom:1px solid var(--line-dark)}
 .lp-marquee{overflow:hidden}
 .lp-marquee-track{display:flex;gap:10px;width:max-content;animation:lp-scroll 40s linear infinite}
 .lp-marquee:hover .lp-marquee-track{animation-play-state:paused}
@@ -528,7 +527,7 @@ body.modal-open{overflow:hidden}
 .lp-section-h2 span{color:var(--gold)}
 .lp-section-sub{color:var(--mut-dark-hi);font-size:var(--t-body);line-height:1.5}
 
-.lp-hero{padding:clamp(48px,9vh,100px) 0 clamp(40px,7vh,80px);text-align:center;position:relative;background:radial-gradient(1000px 600px at 50% -100px,rgba(229,181,71,.22),transparent 60%)}
+.lp-hero{padding:clamp(40px,6vh,60px) 0 clamp(32px,7vh,80px);text-align:center;position:relative}
 .lp-eyebrow{display:inline-block;color:var(--gold);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:var(--t-eyebrow);letter-spacing:.14em;text-transform:uppercase;padding:7px 16px;background:rgba(229,181,71,.06);border:1px solid rgba(229,181,71,.26);border-radius:100px;margin-bottom:24px}
 .lp-hero-h{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:var(--h-hero);line-height:1.0;letter-spacing:-.04em;margin:0 auto 24px;max-width:900px;background:linear-gradient(180deg,#FFE89A 0%,#E5B547 55%,#B8881F 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .lp-hero-sub{color:var(--mut-dark-hi);font-size:clamp(15px,1.5vw,19px);line-height:1.55;margin:0 auto 36px;max-width:640px}
@@ -539,12 +538,12 @@ body.modal-open{overflow:hidden}
 .lp-social{display:inline-flex;align-items:center;gap:12px}
 .lp-avatars{display:flex}
 .lp-avatar{width:30px;height:30px;border-radius:50%;border:2.5px solid var(--bg-pure);flex-shrink:0}
-.lp-avatar + .lp-avatar{margin-left:-10px}
+.lp-avatar + .lp-avatar{margin-left:-14px}
 .lp-social-lbl{color:var(--txt-dark);font-size:12.5px;font-weight:600}
 .lp-social-lbl b{color:var(--gold);font-family:"Cabinet Grotesk",sans-serif;font-weight:800}
 @media(min-width:900px){
   .lp-avatar{width:38px;height:38px;border-width:3px}
-  .lp-avatar + .lp-avatar{margin-left:-12px}
+  .lp-avatar + .lp-avatar{margin-left:-18px}
   .lp-social-lbl{font-size:15px}
   .lp-social-lbl b{font-size:17px}
 }
@@ -672,3 +671,19 @@ body.modal-open{overflow:hidden}
 .lp-vid-meta{padding:12px 16px;text-align:left}
 .lp-vid-attr{font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:15px;color:var(--txt-dark-hi)}
 .lp-vid-detail{color:var(--mut-dark);font-size:12.5px;margin-top:3px}
+
+/* LANDING V2: TOP GLOW (Fix 3 Option A) + LOGIN PAGE */
+.wrap::before{content:"";position:absolute;top:0;left:0;right:0;height:800px;background:radial-gradient(1000px 600px at 50% -50px,rgba(229,181,71,.28),transparent 60%);pointer-events:none;z-index:0}
+.wrap > :not(.lp-drawer):not(.lp-drawer-backdrop){position:relative;z-index:1}
+
+.lp-login{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:40px 24px;position:relative}
+.lp-login-back{position:absolute;top:24px;left:24px;color:var(--mut-dark);font-size:14px;font-weight:600;text-decoration:none;transition:color .15s ease}
+.lp-login-back:hover{color:var(--txt-dark-hi)}
+.lp-login-card{display:flex;flex-direction:column;align-items:center;text-align:center;max-width:500px;width:100%}
+.lp-login-logo{width:80px;height:80px;border-radius:18px;margin-bottom:28px}
+.lp-login-h{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:clamp(32px,4vw,40px);letter-spacing:-.03em;color:var(--txt-dark-hi);margin-bottom:10px}
+.lp-login-sub{color:var(--mut-dark);font-size:16px;margin-bottom:32px}
+.lp-login-cta{width:100%;max-width:400px;justify-content:center}
+.lp-login-note{color:var(--mut-dark);font-size:13px;line-height:1.55;margin-top:24px;max-width:420px}
+.lp-login-join{color:var(--mut-dark);font-size:13.5px;margin-top:28px}
+.lp-login-join a{color:var(--gold);font-weight:700;text-decoration:underline;text-underline-offset:3px}
