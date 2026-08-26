@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// TODO: swap PLACEHOLDERS for real payout screenshot data later.
-const PLACEHOLDERS = Array.from({ length: 10 }, (_, i) => i + 1);
+const WINS = Array.from({ length: 15 }, (_, i) => `/wins/win-${String(i + 1).padStart(2, "0")}.png`);
 const ADVANCE_MS = 7000;
 
 export default function PayoutCarousel() {
@@ -13,7 +12,7 @@ export default function PayoutCarousel() {
   const startTimer = useCallback(() => {
     if (timerRef.current !== null) window.clearInterval(timerRef.current);
     timerRef.current = window.setInterval(() => {
-      setCurrentIndex((i) => (i + 1) % PLACEHOLDERS.length);
+      setCurrentIndex((i) => (i + 1) % WINS.length);
     }, ADVANCE_MS);
   }, []);
 
@@ -26,7 +25,7 @@ export default function PayoutCarousel() {
 
   // Manual navigation advances immediately and resets the 7s auto-advance.
   const go = (delta: number) => {
-    setCurrentIndex((i) => (i + delta + PLACEHOLDERS.length) % PLACEHOLDERS.length);
+    setCurrentIndex((i) => (i + delta + WINS.length) % WINS.length);
     startTimer();
   };
 
@@ -41,7 +40,7 @@ export default function PayoutCarousel() {
         {/* key remount restarts the slide+fade animation per card. CSS
             animation stands in for framer-motion, which is not in deps. */}
         <div className="lp-carousel-card" key={currentIndex}>
-          <span className="lp-carousel-lbl">PAYOUT SCREENSHOT HERE</span>
+          <img src={WINS[currentIndex]} alt={`Student payout ${currentIndex + 1}`} className="lp-payout-img" />
         </div>
       </div>
       <button className="lp-carousel-arrow" onClick={() => go(1)} aria-label="Next payout">

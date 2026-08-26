@@ -224,6 +224,16 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="lp-payouts">
+          <div className="shell">
+            <SectionHead
+              heading={<>Student <span>payouts.</span></>}
+              sub="Every dollar closed by a Real Venture student."
+            />
+          </div>
+          <PayoutCarousel />
+        </section>
+
         <section className="lp-section" id="included">
           <div className="shell">
             <SectionHead
@@ -249,16 +259,6 @@ export default function Home() {
               <CtaStrip onJoin={openPricing} />
             </div>
           </div>
-        </section>
-
-        <section className="lp-payouts">
-          <div className="shell">
-            <SectionHead
-              heading={<>Student <span>payouts.</span></>}
-              sub="Every dollar closed by a Real Venture student."
-            />
-          </div>
-          <PayoutCarousel />
         </section>
 
         <section className="lp-compare">
@@ -293,28 +293,6 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="lp-phases">
-          <div className="shell">
-            <SectionHead
-              heading={<>From zero to <span>first wire.</span></>}
-              sub="Three phases. Fourteen days. Real deals."
-            />
-            <div className="lp-phase-list">
-              {LP_PHASES.map((phase) => (
-                <div className="lp-phase-card" key={phase.num}>
-                  <div className="lp-phase-num">{phase.num}</div>
-                  <div className="lp-phase-step">{phase.step}</div>
-                  <div className="lp-phase-title">{phase.title}</div>
-                  <div className="lp-phase-desc">{phase.desc}</div>
-                </div>
-              ))}
-            </div>
-            <div className="lp-cta-after">
-              <CtaStrip onJoin={openPricing} />
-            </div>
-          </div>
-        </section>
-
         <section className="lp-success-stories">
           <div className="shell">
             <SectionHead
@@ -337,6 +315,28 @@ export default function Home() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="lp-phases">
+          <div className="shell">
+            <SectionHead
+              heading={<>From zero to <span>first wire.</span></>}
+              sub="Three phases. Fourteen days. Real deals."
+            />
+            <div className="lp-phase-list">
+              {LP_PHASES.map((phase) => (
+                <div className="lp-phase-card" key={phase.num}>
+                  <div className="lp-phase-num">{phase.num}</div>
+                  <div className="lp-phase-step">{phase.step}</div>
+                  <div className="lp-phase-title">{phase.title}</div>
+                  <div className="lp-phase-desc">{phase.desc}</div>
+                </div>
+              ))}
+            </div>
+            <div className="lp-cta-after">
+              <CtaStrip onJoin={openPricing} />
             </div>
           </div>
         </section>
