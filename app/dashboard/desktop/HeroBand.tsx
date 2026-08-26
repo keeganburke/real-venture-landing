@@ -54,7 +54,7 @@ export default function HeroBand() {
             variant="live"
             badge="Wed 4:30 PM"
             title="Next livestream"
-            sub={"With Henry · deal review + Q&A. Recording drops right after."}
+            sub={"With William · deal review + Q&A. Recording drops right after."}
             cta="Add to calendar →"
             href="/livestreams"
             icon={

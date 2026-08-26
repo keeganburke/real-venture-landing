@@ -33,7 +33,7 @@ export const SPRINT = {
 
 export const NEXT_LIVE = {
   time: "Wed 4:30 PM ET",
-  host: "with Henry",
+  host: "with William",
   button: "Schedule",
 };
 

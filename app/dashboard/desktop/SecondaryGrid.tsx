@@ -110,7 +110,7 @@ const DESKTOP_TILES: DesktopTile[] = [
     id: "founder",
     variant: "founder",
     title: "Founder Zone",
-    sub: "Direct DM with Keegan & Henry.",
+    sub: "Direct DM with William & Keegan.",
     meta: "25 seats · locked pricing",
     href: "#", // TODO not launched yet
     external: false,

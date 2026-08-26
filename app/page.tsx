@@ -20,7 +20,7 @@ const incCards = [
     emoji: "\u{1F3A5}",
     title: "Live coaching, 3 days a week",
     short: "Mon Wed Fri live sessions",
-    desc: "Live with Keegan and Henry. Q and A, deal reviews, and we call sellers on screen. Recordings drop right after.",
+    desc: "Live with William and Keegan. Q and A, deal reviews, and we call sellers on screen. Recordings drop right after.",
   },
   {
     emoji: "\u{1F4DA}",

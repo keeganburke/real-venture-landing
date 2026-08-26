@@ -127,7 +127,7 @@ export const INTAKE_QUESTIONS: IntakeQuestion[] = [
       {
         value: "access",
         icon: '<path d="M3 18l2-11 5 4 2-7 2 7 5-4 2 11zM3 21h18"/>',
-        label: "Direct access to Keegan & Henry",
+        label: "Direct access to William & Keegan",
       },
     ],
   },

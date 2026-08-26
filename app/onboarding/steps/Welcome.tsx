@@ -11,8 +11,8 @@ export default function Welcome({ onStart, onSkip, busy }: Props) {
     <div className="welcome">
       <div className="wel-badge">{"✓ Payment confirmed"}</div>
       <div className="wel-avatars">
-        <img className="wel-av k" src="/founders/keegan.png" alt="Keegan" width={80} height={80} />
-        <img className="wel-av h" src="/founders/will.jpg" alt="Henry" width={80} height={80} />
+        <img className="wel-av k" src="/founders/will.jpg" alt="William" width={80} height={80} />
+        <img className="wel-av h" src="/founders/keegan.png" alt="Keegan" width={80} height={80} />
       </div>
       <h1 className="wel-h">
         Welcome to <span>Real Venture</span>
@@ -21,7 +21,7 @@ export default function Welcome({ onStart, onSkip, busy }: Props) {
         {"You're in. Five quick questions so we can point you at the right thing first."}
       </p>
       <p className="wel-from">
-        From <b>Keegan</b> and <b>Henry</b>
+        From <b>William</b> and <b>Keegan</b>
       </p>
       <button className="wel-cta" onClick={onStart} disabled={busy}>
         {"Start →"}
