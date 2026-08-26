@@ -31,7 +31,20 @@ export async function getActiveMembershipId(request: NextRequest): Promise<
   if (!res.ok) return { ok: false, error: "membership lookup failed", status: 200 };
 
   const page = await res.json();
-  const membershipId = Array.isArray(page?.data) ? page.data[0]?.id : null;
+  // Same priority as the manage page: paying memberships (active or
+  // trialing) before completed one-time purchases, newest first per tier.
+  const rows: Record<string, unknown>[] = (Array.isArray(page?.data) ? page.data : []).filter(
+    (m: unknown): m is Record<string, unknown> => !!m && typeof m === "object"
+  );
+  const tier = (m: Record<string, unknown>) =>
+    m.status === "active" || m.status === "trialing" ? 0 : 1;
+  const createdAtMs = (v: unknown) => {
+    if (typeof v !== "string" && typeof v !== "number") return 0;
+    const ms = new Date(v).getTime();
+    return Number.isNaN(ms) ? 0 : ms;
+  };
+  rows.sort((a, b) => tier(a) - tier(b) || createdAtMs(b.created_at) - createdAtMs(a.created_at));
+  const membershipId = rows[0]?.id;
   if (typeof membershipId !== "string" || membershipId.length === 0) {
     return { ok: false, error: "no membership", status: 200 };
   }
