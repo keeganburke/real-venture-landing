@@ -18,6 +18,7 @@ export default function NavBar() {
           <a href="#">Tools</a>
           <a href="#">Community</a>
           <a href="#">Wins</a>
+          <a href="/manage-membership">Settings</a>
         </div>
       </div>
       <div className="hub-d-nav-r">

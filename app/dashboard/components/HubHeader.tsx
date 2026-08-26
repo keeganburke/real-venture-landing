@@ -24,6 +24,9 @@ export default function HubHeader({ onLogWin, onTour }: Props) {
           <button className="hdr-btn" title="Take the Tour" onClick={onTour}>
             {"✨"}
           </button>
+          <a className="hdr-btn" title="Settings" href="/manage-membership">
+            {"⚙️"}
+          </a>
           <div className="avatar-hdr">K</div>
         </div>
       </header>
