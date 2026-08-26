@@ -459,7 +459,7 @@ body.modal-open{overflow:hidden}
 /* LANDING V2 NAV (lp- prefix; existing blocks untouched) */
 .lp-nav{position:sticky;top:0;z-index:100;padding:14px 16px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:transparent}
 .lp-nav-inner{max-width:1200px;margin:0 auto}
-.lp-nav-pill{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line-dark-hi);background:rgba(20,17,24,.9);border-radius:60px;min-height:60px;padding:8px 12px;gap:4px}
+.lp-nav-pill{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line-dark-hi);background:rgba(20,17,24,.9);border-radius:60px;min-height:52px;padding:5px 12px;gap:4px}
 .lp-nav-segment{display:flex;align-items:center;gap:10px;background:none;border:none;color:var(--txt-dark);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:12px;letter-spacing:.08em;padding:8px 16px;border-radius:99px;cursor:pointer;text-decoration:none;transition:background .15s ease}
 .lp-nav-segment:hover{background:rgba(244,233,208,.06)}
 .lp-nav-divider{width:1px;height:24px;background:var(--line-dark);flex-shrink:0}
@@ -691,8 +691,7 @@ body.modal-open{overflow:hidden}
 .lp-carousel{display:flex;align-items:center;justify-content:center;gap:12px}
 .lp-carousel-frame{width:100%;max-width:340px}
 @media(min-width:900px){.lp-carousel-frame{max-width:420px}}
-.lp-carousel-card{height:520px;background:var(--card-dark);border:1px solid rgba(229,181,71,.4);border-radius:16px;display:flex;align-items:center;justify-content:center;overflow:hidden;animation:lp-card-in .35s ease}
-@media(min-width:900px){.lp-carousel-card{height:600px}}
+.lp-carousel-card{aspect-ratio:9/8;background:var(--card-dark);border:1px solid rgba(229,181,71,.4);border-radius:16px;display:flex;align-items:center;justify-content:center;overflow:hidden;animation:lp-card-in .35s ease}
 .lp-payout-img{width:100%;height:100%;object-fit:contain;object-position:center;display:block;border-radius:inherit}
 @keyframes lp-card-in{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
 .lp-carousel-lbl{color:var(--gold);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:12px;letter-spacing:1px;text-transform:uppercase;text-align:center;padding:0 16px}
@@ -708,4 +707,23 @@ body.modal-open{overflow:hidden}
   .lp-hero{padding:clamp(26px,4vh,39px) 0 clamp(10px,2.2vh,26px)}
   .lp-payouts{padding:clamp(16px,2.6vh,26px) 0 clamp(26px,4.5vh,42px)}
   .lp-final{padding:clamp(52px,7.8vh,91px) 0}
+}
+
+/* LANDING V2 HERO CTA (TRW-style warm gradient + sparkle overlay + halo; hero button only) */
+.lp-cta-hero{
+  background:
+    radial-gradient(circle at 12% 40%, rgba(255,255,255,.7) 0 1px, transparent 2px),
+    radial-gradient(circle at 34% 22%, rgba(255,240,200,.5) 0 1.5px, transparent 3px),
+    radial-gradient(circle at 55% 68%, rgba(255,255,255,.55) 0 1px, transparent 2px),
+    radial-gradient(circle at 72% 30%, rgba(255,244,214,.6) 0 1.5px, transparent 3px),
+    radial-gradient(circle at 88% 55%, rgba(255,255,255,.5) 0 1px, transparent 2px),
+    radial-gradient(circle at 20% 75%, rgba(255,240,200,.45) 0 1px, transparent 2px),
+    radial-gradient(circle at 45% 15%, rgba(255,255,255,.6) 0 1px, transparent 2px),
+    radial-gradient(circle at 63% 85%, rgba(255,244,214,.5) 0 1.5px, transparent 3px),
+    radial-gradient(circle at 80% 12%, rgba(255,255,255,.45) 0 1px, transparent 2px),
+    radial-gradient(circle at 8% 15%, rgba(255,240,200,.4) 0 1px, transparent 2px),
+    radial-gradient(circle at 92% 80%, rgba(255,255,255,.4) 0 1px, transparent 2px),
+    radial-gradient(circle at 28% 55%, rgba(255,244,214,.35) 0 1px, transparent 2px),
+    linear-gradient(180deg,#FFE89A 0%,#F5C560 25%,#E5A544 55%,#C97D2E 80%,#A85F1A 100%);
+  box-shadow:0 0 40px rgba(229,165,68,.45),0 4px 20px rgba(0,0,0,.3);
 }
