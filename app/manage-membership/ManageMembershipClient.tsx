@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import CancelFlow from "./CancelFlow";
+
 export type MembershipSummary = {
   membershipId: string | null;
   planName: string;
@@ -13,9 +16,9 @@ type Props = {
 };
 
 export default function ManageMembershipClient({ membership }: Props) {
-  const openCancelModal = () => {
-    console.log("TODO: cancel modal fires here, Prompt 2 wires this");
-  };
+  const [cancelOpen, setCancelOpen] = useState(false);
+
+  const openCancelModal = () => setCancelOpen(true);
 
   const statusColor =
     membership.status === "Active" ? "var(--green)" : "var(--txt-mut)";
@@ -95,6 +98,13 @@ export default function ManageMembershipClient({ membership }: Props) {
           </a>
         </div>
       </div>
+
+      <CancelFlow
+        open={cancelOpen}
+        onClose={() => setCancelOpen(false)}
+        membershipId={membership.membershipId ?? ""}
+        plan={membership.planName || "Pro"}
+      />
     </main>
   );
 }
