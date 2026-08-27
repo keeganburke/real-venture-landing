@@ -1418,7 +1418,7 @@ body.modal-open{overflow:hidden}
     display: flex;
     flex-direction: column;
     gap: 4px;
-    text-align: left;
+    text-align: center;
     padding: 0 4px;
   }
   .lp-hero-line-1 {
@@ -1429,22 +1429,21 @@ body.modal-open{overflow:hidden}
     font-weight: 900;
     letter-spacing: -0.02em;
   }
-  .lp-hero-line-2 {
+  .lp-hero-line-2,
+  .lp-hero-line-3 {
     display: block;
-    color: var(--gold-bright, #F5D578);
     font-size: clamp(36px, 10vw, 56px);
     line-height: 1.05;
     font-weight: 900;
     letter-spacing: -0.02em;
+    background: linear-gradient(180deg, #FFE89A 0%, #E5B547 55%, #B8881F 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
   .lp-hero-line-3 {
-    display: block;
-    color: var(--gold-deep, #C99A2E);
-    font-size: 32px;
-    line-height: 1.1;
-    font-weight: 900;
-    letter-spacing: -0.02em;
     margin-top: 4px;
+    font-size: clamp(32px, 9.4vw, 56px);
   }
 }
 
