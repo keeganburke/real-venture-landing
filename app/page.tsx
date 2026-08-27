@@ -281,18 +281,20 @@ export default function Home() {
                 <div className="tier-icon"><img src="/crowns/base.png" alt="Base" width={62} height={54} /></div>
                 <div className="tier-name">Base</div>
                 <div className="tier-price"><span className="cur">$</span><span className="amt">19.99</span></div>
-                <div className="tier-per">per month</div>
-                <div className="tier-tag">Pull up a chair. Learn live.</div>
+                <div className="tier-per">/ per month</div>
+                <div className="tier-tag">Learn the entire process, start to finish.</div>
                 <div className="tier-divider"></div>
                 <ul className="tier-feats">
-                  <li><span className="chk">{"✓"}</span>Live calls Mon Wed Fri</li>
-                  <li><span className="chk">{"✓"}</span>Full 13 lesson curriculum</li>
-                  <li><span className="chk">{"✓"}</span>Discord community</li>
+                  <li><span className="chk">{"✓"}</span>Live calls 7 days a week</li>
+                  <li><span className="chk">{"✓"}</span>JV deals, keep 50%</li>
                   <li><span className="chk">{"✓"}</span>Studio deal analyzer</li>
-                  <li><span className="chk">{"✓"}</span>Buyer CRM plus directory</li>
+                  <li><span className="chk">{"✓"}</span>Buyer network access</li>
+                  <li><span className="chk">{"✓"}</span>Full course library</li>
                   <li><span className="chk">{"✓"}</span>Contract templates</li>
+                  <li><span className="chk">{"✓"}</span>Proof of Funds letters</li>
+                  <li><span className="chk">{"✓"}</span>Deal Manager pipeline</li>
+                  <li><span className="chk">{"✓"}</span>Call recordings</li>
                   <li><span className="chk">{"✓"}</span>LLC and Bank Playbook</li>
-                  <li><span className="chk">{"✓"}</span>14 day First Deal Sprint</li>
                 </ul>
                 <button className="tier-cta" onClick={openPricing}>Choose Base {"→"}</button>
               </div>
@@ -302,37 +304,35 @@ export default function Home() {
                 <div className="tier-icon"><img src="/crowns/pro.png" alt="Pro" width={62} height={54} /></div>
                 <div className="tier-name">Pro</div>
                 <div className="tier-price"><span className="cur">$</span><span className="amt">49.99</span></div>
-                <div className="tier-per">per month</div>
-                <div className="tier-tag">Everything in Base plus we JV your deals.</div>
+                <div className="tier-per">/ per month</div>
+                <div className="tier-tag">Stop learning, start closing.</div>
                 <div className="tier-divider"></div>
                 <ul className="tier-feats">
-                  <li className="hero"><span className="chk">{"✓"}</span>JV on your deals, keep 60%</li>
                   <li><span className="chk">{"✓"}</span>Everything in Base</li>
+                  <li className="hero"><span className="chk">{"✓"}</span>JV deals, keep 60%</li>
                   <li><span className="chk">{"✓"}</span>Contract generator (auto fill)</li>
-                  <li><span className="chk">{"✓"}</span>Proof of Funds letters</li>
-                  <li><span className="chk">{"✓"}</span>Complete buyer network access</li>
-                  <li><span className="chk">{"✓"}</span>All previous call recordings</li>
-                  <li><span className="chk">{"✓"}</span>Priority DM support</li>
+                  <li><span className="chk">{"✓"}</span>Advanced course modules</li>
+                  <li><span className="chk">{"✓"}</span>First look at incoming buyers</li>
+                  <li><span className="chk">{"✓"}</span>Priority DM + Deal support</li>
                 </ul>
                 <button className="tier-cta" onClick={openPricing}>Choose Pro {"→"}</button>
               </div>
 
               <div className="tier ultra">
-                <div className="ribbon coming">Coming Soon</div>
+                <div className="ribbon coming">Coming Soon {"\u00b7"} 25 seats</div>
                 <div className="tier-icon"><img src="/crowns/ultra.png" alt="Ultra" width={62} height={54} /></div>
                 <div className="tier-name">Ultra</div>
                 <div className="tier-price"><span className="cur">$</span><span className="amt">249</span></div>
-                <div className="tier-per">per month {"•"} 25 seats</div>
-                <div className="tier-tag">Get in the room with William.</div>
+                <div className="tier-per">/ per month</div>
+                <div className="tier-tag">Closing deals? Time to scale.</div>
                 <div className="tier-divider"></div>
                 <ul className="tier-feats">
                   <li><span className="chk">{"✓"}</span>Everything in Pro</li>
                   <li><span className="chk">{"✓"}</span>Direct DM to William</li>
-                  <li><span className="chk">{"✓"}</span>Monthly Mastermind Call</li>
-                  <li><span className="chk">{"✓"}</span>Founder review of first 3 offers</li>
-                  <li><span className="chk">{"✓"}</span>Priority JV queue (24hr)</li>
-                  <li><span className="chk">{"✓"}</span>Private Ultra Discord channel</li>
-                  <li><span className="chk">{"✓"}</span>First 10 lock $149 forever</li>
+                  <li><span className="chk">{"✓"}</span>Private inner-circle channel</li>
+                  <li><span className="chk">{"✓"}</span>Monthly mastermind call</li>
+                  <li><span className="chk">{"✓"}</span>1-1 Deal Reviews</li>
+                  <li><span className="chk">{"✓"}</span>First in line</li>
                 </ul>
                 <button className="tier-cta">Coming Soon</button>
               </div>
@@ -481,18 +481,20 @@ export default function Home() {
                 <div className="tier-icon"><img src="/crowns/base.png" alt="Base" width={62} height={54} /></div>
                 <div className="tier-name">Base</div>
                 <div className="tier-price"><span className="cur">$</span><span className="amt">19.99</span></div>
-                <div className="tier-per">per month</div>
-                <div className="tier-tag">Pull up a chair. Learn live.</div>
+                <div className="tier-per">/ per month</div>
+                <div className="tier-tag">Learn the entire process, start to finish.</div>
                 <div className="tier-divider"></div>
                 <ul className="tier-feats">
-                  <li><span className="chk">{"✓"}</span>Live calls Mon Wed Fri</li>
-                  <li><span className="chk">{"✓"}</span>Full 13 lesson curriculum</li>
-                  <li><span className="chk">{"✓"}</span>Discord community</li>
+                  <li><span className="chk">{"✓"}</span>Live calls 7 days a week</li>
+                  <li><span className="chk">{"✓"}</span>JV deals, keep 50%</li>
                   <li><span className="chk">{"✓"}</span>Studio deal analyzer</li>
-                  <li><span className="chk">{"✓"}</span>Buyer CRM plus directory</li>
+                  <li><span className="chk">{"✓"}</span>Buyer network access</li>
+                  <li><span className="chk">{"✓"}</span>Full course library</li>
                   <li><span className="chk">{"✓"}</span>Contract templates</li>
+                  <li><span className="chk">{"✓"}</span>Proof of Funds letters</li>
+                  <li><span className="chk">{"✓"}</span>Deal Manager pipeline</li>
+                  <li><span className="chk">{"✓"}</span>Call recordings</li>
                   <li><span className="chk">{"✓"}</span>LLC and Bank Playbook</li>
-                  <li><span className="chk">{"✓"}</span>14 day First Deal Sprint</li>
                 </ul>
                 <button className="tier-cta">Choose Base {"→"}</button>
               </div>
@@ -502,37 +504,35 @@ export default function Home() {
                 <div className="tier-icon"><img src="/crowns/pro.png" alt="Pro" width={62} height={54} /></div>
                 <div className="tier-name">Pro</div>
                 <div className="tier-price"><span className="cur">$</span><span className="amt">49.99</span></div>
-                <div className="tier-per">per month</div>
-                <div className="tier-tag">Everything in Base plus we JV your deals.</div>
+                <div className="tier-per">/ per month</div>
+                <div className="tier-tag">Stop learning, start closing.</div>
                 <div className="tier-divider"></div>
                 <ul className="tier-feats">
-                  <li className="hero"><span className="chk">{"✓"}</span>JV on your deals, keep 60%</li>
                   <li><span className="chk">{"✓"}</span>Everything in Base</li>
+                  <li className="hero"><span className="chk">{"✓"}</span>JV deals, keep 60%</li>
                   <li><span className="chk">{"✓"}</span>Contract generator (auto fill)</li>
-                  <li><span className="chk">{"✓"}</span>Proof of Funds letters</li>
-                  <li><span className="chk">{"✓"}</span>Complete buyer network access</li>
-                  <li><span className="chk">{"✓"}</span>All previous call recordings</li>
-                  <li><span className="chk">{"✓"}</span>Priority DM support</li>
+                  <li><span className="chk">{"✓"}</span>Advanced course modules</li>
+                  <li><span className="chk">{"✓"}</span>First look at incoming buyers</li>
+                  <li><span className="chk">{"✓"}</span>Priority DM + Deal support</li>
                 </ul>
                 <button className="tier-cta">Choose Pro {"→"}</button>
               </div>
 
               <div className="tier ultra">
-                <div className="ribbon coming">Coming Soon</div>
+                <div className="ribbon coming">Coming Soon {"\u00b7"} 25 seats</div>
                 <div className="tier-icon"><img src="/crowns/ultra.png" alt="Ultra" width={62} height={54} /></div>
                 <div className="tier-name">Ultra</div>
                 <div className="tier-price"><span className="cur">$</span><span className="amt">249</span></div>
-                <div className="tier-per">per month {"•"} 25 seats</div>
-                <div className="tier-tag">Get in the room with William.</div>
+                <div className="tier-per">/ per month</div>
+                <div className="tier-tag">Closing deals? Time to scale.</div>
                 <div className="tier-divider"></div>
                 <ul className="tier-feats">
                   <li><span className="chk">{"✓"}</span>Everything in Pro</li>
                   <li><span className="chk">{"✓"}</span>Direct DM to William</li>
-                  <li><span className="chk">{"✓"}</span>Monthly Mastermind Call</li>
-                  <li><span className="chk">{"✓"}</span>Founder review of first 3 offers</li>
-                  <li><span className="chk">{"✓"}</span>Priority JV queue (24hr)</li>
-                  <li><span className="chk">{"✓"}</span>Private Ultra Discord channel</li>
-                  <li><span className="chk">{"✓"}</span>First 10 lock $149 forever</li>
+                  <li><span className="chk">{"✓"}</span>Private inner-circle channel</li>
+                  <li><span className="chk">{"✓"}</span>Monthly mastermind call</li>
+                  <li><span className="chk">{"✓"}</span>1-1 Deal Reviews</li>
+                  <li><span className="chk">{"✓"}</span>First in line</li>
                 </ul>
                 <button className="tier-cta">Coming Soon</button>
               </div>
