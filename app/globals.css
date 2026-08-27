@@ -577,15 +577,6 @@ body.modal-open{overflow:hidden}
 .lp-vs-box{align-self:center;justify-self:center;width:56px;height:56px;background:var(--card-dark-hi);border:1.5px solid var(--line-dark-hi);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:16px;color:var(--txt-dark-hi);letter-spacing:-.02em}
 
 .lp-phases{padding:var(--sp-section) 0}
-.lp-phase-list{display:grid;grid-template-columns:1fr;gap:20px;max-width:1100px;margin:0 auto}
-@media(min-width:900px){.lp-phase-list{grid-template-columns:repeat(3,1fr);gap:24px}}
-.lp-phase-card{background:var(--card-dark);border:1px solid var(--line-dark);border-radius:24px;padding:28px 24px;position:relative;overflow:hidden}
-@media(min-width:900px){.lp-phase-card{padding:36px 32px;min-height:320px}}
-.lp-phase-num{position:absolute;top:20px;right:24px;font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:clamp(60px,8vw,100px);color:var(--line-dark-hi);line-height:1;letter-spacing:-.04em;opacity:.7}
-.lp-phase-step{color:var(--gold);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px;margin-top:28px}
-@media(min-width:900px){.lp-phase-step{margin-top:40px;font-size:12px}}
-.lp-phase-title{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:clamp(22px,2.5vw,28px);color:var(--txt-dark-hi);margin-bottom:10px;letter-spacing:-.02em}
-.lp-phase-desc{color:var(--mut-dark-hi);font-size:clamp(13px,1.3vw,15px);line-height:1.5}
 
 .lp-pricing{padding:var(--sp-section) 0}
 
@@ -616,9 +607,11 @@ body.modal-open{overflow:hidden}
 .lp-success-stories{padding:var(--sp-section) 0;background:var(--bg-deep);border-top:1px solid var(--line-dark)}
 .lp-vid-stack{display:grid;grid-template-columns:1fr;gap:14px;max-width:480px;margin:0 auto}
 @media(min-width:900px){.lp-vid-stack{grid-template-columns:repeat(3,1fr);gap:20px;max-width:1100px}}
-.lp-vid-card{background:var(--card-dark);border:1px solid var(--line-dark);border-radius:16px;overflow:hidden}
+.lp-vid-card{position:relative;background:var(--card-dark);border:1px solid var(--line-dark);border-radius:16px;overflow:hidden}
 .lp-vid-embed {
   position: relative;
+  z-index: 1;
+  pointer-events: auto;
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
@@ -633,7 +626,8 @@ body.modal-open{overflow:hidden}
   height: 100%;
   border: 0;
   pointer-events: auto;
-  z-index: 1;
+  z-index: 2;
+  touch-action: manipulation;
 }
 
 .lp-vid-caption {
@@ -649,13 +643,13 @@ body.modal-open{overflow:hidden}
 }
 
 .lp-vid-name {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: #e8e8e8;
 }
 
 .lp-vid-amount {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 900;
   color: var(--gold);
   letter-spacing: -0.02em;
@@ -1210,4 +1204,155 @@ body.modal-open{overflow:hidden}
 .lp-reviews-load-more-btn:hover {
   background: rgba(229, 181, 71, 0.2);
   border-color: rgba(229, 181, 71, 0.5);
+}
+
+/* PHASES TIMELINE (Timeline.tsx: HMHW-style rail + scroll orb + active step) */
+.lp-timeline {
+  position: relative;
+  margin-top: 40px;
+  padding-left: 60px;
+}
+
+.lp-timeline-rail {
+  position: absolute;
+  left: 24px;
+  top: 20px;
+  bottom: 20px;
+  width: 2px;
+  pointer-events: none;
+}
+
+.lp-timeline-rail-line {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    rgba(229, 181, 71, 0.1) 0%,
+    rgba(229, 181, 71, 0.4) 30%,
+    rgba(229, 181, 71, 0.4) 70%,
+    rgba(229, 181, 71, 0.1) 100%
+  );
+  border-radius: 2px;
+}
+
+.lp-timeline-orb {
+  position: absolute;
+  left: -12px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #FFE89A 0%, #E5B547 60%, #C99A2E 100%);
+  box-shadow: 0 0 24px rgba(229, 181, 71, 0.6), 0 0 60px rgba(229, 181, 71, 0.3);
+  top: 0;
+  transition: top 0.1s linear;
+  z-index: 2;
+}
+
+.lp-timeline-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  position: relative;
+}
+
+.lp-timeline-step {
+  position: relative;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.lp-timeline-node {
+  position: absolute;
+  left: -60px;
+  top: 8px;
+  width: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.lp-timeline-num {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 2px;
+  opacity: 0.5;
+}
+
+.lp-timeline-icon {
+  font-size: 20px;
+  line-height: 1;
+  filter: drop-shadow(0 0 8px rgba(229, 181, 71, 0.3));
+}
+
+.lp-timeline-card {
+  background: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 20px 22px;
+  flex: 1;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.lp-timeline-step.active .lp-timeline-card {
+  border-color: rgba(229, 181, 71, 0.3);
+  box-shadow: 0 0 40px rgba(229, 181, 71, 0.08);
+}
+
+.lp-timeline-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  opacity: 0.8;
+}
+
+.lp-timeline-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+  color: #ffffff;
+}
+
+.lp-timeline-desc {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #c8c8c8;
+  margin: 0;
+}
+
+@media (min-width: 800px) {
+  .lp-timeline {
+    padding-left: 100px;
+  }
+  .lp-timeline-rail {
+    left: 48px;
+  }
+  .lp-timeline-node {
+    left: -76px;
+    width: 56px;
+  }
+  .lp-timeline-icon {
+    font-size: 24px;
+  }
+}
+
+/* Whop logo in the review summary card */
+.lp-reviews-whop-logo {
+  height: 24px;
+  width: auto;
+  opacity: 0.7;
+  margin-left: 16px;
+  filter: brightness(1.1);
+}
+
+@media (max-width: 640px) {
+  .lp-reviews-whop-logo {
+    height: 20px;
+    margin-left: 12px;
+  }
 }

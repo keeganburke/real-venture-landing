@@ -7,6 +7,7 @@ import SectionHead from "./components/SectionHead";
 import PayoutCarousel from "./components/PayoutCarousel";
 import ToolkitCards from "./components/ToolkitCards";
 import Reviews from "./components/Reviews";
+import Timeline from "./components/Timeline";
 import { REVIEW_STATS } from "./lib/whop-reviews";
 
 const LP_COMPARE_BAD = [
@@ -26,27 +27,6 @@ const LP_COMPARE_GOOD = [
   "Proven strategies to find buyers from the founders",
   "Countless testimonials and students actually getting paid",
   "Starting at the same price as your DoorDash order",
-];
-
-const LP_PHASES = [
-  {
-    num: "01",
-    step: "Phase 1 · Days 1-4",
-    title: "Learn the fundamentals",
-    desc: "Watch the course content and jump in the live streams. Get the framework locked before you touch a single deal.",
-  },
-  {
-    num: "02",
-    step: "Phase 2 · Days 5-9",
-    title: "Analyze deals and find buyers",
-    desc: "Start pulling comps and running deals through the analyzer. Build your buyer list. Take real action every day.",
-  },
-  {
-    num: "03",
-    step: "Phase 3 · Days 10-14",
-    title: "Send offers and get paid",
-    desc: "Use the vetted contracts to send offers, lock up your first deal, and collect your assignment fee.",
-  },
 ];
 
 const LP_STORIES = [
@@ -235,10 +215,11 @@ export default function Home() {
                 <div className="lp-vid-card" key={story.id}>
                   <div className="lp-vid-embed">
                     <iframe
-                      src={`https://player.vimeo.com/video/${story.videoId}?title=0&byline=0&portrait=0&badge=0&autopause=0&dnt=1&transparent=0&responsive=1`}
+                      src={`https://player.vimeo.com/video/${story.videoId}?title=0&byline=0&portrait=0&badge=0&autopause=0&dnt=1&responsive=1&playsinline=1`}
                       frameBorder="0"
                       allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media"
                       allowFullScreen
+                      webkit-playsinline="true"
                       title={`${story.name} testimonial`}
                     />
                   </div>
@@ -258,16 +239,7 @@ export default function Home() {
               heading={<>The simple 3-step path to success.</>}
               sub="Each distinct phase to your first deal."
             />
-            <div className="lp-phase-list">
-              {LP_PHASES.map((phase) => (
-                <div className="lp-phase-card" key={phase.num}>
-                  <div className="lp-phase-num">{phase.num}</div>
-                  <div className="lp-phase-step">{phase.step}</div>
-                  <div className="lp-phase-title">{phase.title}</div>
-                  <div className="lp-phase-desc">{phase.desc}</div>
-                </div>
-              ))}
-            </div>
+            <Timeline />
           </div>
         </section>
 
@@ -355,6 +327,7 @@ export default function Home() {
                 <div className="lp-reviews-stars">{"\u2605\u2605\u2605\u2605\u2605"}</div>
                 <div className="lp-reviews-count">{REVIEW_STATS.total} verified reviews</div>
               </div>
+              <img src="/whoplogo2.png" alt="Whop" className="lp-reviews-whop-logo" />
             </div>
             <Reviews />
           </div>
