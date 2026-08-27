@@ -145,19 +145,37 @@ body.modal-open{overflow:hidden}
 .foot-next{background:var(--cta);color:var(--cta-text);border:none;padding:12px 22px;border-radius:10px;font-weight:800;font-size:14px;display:flex;align-items:center;gap:6px;box-shadow:var(--cta-glow);font-family:"Inter",sans-serif}
 .foot-next:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
 
-/* HUB (palette and rules from hub-v1_1 mockup sections 2a and 2b, scoped to .hub-page so :root and .onb stay untouched) */
+/* HUB (structure from hub-v1_1 mockup sections 2a and 2b; palette now ALIASES the
+   landing :root tokens instead of redefining them, so the two surfaces share one
+   system. Hub rules keep their short local names (--card, --txt-mut, ...) so no
+   class or rule below this block had to change. .onb is a separate later pass.
+
+   --gold, --gold-deep, --cta, --cta-text, --purple and --green are deliberately
+   NOT declared here: they carry the same name in :root, so writing
+   `--gold:var(--gold)` would be a self-reference, which CSS treats as a cycle and
+   makes invalid at computed-value time. Omitting them inherits the :root value,
+   which is exactly the intent. */
 .hub-page{
-  --bg:#0a0a0c;--bg-elev:#111114;--card:#16161c;--card-hi:#1e1e26;--line:#26262e;--line-hi:#34343e;
-  --gold:#E5B547;--gold-hi:#FFE89A;--gold-deep:#B8881F;--gold-glow:rgba(229,181,71,.35);
-  --cta:linear-gradient(180deg,#FFE89A 0%,#F5D578 20%,#E5B547 55%,#C99A2E 80%,#B8881F 100%);
+  --bg:var(--bg-deep);
+  --bg-elev:var(--bg-elevated);
+  --card:var(--card-dark);
+  --card-hi:var(--card-dark-hi);
+  --line:var(--line-dark);
+  --line-hi:var(--line-dark-hi);
+  --gold-hi:var(--gold-bright);
+  --gold-glow:rgba(229,181,71,.35);
   --cta-glow:0 0 40px rgba(229,181,71,.5),0 0 80px rgba(229,181,71,.25);
-  --cta-text:#1a1208;
-  --purple:#8B5CF6;--purple-glow:rgba(139,92,246,.28);
-  --red:#F87171;--red-glow:rgba(248,113,113,.28);
-  --blue:#60A5FA;--blue-glow:rgba(96,165,250,.28);
-  --green:#4ade80;--green-glow:rgba(74,222,128,.28);
-  --teal:#5FB3E0;--teal-glow:rgba(95,179,224,.28);
-  --txt:#f4f4f5;--txt-mut:#8a8a92;--txt-dim:#55555c;
+  --purple-glow:rgba(196,187,255,.28);
+  --red:#F87171;
+  --red-glow:rgba(248,113,113,.28);
+  --blue:var(--ice);
+  --blue-glow:rgba(95,179,224,.28);
+  --green-glow:rgba(34,197,94,.28);
+  --teal:var(--ice);
+  --teal-glow:rgba(95,179,224,.28);
+  --txt:var(--txt-dark-hi);
+  --txt-mut:var(--mut-dark-hi);
+  --txt-dim:var(--mut-dark);
   min-height:100vh;background:var(--bg);color:var(--txt);
   font-family:"Inter",ui-sans-serif,-apple-system,sans-serif;
 }
@@ -663,11 +681,11 @@ body.modal-open{overflow:hidden}
 .wrap::before{content:"";position:absolute;top:0;left:0;right:0;height:800px;background:radial-gradient(1000px 600px at 50% -50px,rgba(229,181,71,.28),transparent 60%);pointer-events:none;z-index:0}
 .wrap > :not(.lp-drawer):not(.lp-drawer-backdrop){position:relative;z-index:1}
 
-.lp-login{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:40px 24px;position:relative}
+.lp-login{min-height:100vh;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;padding:15vh 24px 40px;position:relative}
 .lp-login-back{position:absolute;top:24px;left:24px;color:var(--mut-dark);font-size:14px;font-weight:600;text-decoration:none;transition:color .15s ease}
 .lp-login-back:hover{color:var(--txt-dark-hi)}
 .lp-login-card{display:flex;flex-direction:column;align-items:center;text-align:center;max-width:500px;width:100%}
-.lp-login-logo{width:160px;height:160px;border-radius:18px;margin-top:120px;margin-bottom:28px}
+.lp-login-logo{width:160px;height:160px;border-radius:18px;margin-bottom:28px}
 .lp-login-h{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:clamp(32px,4vw,40px);letter-spacing:-.03em;color:var(--txt-dark-hi);margin-bottom:10px}
 .lp-login-sub{color:var(--mut-dark);font-size:16px;margin-bottom:32px}
 .lp-login-cta{width:100%;max-width:400px;justify-content:center}
