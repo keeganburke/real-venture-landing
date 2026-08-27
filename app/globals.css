@@ -160,8 +160,8 @@ body.modal-open{overflow:hidden}
   --bg-elev:var(--bg-elevated);
   --card:var(--card-dark);
   --card-hi:var(--card-dark-hi);
-  --line:var(--line-dark);
-  --line-hi:var(--line-dark-hi);
+  --line:rgba(229,181,71,.08);
+  --line-hi:rgba(229,181,71,.20);
   --gold-hi:var(--gold-bright);
   --gold-glow:rgba(229,181,71,.35);
   --cta-glow:0 0 40px rgba(229,181,71,.5),0 0 80px rgba(229,181,71,.25);
@@ -173,14 +173,15 @@ body.modal-open{overflow:hidden}
   --green-glow:rgba(34,197,94,.28);
   --teal:var(--ice);
   --teal-glow:rgba(95,179,224,.28);
-  --txt:var(--txt-dark-hi);
-  --txt-mut:var(--mut-dark-hi);
-  --txt-dim:var(--mut-dark);
+  --txt:#ffffff;
+  --txt-mut:rgba(255,255,255,.6);
+  --txt-dim:rgba(255,255,255,.4);
   min-height:100vh;background:var(--bg);color:var(--txt);
   font-family:"Inter",ui-sans-serif,-apple-system,sans-serif;
   position:relative;
 }
-.hub-page::before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(229,181,71,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(229,181,71,0.025) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+.hub-page::before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(229,181,71,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(229,181,71,0.04) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+.hub-page::after{content:"";position:fixed;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:600px;background:radial-gradient(ellipse at center,rgba(229,181,71,0.08) 0%,transparent 70%);pointer-events:none;z-index:0}
 .hub-page > *{position:relative;z-index:1}
 .hub-page button{font-family:inherit;cursor:pointer}
 .hub{width:100%;padding:0 0 100px;position:relative}
@@ -213,7 +214,7 @@ body.modal-open{overflow:hidden}
 .hub .search-key{background:var(--card-hi);color:var(--txt-mut);font-size:11px;padding:2px 6px;border-radius:4px;border:1px solid var(--line);font-family:"SF Mono",Monaco,monospace}
 
 .hub .tile{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:16px 16px;margin:0 16px 10px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .15s;position:relative;text-decoration:none}
-.hub .tile:hover{background:var(--card-hi);border-color:var(--line-hi)}
+.hub .tile:hover{background:var(--card-hi);border-color:var(--line-hi);box-shadow:0 0 20px rgba(229,181,71,.08)}
 .hub .tile-icn{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .hub .tile-icn .ico{width:22px;height:22px;stroke-width:1.75}
 .hub .tile-body{flex:1;min-width:0}
@@ -277,8 +278,8 @@ body.modal-open{overflow:hidden}
 .hub-desktop{
   --bg-hero:#050506;
   --hero-glow:radial-gradient(1200px 700px at 50% 0%,rgba(229,181,71,.28),transparent 55%),
-              radial-gradient(700px 500px at 20% 100%,rgba(139,92,246,.10),transparent 55%),
-              radial-gradient(600px 400px at 85% 90%,rgba(95,179,224,.08),transparent 55%);
+              radial-gradient(700px 500px at 20% 100%,rgba(229,181,71,.04),transparent 55%),
+              radial-gradient(600px 400px at 85% 90%,rgba(229,181,71,.03),transparent 55%);
   --cta-glow:0 0 60px rgba(229,181,71,.45),0 0 120px rgba(229,181,71,.18);
 }
 .hub-d-root{min-height:900px;background:var(--bg);position:relative;overflow:hidden}
@@ -1409,3 +1410,60 @@ body.modal-open{overflow:hidden}
   border-color:transparent;
   filter:brightness(1.06);
 }
+
+/* HERO H1 3-LINE MOBILE SPLIT (lp-hero-break span retired from JSX; its rules
+   above are dead code kept deliberately) */
+@media (max-width: 899px) {
+  .lp-hero-h {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+    padding: 0 4px;
+  }
+  .lp-hero-line-1 {
+    display: block;
+    color: #ffffff;
+    font-size: clamp(36px, 10vw, 56px);
+    line-height: 1.05;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+  }
+  .lp-hero-line-2 {
+    display: block;
+    color: var(--gold-bright, #F5D578);
+    font-size: clamp(36px, 10vw, 56px);
+    line-height: 1.05;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+  }
+  .lp-hero-line-3 {
+    display: block;
+    color: var(--gold-deep, #C99A2E);
+    font-size: 32px;
+    line-height: 1.1;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    margin-top: 4px;
+  }
+}
+
+@media (min-width: 900px) {
+  .lp-hero-line-1,
+  .lp-hero-line-2,
+  .lp-hero-line-3 {
+    display: inline;
+    color: inherit;
+    font-size: inherit;
+  }
+  .lp-hero-line-2::before {
+    content: " ";
+  }
+  .lp-hero-line-3 {
+    display: block;
+  }
+}
+
+/* HUB GOLD THEME: "Not joined yet" badge on the Discord hero tile goes gold
+   (tile accent + CTA stay Discord purple per semantic-color rule). */
+.hub-d-hero-tile.hub-d-t-discord .hub-d-ht-badge{background:rgba(229,181,71,.10);color:var(--gold);border:1px solid rgba(229,181,71,.30)}

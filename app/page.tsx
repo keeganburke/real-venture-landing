@@ -136,9 +136,9 @@ export default function Home() {
           <div className="shell">
             <div className="lp-hero-badge">Real Venture {"·"} Proven Path</div>
             <h1 className="lp-hero-h">
-              {"Your first real estate payday."}
-              <span className="lp-hero-break"> </span>
-              {"We'll walk you there."}
+              <span className="lp-hero-line-1">Your first</span>
+              <span className="lp-hero-line-2">real estate payday.</span>
+              <span className="lp-hero-line-3">{"We'll walk you there."}</span>
             </h1>
             <p className="lp-hero-sub">{"We teach you live, hand you the tools, and send real buyers to your deals. No license, no capital, no experience needed."}</p>
             <CtaStrip onJoin={openPricing} />
