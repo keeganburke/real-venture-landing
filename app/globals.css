@@ -1343,7 +1343,7 @@ body.modal-open{overflow:hidden}
 
 /* Whop logo in the review summary card */
 .lp-reviews-whop-logo {
-  height: 24px;
+  height: 48px;
   width: auto;
   opacity: 0.7;
   margin-left: 16px;
@@ -1352,7 +1352,7 @@ body.modal-open{overflow:hidden}
 
 @media (max-width: 640px) {
   .lp-reviews-whop-logo {
-    height: 20px;
+    height: 40px;
     margin-left: 12px;
   }
 }
