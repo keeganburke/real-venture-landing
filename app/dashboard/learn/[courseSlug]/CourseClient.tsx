@@ -43,7 +43,7 @@ export default function CourseClient({ course, lessons, completedLessonIds, user
   const doneCount = lessons.filter((lesson) => completed.has(lesson.id)).length;
   const pct = lessons.length > 0 ? Math.round((doneCount / lessons.length) * 100) : 0;
 
-  const onRowClick = (lesson: Lesson, lockReason: "sequence" | "pro" | null) => {
+  const onRowClick = (lesson: Lesson, lockReason: "sequence" | "pro") => {
     if (lockReason === "pro") {
       setShakingId(lesson.id);
       setToast("Pro membership required");
@@ -51,15 +51,10 @@ export default function CourseClient({ course, lessons, completedLessonIds, user
       window.setTimeout(() => setToast(null), 2200);
       return;
     }
-    if (lockReason === "sequence") {
-      setShakingId(lesson.id);
-      setToast("Complete the previous lesson first");
-      window.setTimeout(() => setShakingId(null), 500);
-      window.setTimeout(() => setToast(null), 2200);
-      return;
-    }
-    // Lesson player lands in the next build step.
-    window.alert("Lesson player coming soon");
+    setShakingId(lesson.id);
+    setToast("Complete the previous lesson first");
+    window.setTimeout(() => setShakingId(null), 500);
+    window.setTimeout(() => setToast(null), 2200);
   };
 
   return (
@@ -94,13 +89,9 @@ export default function CourseClient({ course, lessons, completedLessonIds, user
             const proLocked = lesson.requires_pro && userTier === "base";
             const sequenceLocked = !isComplete && index > maxUnlockedIndex;
             const lockReason = proLocked ? "pro" : sequenceLocked ? "sequence" : null;
-            return (
-              <button
-                type="button"
-                className={`learn-lesson-row${isComplete ? " complete" : ""}${lockReason ? " locked" : ""}${shakingId === lesson.id ? " shake" : ""}`}
-                key={lesson.id}
-                onClick={() => onRowClick(lesson, lockReason)}
-              >
+            const rowClass = `learn-lesson-row${isComplete ? " complete" : ""}${lockReason ? " locked" : ""}${shakingId === lesson.id ? " shake" : ""}`;
+            const inner = (
+              <>
                 <span className="learn-lesson-num">{isComplete ? "✓" : index + 1}</span>
                 <span className="learn-lesson-body">
                   <span className="learn-lesson-title">
@@ -116,7 +107,25 @@ export default function CourseClient({ course, lessons, completedLessonIds, user
                   </span>
                 </span>
                 <span className="learn-lesson-arw">{lockReason ? "🔒" : "→"}</span>
+              </>
+            );
+            return lockReason ? (
+              <button
+                type="button"
+                className={rowClass}
+                key={lesson.id}
+                onClick={() => onRowClick(lesson, lockReason)}
+              >
+                {inner}
               </button>
+            ) : (
+              <Link
+                href={`/dashboard/learn/${course.slug}/${lesson.slug}`}
+                className={rowClass}
+                key={lesson.id}
+              >
+                {inner}
+              </Link>
             );
           })}
         </div>
