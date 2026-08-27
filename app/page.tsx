@@ -270,8 +270,8 @@ export default function Home() {
         <section className="lp-phases">
           <div className="shell">
             <SectionHead
-              heading={<>From zero to <span>first wire.</span></>}
-              sub="Three phases. Fourteen days. Real deals."
+              heading={<>The simple 3-step path to success.</>}
+              sub="Each distinct phase to your first deal."
             />
             <div className="lp-phase-list">
               {LP_PHASES.map((phase) => (
@@ -384,6 +384,67 @@ export default function Home() {
                   <div className="lp-review-body">{review.body}</div>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="lp-choice">
+          <div className="shell">
+            <div className="lp-section-head">
+              <h2 className="lp-section-h2">The choice is yours.</h2>
+              <p className="lp-section-sub">Two paths. One decision.</p>
+            </div>
+
+            <div className="lp-choice-grid">
+
+              <div className="lp-choice-col lp-choice-col-dead">
+                <div className="lp-choice-col-head">
+                  <div className="lp-choice-icon">
+                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M12 7v5l3 3" />
+                    </svg>
+                  </div>
+                  <h3 className="lp-choice-col-title">Do Nothing</h3>
+                  <p className="lp-choice-col-sub">Same life, forever</p>
+                </div>
+                <ul className="lp-choice-list">
+                  <li>Wake up dreading the 9-5</li>
+                  <li>Trade time for a paycheck</li>
+                  <li>Watch others get ahead</li>
+                  <li>No control over your income</li>
+                  <li>Same routine, same results</li>
+                  <li>{"Retire at 65, if you're lucky"}</li>
+                </ul>
+              </div>
+
+              <div className="lp-choice-col lp-choice-col-alive">
+                <div className="lp-choice-col-head">
+                  <div className="lp-choice-icon">
+                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 19V5" />
+                      <path d="M5 12l7-7 7 7" />
+                    </svg>
+                  </div>
+                  <h3 className="lp-choice-col-title">Join Real Venture</h3>
+                  <p className="lp-choice-col-sub">Start earning today</p>
+                </div>
+                <ul className="lp-choice-list">
+                  <li>Wake up on your own schedule</li>
+                  <li>Get paid per deal, uncapped</li>
+                  <li>Direct access to William + Keegan every day</li>
+                  <li>Live coaching 6x/week</li>
+                  <li>Vetted buyer network on tap</li>
+                  <li>Deal analyzer + contract templates</li>
+                  <li>300+ members closing deals with you</li>
+                  <li>Finally start your journey in entrepreneurship</li>
+                </ul>
+              </div>
+
+            </div>
+
+            <div className="lp-cta-after">
+              <CtaStrip onJoin={openPricing} label={"Join Real Venture \u2192"} />
             </div>
           </div>
         </section>

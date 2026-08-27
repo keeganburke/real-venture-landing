@@ -938,3 +938,135 @@ body.modal-open{overflow:hidden}
   .tkc-sp-grid{gap:6px}
   .tkc-sp-day{padding:6px 4px 5px}
 }
+
+/* THE CHOICE IS YOURS (lp-choice; between reviews and final CTA) */
+.lp-choice {
+  padding-block: var(--sp-section);
+}
+
+.lp-choice-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  margin-top: 32px;
+}
+
+@media (min-width: 800px) {
+  .lp-choice-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+}
+
+.lp-choice-col {
+  background: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.lp-choice-col-head {
+  text-align: center;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.lp-choice-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lp-choice-col-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+
+.lp-choice-col-sub {
+  font-size: 13px;
+  color: rgba(200, 200, 200, 0.7);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.lp-choice-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+
+.lp-choice-list li {
+  font-size: 15px;
+  line-height: 1.45;
+  padding-left: 28px;
+  position: relative;
+}
+
+/* DEAD COLUMN: muted / grey / dim */
+.lp-choice-col-dead {
+  background: rgba(255, 255, 255, 0.02);
+  opacity: 0.65;
+}
+
+.lp-choice-col-dead .lp-choice-col-title,
+.lp-choice-col-dead .lp-choice-col-sub,
+.lp-choice-col-dead .lp-choice-list li {
+  color: rgba(180, 180, 180, 0.7);
+}
+
+.lp-choice-col-dead .lp-choice-icon svg {
+  stroke: rgba(160, 160, 160, 0.6);
+}
+
+.lp-choice-col-dead .lp-choice-list li::before {
+  content: "✕";
+  position: absolute;
+  left: 4px;
+  top: 0;
+  color: rgba(160, 160, 160, 0.5);
+  font-weight: 600;
+}
+
+/* ALIVE COLUMN: gold, present, energetic */
+.lp-choice-col-alive {
+  background: linear-gradient(180deg, rgba(229, 181, 71, 0.08), rgba(229, 181, 71, 0.02));
+  border-color: rgba(229, 181, 71, 0.3);
+  box-shadow: 0 0 60px rgba(229, 181, 71, 0.05);
+}
+
+.lp-choice-col-alive .lp-choice-col-title {
+  color: #fff;
+}
+
+.lp-choice-col-alive .lp-choice-col-sub {
+  color: var(--gold);
+}
+
+.lp-choice-col-alive .lp-choice-icon svg {
+  stroke: var(--gold);
+}
+
+.lp-choice-col-alive .lp-choice-list li {
+  color: #e8e8e8;
+}
+
+.lp-choice-col-alive .lp-choice-list li::before {
+  content: "✓";
+  position: absolute;
+  left: 4px;
+  top: 0;
+  color: var(--gold);
+  font-weight: 700;
+}
