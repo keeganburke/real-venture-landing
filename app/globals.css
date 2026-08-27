@@ -1116,19 +1116,20 @@ body.modal-open{overflow:hidden}
   transform-origin: center;
 }
 
-/* REVIEWS v2 (Reviews.tsx: desktop marquee, mobile load-more stack) */
+/* REVIEWS v3 (Reviews.tsx: screenshot cards; desktop marquee, mobile load-more) */
 .lp-reviews-marquee {
   overflow: hidden;
   width: 100%;
   mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
   -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+  margin-top: 32px;
 }
 
 .lp-reviews-track {
   display: flex;
   gap: 20px;
   width: max-content;
-  animation: reviews-scroll 90s linear infinite;
+  animation: reviews-scroll 120s linear infinite;
 }
 
 .lp-reviews-marquee:hover .lp-reviews-track { animation-play-state: paused; }
@@ -1138,82 +1139,44 @@ body.modal-open{overflow:hidden}
   to { transform: translateX(-50%); }
 }
 
-.lp-review-card {
-  flex: 0 0 320px;
+.lp-review-img-card {
+  flex: 0 0 auto;
+  width: 320px;
+  border-radius: 16px;
+  overflow: hidden;
   background: #141414;
   border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 16px;
-  padding: 20px;
+}
+
+.lp-review-img-card img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.lp-reviews-stack {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-@media (max-width: 899px) {
-  .lp-reviews-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  .lp-review-card {
-    flex: 1 1 auto;
-    width: 100%;
-  }
-}
-
-.lp-review-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.lp-review-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 700;
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-.lp-review-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #e8e8e8;
-}
-
-.lp-review-stars {
-  color: var(--gold);
-  font-size: 12px;
-  letter-spacing: 1px;
-}
-
-.lp-review-text {
-  font-size: 14px;
-  line-height: 1.5;
-  color: #c8c8c8;
-  margin: 0;
-}
-
-.lp-reviews-load-more {
-  display: flex;
-  justify-content: center;
+  gap: 16px;
   margin-top: 24px;
+}
+
+.lp-reviews-stack .lp-review-img-card {
+  width: 100%;
+  max-width: 100%;
 }
 
 .lp-reviews-load-more-btn {
   background: rgba(229, 181, 71, 0.1);
   border: 1px solid rgba(229, 181, 71, 0.3);
   color: var(--gold);
-  padding: 12px 28px;
+  padding: 14px 28px;
   border-radius: 999px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
+  align-self: center;
+  margin-top: 8px;
   transition: all 0.2s ease;
 }
 

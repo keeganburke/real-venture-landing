@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/gen-wins-manifest.mjs",
+    "prebuild": "node scripts/gen-wins-manifest.mjs && node scripts/gen-reviews-manifest.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
