@@ -21,7 +21,7 @@ const LP_COMPARE_BAD = [
 const LP_COMPARE_GOOD = [
   "Direct access to William + Keegan every day",
   "Step-by-step 14-day sprint with clear checkpoints",
-  "Live Q&A calls 6x/week + Discord 24/7",
+  "Live Q&A calls 7x/week + Discord 24/7",
   "Deal analyzer + contract templates ready",
   "Proven strategies to find buyers from the founders",
   "Countless testimonials and students actually getting paid",
@@ -235,9 +235,9 @@ export default function Home() {
                 <div className="lp-vid-card" key={story.id}>
                   <div className="lp-vid-embed">
                     <iframe
-                      src={`https://player.vimeo.com/video/${story.videoId}?title=0&byline=0&portrait=0&badge=0&autopause=0&player_id=0&app_id=58479`}
+                      src={`https://player.vimeo.com/video/${story.videoId}?title=0&byline=0&portrait=0&badge=0&autopause=0&dnt=1&transparent=0&responsive=1`}
                       frameBorder="0"
-                      allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
+                      allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media"
                       allowFullScreen
                       title={`${story.name} testimonial`}
                     />
@@ -388,6 +388,14 @@ export default function Home() {
                   <li>Same routine, same results</li>
                   <li>{"Retire at 65, if you're lucky"}</li>
                 </ul>
+                <a
+                  href="https://www.indeed.com/companies"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="lp-choice-dead-btn"
+                >
+                  Do It Your Way {"\u2192"}
+                </a>
               </div>
 
               <div className="lp-choice-col lp-choice-col-alive">
@@ -408,26 +416,15 @@ export default function Home() {
                   <li>300+ members closing deals with you</li>
                   <li>Finally start your journey in entrepreneurship</li>
                 </ul>
+                <button
+                  type="button"
+                  onClick={openPricing}
+                  className="lp-cta-primary lp-cta-hero lp-choice-alive-btn"
+                >
+                  Join Real Venture {"\u2192"}
+                </button>
               </div>
 
-            </div>
-
-            <div className="lp-choice-cta-row">
-              <a
-                href="https://www.indeed.com/companies"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="lp-choice-dead-btn"
-              >
-                Do It Your Way {"\u2192"}
-              </a>
-              <button
-                type="button"
-                onClick={openPricing}
-                className="lp-cta-primary lp-cta-hero lp-choice-alive-btn"
-              >
-                Join Real Venture {"\u2192"}
-              </button>
             </div>
           </div>
         </section>

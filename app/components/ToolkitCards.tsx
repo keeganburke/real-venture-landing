@@ -14,7 +14,7 @@ const FRONTS = [
     title: "Live teaching",
     desc: (
       <>
-        <strong>3x/week live calls</strong> with William + Keegan. Every deal reviewed, every question answered.
+        <strong>Calls 7x/week</strong> with William + Keegan. Every deal reviewed, every question answered.
       </>
     ),
     emoji: "🎥",
@@ -141,7 +141,7 @@ function BackVideo() {
           35 members watching
         </span>
       </div>
-      <div className="tkc-video-title">Calls 6x/week</div>
+      <div className="tkc-video-title">Calls 7x/week</div>
       <div className="tkc-live-chat">
         {LIVE_CHAT.map((msg, i) => (
           <div className={`tkc-live-msg tkc-live-m${i + 1}`} key={msg.user}>
