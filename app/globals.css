@@ -459,7 +459,7 @@ body.modal-open{overflow:hidden}
 /* LANDING V2 NAV (lp- prefix; existing blocks untouched) */
 .lp-nav{position:sticky;top:0;z-index:100;padding:14px 16px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:transparent}
 .lp-nav-inner{max-width:1200px;margin:0 auto}
-.lp-nav-pill{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line-dark-hi);background:rgba(20,17,24,.9);border-radius:60px;min-height:52px;padding:5px 12px;gap:4px}
+.lp-nav-pill{display:flex;align-items:center;justify-content:space-between;border:1px solid rgba(255,255,255,.12);background:transparent;border-radius:60px;min-height:44px;padding:3px 12px;gap:4px}
 .lp-nav-segment{display:flex;align-items:center;gap:10px;background:none;border:none;color:var(--txt-dark);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:12px;letter-spacing:.08em;padding:8px 16px;border-radius:99px;cursor:pointer;text-decoration:none;transition:background .15s ease}
 .lp-nav-segment:hover{background:rgba(244,233,208,.06)}
 .lp-nav-divider{width:1px;height:24px;background:var(--line-dark);flex-shrink:0}
@@ -472,7 +472,7 @@ body.modal-open{overflow:hidden}
 .lp-burger.open span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
 .lp-user-icn{width:16px;height:16px;flex-shrink:0}
 .lp-nav-label{font-weight:700;letter-spacing:.10em;font-size:12px}
-.lp-nav-logo{width:48px;height:48px;border-radius:11px;object-fit:cover;transform:scale(1.4);transform-origin:center}
+.lp-nav-logo{width:48px;height:48px;border-radius:11px;object-fit:cover;transform:scale(2.1);transform-origin:center}
 .lp-nav-logo-seg{overflow:hidden}
 @media(max-width:640px){.lp-nav-segment{padding:8px 12px}.lp-nav-logo{width:48px;height:48px;border-radius:11px}}
 @media(max-width:380px){.lp-nav-label{font-size:11px}.lp-nav-segment{padding:8px 10px;gap:7px}}
@@ -520,8 +520,8 @@ body.modal-open{overflow:hidden}
 .lp-section-h2 span{color:var(--gold)}
 .lp-section-sub{color:var(--mut-dark-hi);font-size:var(--t-body);line-height:1.5}
 
-.lp-hero{padding:clamp(40px,6vh,60px) 0 clamp(32px,7vh,80px);text-align:center;position:relative}
-.lp-hero-badge,
+.lp-hero{padding:10px 0 clamp(32px,7vh,80px);text-align:center;position:relative}
+.lp-hero-badge{display:inline-block;color:rgba(180, 180, 180, 0.7);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:var(--t-eyebrow);letter-spacing:.14em;text-transform:uppercase;padding:7px 16px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:100px;margin-bottom:24px}
 .lp-eyebrow{display:inline-block;color:var(--gold);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:var(--t-eyebrow);letter-spacing:.14em;text-transform:uppercase;padding:7px 16px;background:rgba(229,181,71,.06);border:1px solid rgba(229,181,71,.26);border-radius:100px;margin-bottom:24px}
 .lp-hero-h{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:var(--h-hero);line-height:1.0;letter-spacing:-.04em;margin:0 auto 24px;max-width:900px;background:linear-gradient(180deg,#FFE89A 0%,#E5B547 55%,#B8881F 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .lp-hero-sub{color:var(--mut-dark-hi);font-size:clamp(15px,1.5vw,19px);line-height:1.55;margin:0 auto 36px;max-width:640px}
@@ -735,7 +735,7 @@ body.modal-open{overflow:hidden}
    Change 5: hero bottom and payouts top cut an extra ~50 percent. */
 @media(max-width:640px){
   :root{--sp-section:clamp(42px,6.5vh,78px)}
-  .lp-hero{padding:clamp(26px,4vh,39px) 0 clamp(10px,2.2vh,26px)}
+  .lp-hero{padding:10px 0 clamp(10px,2.2vh,26px)}
   .lp-payouts{padding:clamp(16px,2.6vh,26px) 0 clamp(26px,4.5vh,42px)}
   .lp-final{padding:clamp(52px,7.8vh,91px) 0}
 }
