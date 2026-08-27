@@ -227,8 +227,8 @@ export default function Home() {
         <section className="lp-success-stories">
           <div className="shell">
             <SectionHead
-              heading={<>See the <span>payoff.</span></>}
-              sub="Real students. Real deals. Real dollars."
+              heading={<>Success <span>stories.</span></>}
+              sub="Long-form testimonials from the Real Gs."
             />
             <div className="lp-vid-stack">
               {LP_STORIES.map((story) => (
