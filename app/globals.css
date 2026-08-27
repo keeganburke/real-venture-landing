@@ -1906,3 +1906,48 @@ body.modal-open{overflow:hidden}
 a.learn-lesson-row {
   text-decoration: none;
 }
+
+/* ============================================================================
+   SKELETON LOADERS
+   Used by loading.tsx boundaries to render instant Suspense fallbacks.
+   ============================================================================ */
+
+.rv-skel {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.09) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: 8px;
+  animation: rv-skel-shimmer 1.4s ease-in-out infinite;
+}
+
+.rv-skel-title {
+  border-radius: 10px;
+}
+
+.rv-skel-card {
+  border-radius: 14px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.07) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 200% 100%;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+@keyframes rv-skel-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rv-skel,
+  .rv-skel-card {
+    animation: none;
+  }
+}
