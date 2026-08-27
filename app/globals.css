@@ -1420,26 +1420,23 @@ body.modal-open{overflow:hidden}
     gap: 4px;
     text-align: center;
     padding: 0 4px;
-  }
-  .lp-hero-line-1 {
-    display: block;
-    color: #ffffff;
-    font-size: clamp(36px, 10vw, 56px);
-    line-height: 1.05;
-    font-weight: 900;
-    letter-spacing: -0.02em;
-  }
-  .lp-hero-line-2,
-  .lp-hero-line-3 {
-    display: block;
-    font-size: clamp(36px, 10vw, 56px);
-    line-height: 1.05;
-    font-weight: 900;
-    letter-spacing: -0.02em;
-    background: linear-gradient(180deg, #FFE89A 0%, #E5B547 55%, #B8881F 100%);
+    background: linear-gradient(180deg, #FFE89A 0%, #E5B547 50%, #B8881F 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+  .lp-hero-line-1,
+  .lp-hero-line-2,
+  .lp-hero-line-3 {
+    display: block;
+    color: inherit;
+    background: none;
+    -webkit-text-fill-color: inherit;
+    font-size: clamp(36px, 10vw, 56px);
+    line-height: 1.05;
+    font-weight: 900;
+    letter-spacing: -0.02em;
   }
   .lp-hero-line-3 {
     margin-top: 4px;
