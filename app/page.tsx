@@ -50,9 +50,9 @@ const LP_PHASES = [
 ];
 
 const LP_STORIES = [
-  { id: "marcus", attr: "Marcus T.", detail: "$18,000 first assignment · 22 days" }, // TODO placeholder video, swap Vimeo embed
-  { id: "sara", attr: "Sara R.", detail: "$12,500 in month 2 · closed via JV" }, // TODO placeholder video, swap Vimeo embed
-  { id: "devon", attr: "Devon K.", detail: "3 deals since joining · $56k YTD" }, // TODO placeholder video, swap Vimeo embed
+  { id: "dylan", name: "Dylan", videoId: "1221681436", amount: "$24,000 Profit" },
+  { id: "yves", name: "Yves", videoId: "1197200708", amount: "$11,000 Profit" },
+  { id: "zach", name: "Zach", videoId: "1197200691", amount: "$6,000 Profit" },
 ];
 
 
@@ -233,16 +233,18 @@ export default function Home() {
             <div className="lp-vid-stack">
               {LP_STORIES.map((story) => (
                 <div className="lp-vid-card" key={story.id}>
-                  <button
-                    className="lp-vid-thumb"
-                    onClick={() => console.log("TODO: open Vimeo modal for testimonial", story.id)}
-                    aria-label={`Play testimonial from ${story.attr}`}
-                  >
-                    <span className="lp-play" />
-                  </button>
-                  <div className="lp-vid-meta">
-                    <div className="lp-vid-attr">{story.attr}</div>
-                    <div className="lp-vid-detail">{story.detail}</div>
+                  <div className="lp-vid-embed">
+                    <iframe
+                      src={`https://player.vimeo.com/video/${story.videoId}?title=0&byline=0&portrait=0&badge=0&autopause=0&player_id=0&app_id=58479`}
+                      frameBorder="0"
+                      allow="autoplay; fullscreen; picture-in-picture; clipboard-write"
+                      allowFullScreen
+                      title={`${story.name} testimonial`}
+                    />
+                  </div>
+                  <div className="lp-vid-caption">
+                    <div className="lp-vid-name">{story.name}</div>
+                    <div className="lp-vid-amount">{story.amount}</div>
                   </div>
                 </div>
               ))}
@@ -309,7 +311,7 @@ export default function Home() {
                 <div className="tier-divider"></div>
                 <ul className="tier-feats">
                   <li><span className="chk">{"✓"}</span>Everything in Base</li>
-                  <li className="hero"><span className="chk">{"✓"}</span>JV deals, keep 60%</li>
+                  <li><span className="chk">{"✓"}</span>JV deals, keep 60%</li>
                   <li><span className="chk">{"✓"}</span>Contract generator (auto fill)</li>
                   <li><span className="chk">{"✓"}</span>Advanced course modules</li>
                   <li><span className="chk">{"✓"}</span>First look at incoming buyers</li>
@@ -509,7 +511,7 @@ export default function Home() {
                 <div className="tier-divider"></div>
                 <ul className="tier-feats">
                   <li><span className="chk">{"✓"}</span>Everything in Base</li>
-                  <li className="hero"><span className="chk">{"✓"}</span>JV deals, keep 60%</li>
+                  <li><span className="chk">{"✓"}</span>JV deals, keep 60%</li>
                   <li><span className="chk">{"✓"}</span>Contract generator (auto fill)</li>
                   <li><span className="chk">{"✓"}</span>Advanced course modules</li>
                   <li><span className="chk">{"✓"}</span>First look at incoming buyers</li>

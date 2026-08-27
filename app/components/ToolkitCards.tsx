@@ -7,43 +7,67 @@ import { useEffect, useRef, useState } from "react";
 const OVERRIDE_MS = 5000;
 const CARD_COUNT = 6;
 
-// Front copy carried over 1:1 from the old static LP_TOOLKIT grid.
+// Front copy for the 6 cards (emoji icons; key phrases bolded).
 const FRONTS = [
   {
     num: "01",
     title: "Live teaching",
-    desc: "3x/week live calls with William + Keegan. Every deal reviewed, every question answered.",
-    icon: '<path d="M23 7l-9.5 9.5-5-5L1 19"/><path d="M17 7h6v6"/>',
+    desc: (
+      <>
+        <strong>3x/week live calls</strong> with William + Keegan. Every deal reviewed, every question answered.
+      </>
+    ),
+    emoji: "🎥",
   },
   {
     num: "02",
     title: "Buyer network",
-    desc: "Send your deals straight to our vetted buyer network. Skip the cold outreach.",
-    icon: '<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    desc: (
+      <>
+        Send your deals straight to our <strong>vetted buyer network</strong>. Skip the cold outreach.
+      </>
+    ),
+    emoji: "🤝",
   },
   {
     num: "03",
     title: "Deal analyzer",
-    desc: "Any address, comps + ARV + max offer in under a minute. Never guess again.",
-    icon: '<path d="M9 12l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="2"/>',
+    desc: (
+      <>
+        Any address, comps + ARV + max offer in <strong>under a minute</strong>. Never guess again.
+      </>
+    ),
+    emoji: "📊",
   },
   {
     num: "04",
     title: "Auto contracts",
-    desc: "Fill your own contracts or use our templates. Send offers in minutes, not hours.",
-    icon: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/>',
+    desc: (
+      <>
+        Fill your own contracts or use our templates. Send offers in <strong>minutes, not hours</strong>.
+      </>
+    ),
+    emoji: "📝",
   },
   {
     num: "05",
     title: "Discord community",
-    desc: "300+ members. 24/7 wins channel. Ask anything, get answers in minutes.",
-    icon: '<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>',
+    desc: (
+      <>
+        <strong>300+ members</strong>. <strong>24/7</strong> wins channel. Ask anything, get answers in minutes.
+      </>
+    ),
+    emoji: "💬",
   },
   {
     num: "06",
     title: "14-day sprint",
-    desc: "Structured 14-day path. Most members have a contract signed by day 14.",
-    icon: '<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>',
+    desc: (
+      <>
+        Structured 14-day path. Most members have a contract signed by <strong>day 14</strong>.
+      </>
+    ),
+    emoji: "🚀",
   },
 ];
 
@@ -388,12 +412,7 @@ export default function ToolkitCards() {
           <div className="toolkit-card-inner">
             <div className="toolkit-card-face toolkit-card-front">
               <div className="lp-tk-num">{card.num}</div>
-              <div
-                className="lp-tk-icn"
-                dangerouslySetInnerHTML={{
-                  __html: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">${card.icon}</svg>`,
-                }}
-              />
+              <span className="lp-tk-emoji">{card.emoji}</span>
               <div className="lp-tk-title">{card.title}</div>
               <div className="lp-tk-desc">{card.desc}</div>
               <div className="tkc-front-hint">

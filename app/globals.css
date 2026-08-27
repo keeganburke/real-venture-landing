@@ -63,12 +63,12 @@ body.modal-open{overflow:hidden}
 .tier.pro{background:radial-gradient(400px 200px at 50% -15%,rgba(229,181,71,.18),transparent 65%),linear-gradient(180deg,#241c14,#1a140f);border:2px solid var(--gold);box-shadow:0 0 0 3px rgba(229,181,71,.05),0 18px 44px -15px rgba(229,181,71,.32);transform:translateY(-5px)}
 .ribbon{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--cta);color:var(--cta-text);font-family:"Cabinet Grotesk";font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;padding:5px 12px;border-radius:99px;white-space:nowrap;box-shadow:0 6px 18px -4px rgba(229,181,71,.5)}
 .ribbon.coming{position:absolute;top:12px;right:12px;left:auto;transform:none;background:rgba(196,187,255,.14);color:var(--purple-bright);border:1px solid rgba(196,187,255,.35);box-shadow:none;font-size:9px;letter-spacing:.14em;padding:3px 8px}
-.tier-icon{width:62px;height:54px;margin:0 auto 10px;display:block}
+.tier-icon{width:78px;height:68px;margin:0 auto 10px;display:block}
 .tier-icon img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 4px 8px rgba(0,0,0,.4))}
 .tier.base .tier-icon{filter:drop-shadow(0 0 18px rgba(95,179,224,.5))}
 .tier.pro .tier-icon{filter:drop-shadow(0 0 22px rgba(229,181,71,.55))}
 .tier.ultra .tier-icon{filter:drop-shadow(0 0 18px rgba(196,187,255,.5))}
-.tier-name{font-family:"Cabinet Grotesk";font-size:14.5px;font-weight:800;letter-spacing:-.01em;margin-bottom:6px;color:var(--txt-dark-hi)}
+.tier-name{font-family:"Cabinet Grotesk";font-size:18px;font-weight:800;letter-spacing:-.01em;margin-bottom:6px;color:var(--txt-dark-hi)}
 .tier-price{display:flex;justify-content:center;align-items:baseline;gap:2px;margin-bottom:2px;line-height:1}
 .tier-price .cur,.tier-price .amt{font-family:"Cabinet Grotesk";font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:.9}
 .tier.base .tier-price .cur,.tier.base .tier-price .amt{background-image:linear-gradient(180deg,var(--ice-bright),var(--ice));-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -550,9 +550,8 @@ body.modal-open{overflow:hidden}
 @media(min-width:900px){.lp-trust{font-size:14px;gap:20px;margin-top:28px}}
 
 .lp-tk-num{font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:11px;color:var(--gold);letter-spacing:.12em}
-.lp-tk-icn{width:40px;height:40px;background:var(--cta);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#1a1208;box-shadow:0 4px 16px rgba(229,181,71,.30);margin:12px 0 14px}
-.lp-tk-icn svg{width:20px;height:20px;stroke-width:2}
-@media(min-width:900px){.lp-tk-icn{width:56px;height:56px;border-radius:14px;margin:20px 0 22px}.lp-tk-icn svg{width:28px;height:28px}}
+.lp-tk-emoji{font-size:48px;line-height:1;display:block;margin:20px 0 16px;filter:drop-shadow(0 0 20px rgba(229, 181, 71, 0.15))}
+.lp-tk-desc strong{color:#f5e6b8;font-weight:700}
 .lp-tk-title{font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:16px;color:var(--txt-dark-hi);margin-bottom:6px;letter-spacing:-.01em}
 @media(min-width:900px){.lp-tk-title{font-size:22px}}
 .lp-tk-desc{color:var(--mut-dark);font-size:12.5px;line-height:1.45}
@@ -618,13 +617,46 @@ body.modal-open{overflow:hidden}
 .lp-vid-stack{display:grid;grid-template-columns:1fr;gap:14px;max-width:480px;margin:0 auto}
 @media(min-width:900px){.lp-vid-stack{grid-template-columns:repeat(3,1fr);gap:20px;max-width:1100px}}
 .lp-vid-card{background:var(--card-dark);border:1px solid var(--line-dark);border-radius:16px;overflow:hidden}
-.lp-vid-thumb{aspect-ratio:16/9;width:100%;background:linear-gradient(135deg,#1e1e26,#0a0a0c);position:relative;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;padding:0}
-.lp-vid-thumb::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(229,181,71,.10),transparent 60%);pointer-events:none}
-.lp-play{width:52px;height:52px;background:var(--cta);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 24px rgba(229,181,71,.35);position:relative;z-index:5}
-.lp-play::after{content:"";width:0;height:0;border-left:16px solid #1a1208;border-top:10px solid transparent;border-bottom:10px solid transparent;margin-left:4px}
-.lp-vid-meta{padding:12px 16px;text-align:left}
-.lp-vid-attr{font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:15px;color:var(--txt-dark-hi)}
-.lp-vid-detail{color:var(--mut-dark);font-size:12.5px;margin-top:3px}
+.lp-vid-embed {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  border-radius: 16px 16px 0 0;
+  background: #000;
+}
+
+.lp-vid-embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.lp-vid-caption {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: #141414;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: none;
+  border-radius: 0 0 16px 16px;
+}
+
+.lp-vid-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #e8e8e8;
+}
+
+.lp-vid-amount {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--gold);
+}
 
 /* LANDING V2: TOP GLOW (Fix 3 Option A) + LOGIN PAGE */
 .wrap::before{content:"";position:absolute;top:0;left:0;right:0;height:800px;background:radial-gradient(1000px 600px at 50% -50px,rgba(229,181,71,.28),transparent 60%);pointer-events:none;z-index:0}
