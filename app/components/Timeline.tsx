@@ -2,28 +2,56 @@
 
 import { useEffect, useRef } from "react";
 
-// Phase content carried over 1:1 from the old LP_PHASES cards.
+// The 7-step wholesale path (labels render uppercase via CSS).
 const STEPS = [
   {
     num: "01",
-    icon: "📚",
-    label: "Phase 1 · Days 1-4",
-    title: "Learn the fundamentals",
-    desc: "Watch the course content and jump in the live streams. Get the framework locked before you touch a single deal.",
+    icon: "🎯",
+    label: "Step 1",
+    title: "Find your buyer",
+    desc: "Start with demand. Identify a buyer who's actively looking in your market before you touch a single deal.",
   },
   {
     num: "02",
     icon: "🔍",
-    label: "Phase 2 · Days 5-9",
-    title: "Analyze deals and find buyers",
-    desc: "Start pulling comps and running deals through the analyzer. Build your buyer list. Take real action every day.",
+    label: "Step 2",
+    title: "Search for the house",
+    desc: "Now you know what your buyer wants. Hunt for the property that matches their exact buy box.",
   },
   {
     num: "03",
+    icon: "📊",
+    label: "Step 3",
+    title: "Analyze the deal",
+    desc: "Pull comps, run the numbers through the analyzer, and know your max offer in under a minute.",
+  },
+  {
+    num: "04",
+    icon: "📞",
+    label: "Step 4",
+    title: "Call the seller",
+    desc: "Use our proven scripts to get the seller on the phone and lock in the price.",
+  },
+  {
+    num: "05",
+    icon: "📝",
+    label: "Step 5",
+    title: "Generate contract",
+    desc: "Auto-fill the contract with our templates. Send it to the seller and get it signed.",
+  },
+  {
+    num: "06",
+    icon: "🤝",
+    label: "Step 6",
+    title: "Assign it to buyer",
+    desc: "Send the contract to your buyer for assignment. They handle the closing.",
+  },
+  {
+    num: "07",
     icon: "💰",
-    label: "Phase 3 · Days 10-14",
-    title: "Send offers and get paid",
-    desc: "Use the vetted contracts to send offers, lock up your first deal, and collect your assignment fee.",
+    label: "Step 7",
+    title: "Get paid and repeat",
+    desc: "Collect your assignment fee at closing. Do it again. Scale from here.",
   },
 ];
 

@@ -236,7 +236,7 @@ export default function Home() {
         <section className="lp-phases">
           <div className="shell">
             <SectionHead
-              heading={<>The simple 3-step path to success.</>}
+              heading={<>The simple 7-step path to success.</>}
               sub="Each distinct phase to your first deal."
             />
             <Timeline />
@@ -327,7 +327,7 @@ export default function Home() {
                 <div className="lp-reviews-stars">{"\u2605\u2605\u2605\u2605\u2605"}</div>
                 <div className="lp-reviews-count">{REVIEW_STATS.total} verified reviews</div>
               </div>
-              <img src="/whoplogo2.png" alt="Whop" className="lp-reviews-whop-logo" />
+              <img src="/whoplogo3.png" alt="Whop" className="lp-reviews-whop-logo" />
             </div>
             <Reviews />
           </div>
