@@ -288,10 +288,27 @@ function BackSprint({ count }: { count: number }) {
 export default function ToolkitCards() {
   const [flipped, setFlipped] = useState<boolean[]>(() => Array(CARD_COUNT).fill(false));
   const [sprintCount, setSprintCount] = useState(0);
+  const [hoverCapable, setHoverCapable] = useState(false);
   const overrideUntil = useRef<number[]>(Array(CARD_COUNT).fill(0));
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  // Desktop (hover: hover) vs touch split; tracks mid-session input changes.
   useEffect(() => {
+    const mq = window.matchMedia("(hover: hover)");
+    const update = () => setHoverCapable(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  // Scroll auto-flip is touch-only. Desktop flips purely on hover: the CSS
+  // :hover rule turns the card, and mouseenter/leave mirrors the state into
+  // .flipped because every back animation (and the sprint counter) keys off it.
+  useEffect(() => {
+    if (hoverCapable) {
+      setFlipped(Array(CARD_COUNT).fill(false));
+      return;
+    }
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -307,7 +324,7 @@ export default function ToolkitCards() {
     );
     cardRefs.current.forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
-  }, []);
+  }, [hoverCapable]);
 
   // Sprint badge counts 0 -> 5 while the card flips in; resets when it flips back.
   const sprintFlipped = flipped[5];
@@ -330,6 +347,10 @@ export default function ToolkitCards() {
     setFlipped((prev) => prev.map((f, i) => (i === idx ? !f : f)));
   };
 
+  const setHover = (idx: number, on: boolean) => {
+    setFlipped((prev) => (prev[idx] === on ? prev : prev.map((f, i) => (i === idx ? on : f))));
+  };
+
   const backs = [
     { hook: "card-back-video", node: <BackVideo /> },
     { hook: "card-back-buyer", node: <BackBuyer /> },
@@ -349,7 +370,9 @@ export default function ToolkitCards() {
           ref={(el) => {
             cardRefs.current[idx] = el;
           }}
-          onClick={() => tap(idx)}
+          onClick={hoverCapable ? undefined : () => tap(idx)}
+          onMouseEnter={hoverCapable ? () => setHover(idx, true) : undefined}
+          onMouseLeave={hoverCapable ? () => setHover(idx, false) : undefined}
         >
           <div className="toolkit-card-inner">
             <div className="toolkit-card-face toolkit-card-front">
