@@ -8,21 +8,21 @@ import PayoutCarousel from "./components/PayoutCarousel";
 import ToolkitCards from "./components/ToolkitCards";
 
 const LP_COMPARE_BAD = [
-  "Watch YouTube for hours, no progress",
-  "Random advice from random people",
-  "Get stuck with nowhere to ask questions",
-  "No idea what actually works in your market",
-  "Never talk to a real cash buyer",
-  "Quit after 3 months, blame the market",
+  "Watch YouTube for hours without taking action",
+  "Random advice from random people, trying to piece all the information together yourself, getting stuck with nowhere to ask questions",
+  "No idea how to actually spot a deal",
+  "Never talked to a real cash buyer, no reliable path to finding buyers",
+  "Quit after one week because it seems hopeless",
 ];
 
 const LP_COMPARE_GOOD = [
-  "Direct access to William + Keegan every week",
+  "Direct access to William + Keegan every day",
   "Step-by-step 14-day sprint with clear checkpoints",
-  "Live Q&A calls 3x per week, plus Discord 24/7",
-  "Deal analyzer + templates ready to use today",
-  "Vetted cash buyer network on tap",
-  "300+ members already closing deals",
+  "Live Q&A calls 6x/week + Discord 24/7",
+  "Deal analyzer + contract templates ready",
+  "Proven strategies to find buyers from the founders",
+  "Countless testimonials and students actually getting paid",
+  "Starting at the same price as your DoorDash order",
 ];
 
 const LP_PHASES = [
@@ -137,7 +137,7 @@ export default function Home() {
               </button>
               <span className="lp-nav-divider" />
               <button
-                className="lp-nav-segment"
+                className="lp-nav-segment lp-nav-logo-seg"
                 onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
                 aria-label="Real Venture, back to top"
               >
@@ -223,7 +223,6 @@ export default function Home() {
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
-                <div className="lp-compare-cta">Do it their way</div>
               </div>
               <div className="lp-vs-box">VS</div>
               <div className="lp-compare-col good">
@@ -233,10 +232,10 @@ export default function Home() {
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
-                <button className="lp-compare-cta good" onClick={openPricing}>
-                  Join Real Venture {"\u2192"}
-                </button>
               </div>
+            </div>
+            <div className="lp-cta-after">
+              <CtaStrip onJoin={openPricing} label={"Join Real Venture \u2192"} />
             </div>
           </div>
         </section>
