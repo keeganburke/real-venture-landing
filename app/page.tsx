@@ -443,8 +443,22 @@ export default function Home() {
 
             </div>
 
-            <div className="lp-cta-after">
-              <CtaStrip onJoin={openPricing} label={"Join Real Venture \u2192"} />
+            <div className="lp-choice-cta-row">
+              <a
+                href="https://www.indeed.com/companies"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="lp-choice-dead-btn"
+              >
+                Do It Your Way {"\u2192"}
+              </a>
+              <button
+                type="button"
+                onClick={openPricing}
+                className="lp-cta-primary lp-cta-hero lp-choice-alive-btn"
+              >
+                Join Real Venture {"\u2192"}
+              </button>
             </div>
           </div>
         </section>
