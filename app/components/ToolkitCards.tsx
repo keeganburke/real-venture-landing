@@ -100,6 +100,12 @@ const SPRINT_DAYS = [
   { label: "Bonus", state: "dim" },
 ];
 
+const LIVE_CHAT = [
+  { user: "marcus", color: "#5865f2", text: "this is fire 🔥" },
+  { user: "sara", color: "#eb459e", text: "taking notes rn" },
+  { user: "devon", color: "#23a55a", text: "closing next week 💰" },
+];
+
 function BackVideo() {
   return (
     <>
@@ -108,15 +114,17 @@ function BackVideo() {
         <span className="tkc-live-badge">LIVE</span>
         <span className="tkc-viewers">
           <span className="tkc-viewers-dot" />
-          336 watching
+          35 members watching
         </span>
       </div>
-      <div className="tkc-video-title">Live streams 6 days a week</div>
-      <div className="tkc-wave" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-        <span />
+      <div className="tkc-video-title">Calls 6x/week</div>
+      <div className="tkc-live-chat">
+        {LIVE_CHAT.map((msg, i) => (
+          <div className={`tkc-live-msg tkc-live-m${i + 1}`} key={msg.user}>
+            <span className="tkc-live-av" style={{ background: msg.color }} />
+            <b>{msg.user}:</b> {msg.text}
+          </div>
+        ))}
       </div>
     </>
   );
@@ -142,9 +150,10 @@ function BackBuyer() {
           </div>
         ))}
       </div>
-      <div className="tkc-buyer-online">
-        <span className="tkc-online-dot" />
-        12 buyers online now
+      <div className="tkc-buyer-stats">
+        <span className="tkc-buyer-stat tkc-bs1">42 buyer requests today</span>
+        <span className="tkc-buyer-stat tkc-bs2">8 deals closed this week</span>
+        <span className="tkc-buyer-stat tkc-bs3">$127K in fees paid this month</span>
       </div>
     </>
   );
@@ -314,13 +323,15 @@ export default function ToolkitCards() {
         for (const entry of entries) {
           const idx = Number((entry.target as HTMLElement).dataset.idx);
           if (Number.isNaN(idx) || Date.now() < overrideUntil.current[idx]) continue;
-          const shouldFlip = entry.isIntersecting && entry.intersectionRatio >= 0.55;
+          const shouldFlip = entry.isIntersecting;
           setFlipped((prev) =>
             prev[idx] === shouldFlip ? prev : prev.map((f, i) => (i === idx ? shouldFlip : f))
           );
         }
       },
-      { threshold: [0, 0.55, 1] }
+      // Observation zone is a band 20-40% from the viewport top: cards flip
+      // once scrolled near the top, not on entry from the bottom.
+      { threshold: 0, rootMargin: "-20% 0px -60% 0px" }
     );
     cardRefs.current.forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();
@@ -385,6 +396,14 @@ export default function ToolkitCards() {
               />
               <div className="lp-tk-title">{card.title}</div>
               <div className="lp-tk-desc">{card.desc}</div>
+              <div className="tkc-front-hint">
+                <span className="tkc-front-hint-lbl">
+                  <span className="tkc-front-hint-dot" />
+                  <span className="tkc-hint-tap">Tap to reveal</span>
+                  <span className="tkc-hint-hover">Hover to see</span>
+                </span>
+                <span className="tkc-front-hint-arrow">→</span>
+              </div>
             </div>
             <div className={`toolkit-card-face toolkit-card-back ${backs[idx].hook}`}>
               {backs[idx].node}

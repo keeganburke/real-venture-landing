@@ -781,33 +781,27 @@ body.modal-open{overflow:hidden}
 .toolkit-cards{display:grid;grid-template-columns:1fr;gap:12px}
 @media(min-width:640px){.toolkit-cards{grid-template-columns:1fr 1fr;gap:14px}}
 @media(min-width:1024px){.toolkit-cards{grid-template-columns:repeat(3,1fr);gap:20px}}
-.toolkit-card{perspective:1200px;height:400px;cursor:pointer}
+.toolkit-card{perspective:1200px;height:280px;cursor:pointer}
 @media(min-width:900px){.toolkit-card{height:420px}}
 .toolkit-card-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .65s cubic-bezier(.4,.1,.2,1)}
 .toolkit-card.flipped .toolkit-card-inner{transform:rotateY(180deg)}
 @media(hover:hover){.toolkit-card:hover .toolkit-card-inner{transform:rotateY(180deg)}}
 .toolkit-card-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:16px;background:#16161c;border:1px solid #26262e;overflow:hidden}
 @media(min-width:900px){.toolkit-card-face{border-radius:20px}}
-.toolkit-card-front{padding:18px 16px}
+.toolkit-card-front{padding:18px 16px;display:flex;flex-direction:column;align-items:flex-start}
 @media(min-width:900px){.toolkit-card-front{padding:32px 28px}}
 .toolkit-card-back{transform:rotateY(180deg);border-color:rgba(229,181,71,.3);background:#141118;padding:14px;display:flex;flex-direction:column}
 
 /* Card 1: live video */
 .card-back-video{justify-content:center}
-.tkc-video-frame{position:relative;height:180px;border-radius:12px;overflow:hidden;background:#0f0f0f;flex-shrink:0}
+.tkc-video-frame{position:relative;height:140px;border-radius:12px;overflow:hidden;background:#0f0f0f;flex-shrink:0}
+@media(min-width:900px){.tkc-video-frame{height:180px}}
 .tkc-video-frame video{width:100%;height:100%;object-fit:cover;display:block}
 .tkc-live-badge{position:absolute;top:8px;left:8px;background:#f23f42;color:#fff;font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:10px;letter-spacing:.08em;padding:3px 8px;border-radius:6px}
 .tkc-viewers{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.65);color:#fff;font-size:10px;padding:3px 8px;border-radius:6px;display:flex;align-items:center;gap:5px}
 .tkc-viewers-dot{width:6px;height:6px;border-radius:50%;background:#f23f42;animation:tkc-pulse 1.4s ease infinite}
-.tkc-video-title{font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:17px;color:var(--txt-dark-hi);margin:14px 0 12px;text-align:center}
-.tkc-wave{display:flex;gap:4px;justify-content:center;align-items:flex-end;height:18px}
-.tkc-wave span{width:4px;border-radius:2px;background:var(--gold);transform-origin:bottom;animation:tkc-wave 1s ease-in-out infinite}
-.tkc-wave span:nth-child(1){height:8px}
-.tkc-wave span:nth-child(2){height:16px;animation-delay:.15s}
-.tkc-wave span:nth-child(3){height:11px;animation-delay:.3s}
-.tkc-wave span:nth-child(4){height:14px;animation-delay:.45s}
+.tkc-video-title{font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:16px;color:var(--txt-dark-hi);margin:10px 0 8px;text-align:center}
 @keyframes tkc-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}
-@keyframes tkc-wave{0%,100%{transform:scaleY(.45)}50%{transform:scaleY(1)}}
 @keyframes tkc-blink{0%,100%{opacity:1}50%{opacity:.25}}
 @keyframes tkc-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 @keyframes tkc-fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
@@ -831,9 +825,11 @@ body.modal-open{overflow:hidden}
 .tkc-online-dot{width:5px;height:5px;border-radius:50%;background:#23a55a;animation:tkc-blink 1.6s ease infinite;flex-shrink:0}
 .tkc-buyer-range{font-size:10px;color:var(--mut-dark)}
 .tkc-deals{align-self:flex-start;background:rgba(35,165,90,.15);color:#4ade80;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px}
-.tkc-buyer-online{margin-top:10px;font-size:11px;font-weight:700;color:#4ade80;display:flex;align-items:center;gap:6px}
-.toolkit-card.flipped .tkc-buyer-online{animation:tkc-ticker 2.4s ease .5s infinite}
-@keyframes tkc-ticker{0%,100%{opacity:1}50%{opacity:.55}}
+.tkc-buyer-stats{position:relative;margin-top:auto;height:28px;background:#0f0f14;border:1px solid #2a2a33;border-left:2px solid var(--gold);border-radius:7px;overflow:hidden}
+.tkc-buyer-stat{position:absolute;inset:0;display:flex;align-items:center;padding:0 11px;font-size:11px;font-weight:700;color:rgba(229,181,71,.85);opacity:0;animation:tkc-cycle3 9s ease infinite}
+.tkc-bs2{animation-delay:3s}
+.tkc-bs3{animation-delay:6s}
+@keyframes tkc-cycle3{0%{opacity:0;transform:translateY(3px)}4%{opacity:1;transform:translateY(0)}30%{opacity:1}37%{opacity:0}100%{opacity:0}}
 
 /* Card 3: deal analyzer (input view types, then result view fades in) */
 .tkc-an-view{position:absolute;inset:14px;display:flex;flex-direction:column}
@@ -939,3 +935,31 @@ body.modal-open{overflow:hidden}
 .tkc-sp-now{background:rgba(35,165,90,.2);color:#4ade80;font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:8px;letter-spacing:.06em;padding:1px 6px;border-radius:5px}
 .tkc-sp-line{margin-top:10px;font-size:11px;font-weight:700;color:#4ade80}
 .tkc-sp-stat{margin-top:5px;font-size:9.5px;color:var(--mut-dark)}
+
+/* Toolkit front hint row + card 1 chat feed + mobile density (280px cards) */
+.tkc-front-hint{margin-top:auto;padding-top:9px;border-top:1px solid rgba(229,181,71,.15);width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.tkc-front-hint-lbl{display:flex;align-items:center;gap:6px;font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:rgba(229,181,71,.6)}
+.tkc-front-hint-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);opacity:.7;flex-shrink:0}
+.tkc-front-hint-arrow{color:rgba(229,181,71,.6);font-size:13px;animation:tkc-hint-pulse 3s ease infinite}
+@keyframes tkc-hint-pulse{0%,100%{opacity:.5;transform:translateX(0)}12%{opacity:1;transform:translateX(3px)}24%{opacity:.5;transform:translateX(0)}}
+.tkc-hint-hover{display:none}
+@media(hover:hover){.tkc-hint-tap{display:none}.tkc-hint-hover{display:inline}}
+.tkc-live-chat{background:#0f0f14;border:1px solid #2a2a33;border-radius:9px;padding:7px 10px;display:flex;flex-direction:column;gap:4px}
+.tkc-live-msg{display:flex;align-items:center;gap:6px;font-size:11px;color:#e8e8ea;opacity:0;animation:tkc-chat 6s ease infinite}
+.tkc-live-msg b{color:rgba(232,232,234,.55);font-weight:700}
+.tkc-live-m2{animation-delay:2s}
+.tkc-live-m3{animation-delay:4s}
+.tkc-live-av{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+@keyframes tkc-chat{0%{opacity:0;transform:translateY(4px)}8%{opacity:1;transform:translateY(0)}78%{opacity:1}92%{opacity:0}100%{opacity:0}}
+@media(max-width:899px){
+  .tkc-dc-head{padding:8px 12px;font-size:12px}
+  .tkc-dc-msgs{padding:8px 12px;gap:7px}
+  .tkc-dc-av{width:22px;height:22px;font-size:10.5px}
+  .tkc-dc-meta{font-size:10.5px}
+  .tkc-dc-text{font-size:10.5px}
+  .tkc-dc-reactions{margin-top:2px}
+  .tkc-dc-reactions span{font-size:9px;padding:0 5px}
+  .tkc-dc-input{margin:0 12px 8px;padding:6px 12px}
+  .tkc-sp-grid{gap:6px}
+  .tkc-sp-day{padding:6px 4px 5px}
+}
