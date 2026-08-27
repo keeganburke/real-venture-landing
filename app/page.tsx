@@ -5,45 +5,7 @@ import NavDrawer from "./components/NavDrawer";
 import CtaStrip from "./components/CtaStrip";
 import SectionHead from "./components/SectionHead";
 import PayoutCarousel from "./components/PayoutCarousel";
-
-const LP_TOOLKIT = [
-  {
-    num: "01",
-    title: "Live teaching",
-    desc: "3x/week live calls with William + Keegan. Every deal reviewed, every question answered.",
-    icon: '<path d="M23 7l-9.5 9.5-5-5L1 19"/><path d="M17 7h6v6"/>',
-  },
-  {
-    num: "02",
-    title: "Buyer network",
-    desc: "Send your deals straight to our vetted buyer network. Skip the cold outreach.",
-    icon: '<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>',
-  },
-  {
-    num: "03",
-    title: "Deal analyzer",
-    desc: "Any address, comps + ARV + max offer in under a minute. Never guess again.",
-    icon: '<path d="M9 12l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="2"/>',
-  },
-  {
-    num: "04",
-    title: "Auto contracts",
-    desc: "Fill your own contracts or use our templates. Send offers in minutes, not hours.",
-    icon: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/>',
-  },
-  {
-    num: "05",
-    title: "Discord community",
-    desc: "300+ members. 24/7 wins channel. Ask anything, get answers in minutes.",
-    icon: '<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>',
-  },
-  {
-    num: "06",
-    title: "14-day sprint",
-    desc: "Structured 14-day path. Most members have a contract signed by day 14.",
-    icon: '<path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>',
-  },
-];
+import ToolkitCards from "./components/ToolkitCards";
 
 const LP_COMPARE_BAD = [
   "Watch YouTube for hours, no progress",
@@ -240,21 +202,7 @@ export default function Home() {
               heading={<>The full <span>toolkit.</span></>}
               sub="Every tool, every script, every step. Nothing gate-kept."
             />
-            <div className="lp-toolkit-grid">
-              {LP_TOOLKIT.map((card) => (
-                <div className="lp-tk-card" key={card.num}>
-                  <div className="lp-tk-num">{card.num}</div>
-                  <div
-                    className="lp-tk-icn"
-                    dangerouslySetInnerHTML={{
-                      __html: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor">${card.icon}</svg>`,
-                    }}
-                  />
-                  <div className="lp-tk-title">{card.title}</div>
-                  <div className="lp-tk-desc">{card.desc}</div>
-                </div>
-              ))}
-            </div>
+            <ToolkitCards />
             <div className="lp-cta-after">
               <CtaStrip onJoin={openPricing} />
             </div>
