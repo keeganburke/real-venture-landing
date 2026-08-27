@@ -1463,3 +1463,58 @@ body.modal-open{overflow:hidden}
 /* HUB GOLD THEME: "Not joined yet" badge on the Discord hero tile goes gold
    (tile accent + CTA stay Discord purple per semantic-color rule). */
 .hub-d-hero-tile.hub-d-t-discord .hub-d-ht-badge{background:rgba(229,181,71,.10);color:var(--gold);border:1px solid rgba(229,181,71,.30)}
+
+/* ================= LEARN (hub education: catalog + course detail) ================= */
+.learn-page{padding:32px 16px 100px}
+.learn-shell{max-width:900px;margin:0 auto}
+.learn-header{text-align:center;margin-bottom:28px}
+.learn-title{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:clamp(30px,5vw,44px);letter-spacing:-.03em;line-height:1.05;background:linear-gradient(180deg,#FFE89A 0%,#E5B547 55%,#B8881F 100%);-webkit-background-clip:text;background-clip:text;color:transparent;display:inline-flex;align-items:center;gap:12px}
+.learn-sub{color:var(--txt-mut);font-size:14.5px;margin-top:8px}
+.learn-stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:32px}
+@media(min-width:760px){.learn-stats-grid{grid-template-columns:repeat(4,1fr);gap:14px}}
+.learn-stat-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 14px;display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center}
+.learn-stat-card.locked{opacity:.45}
+.learn-stat-icn{font-size:22px;line-height:1}
+.learn-stat-num{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:20px;color:var(--txt)}
+.learn-stat-lbl{color:var(--txt-mut);font-size:11px;font-weight:600}
+.learn-section{margin-bottom:28px}
+.learn-section-head{display:flex;align-items:center;gap:8px;font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:var(--txt);margin-bottom:12px}
+.learn-section-emoji{font-size:17px}
+.learn-course-card{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:10px;text-decoration:none;transition:all .15s;cursor:pointer}
+.learn-course-card:hover{background:var(--card-hi);border-color:var(--line-hi);box-shadow:0 0 20px rgba(229,181,71,.08)}
+.learn-course-thumb{width:56px;height:56px;flex-shrink:0;background:rgba(229,181,71,.10);border:1px solid rgba(229,181,71,.22);border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:26px}
+@media(min-width:760px){.learn-course-thumb{width:80px;height:80px;font-size:34px}}
+.learn-course-meta{flex:1;min-width:0}
+.learn-course-title{font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:16px;color:var(--txt);display:flex;align-items:center;gap:8px;margin-bottom:3px}
+.learn-course-status{color:var(--txt-mut);font-size:12.5px}
+.learn-pro-badge{background:rgba(229,181,71,.14);border:1px solid rgba(229,181,71,.4);color:var(--gold);font-size:9px;font-weight:800;letter-spacing:.1em;padding:2px 7px;border-radius:99px}
+.learn-course-progress{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.learn-course-pct{font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:13px;color:var(--txt-mut)}
+.learn-course-pct.done{color:var(--gold)}
+.learn-course-bar{display:block;width:72px;height:6px;background:transparent;border:1px solid rgba(229,181,71,.20);border-radius:99px;overflow:hidden}
+.learn-course-fill{display:block;height:100%;background:rgba(229,181,71,.45);border-radius:99px;transition:width .3s ease}
+.learn-course-fill.done{background:linear-gradient(90deg,#FFE89A,#E5B547)}
+.learn-back{display:inline-block;color:var(--txt-mut);font-size:13.5px;font-weight:600;text-decoration:none;margin-bottom:20px}
+.learn-back:hover{color:var(--txt)}
+.learn-course-head{margin-bottom:26px}
+.learn-course-head .learn-title{font-size:clamp(26px,4vw,38px)}
+.learn-course-head .learn-sub{margin:8px 0 14px}
+.learn-detail-progress{display:flex;align-items:center;gap:12px}
+.learn-detail-progress .learn-course-bar{width:160px}
+.learn-detail-count{color:var(--txt-mut);font-size:12.5px;font-weight:600}
+.learn-lesson-list{display:flex;flex-direction:column;gap:10px}
+.learn-lesson-row{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-align:left;transition:all .15s;color:var(--txt);width:100%}
+.learn-lesson-row:hover{background:var(--card-hi);border-color:var(--line-hi)}
+.learn-lesson-row.complete .learn-lesson-num{background:rgba(74,222,128,.15);border-color:rgba(74,222,128,.4);color:var(--green,#4ade80)}
+.learn-lesson-row.locked{opacity:.3;cursor:not-allowed}
+.learn-lesson-row.locked:hover{background:var(--card);border-color:var(--line)}
+.learn-lesson-row.shake{animation:learn-shake .4s ease}
+@keyframes learn-shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}50%{transform:translateX(5px)}75%{transform:translateX(-3px)}}
+.learn-lesson-num{width:32px;height:32px;flex-shrink:0;border-radius:50%;background:rgba(229,181,71,.10);border:1px solid rgba(229,181,71,.3);color:var(--gold);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}
+.learn-lesson-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.learn-lesson-title{font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:14.5px;color:var(--txt)}
+.learn-lesson-desc{color:var(--txt-mut);font-size:12px;line-height:1.4}
+.learn-lesson-meta{display:flex;align-items:center;gap:8px;color:var(--txt-dim);font-size:11px;margin-top:3px}
+.learn-lesson-types{letter-spacing:2px}
+.learn-lesson-arw{color:var(--gold);font-size:15px;flex-shrink:0}
+.learn-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--card-hi);border:1px solid rgba(229,181,71,.35);color:var(--txt);font-size:13px;font-weight:600;padding:10px 18px;border-radius:99px;z-index:80;box-shadow:0 8px 30px rgba(0,0,0,.5)}

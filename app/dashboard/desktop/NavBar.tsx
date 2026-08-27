@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { STATS } from "../hub-copy";
 
 export default function NavBar() {
@@ -14,7 +15,7 @@ export default function NavBar() {
         </div>
         <div className="hub-d-nav-links">
           <a href="#" className="hub-d-on">Hub</a>
-          <a href="#">Learn</a>
+          <Link href="/dashboard/learn">Learn</Link>
           <a href="#">Tools</a>
           <a href="#">Community</a>
           <a href="#">Wins</a>
