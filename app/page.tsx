@@ -246,8 +246,8 @@ export default function Home() {
         <section className="lp-pricing">
           <div className="shell">
             <SectionHead
-              heading={<>Three ways <span>in.</span></>}
-              sub="Start on Base. Upgrade to Pro when you close."
+              heading={<>Choose your <span>path.</span></>}
+              sub="Cancel anytime. Upgrade anytime."
             />
             <div className="modal-tiers lp-pricing-tiers">
 
