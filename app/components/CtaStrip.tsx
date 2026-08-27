@@ -13,14 +13,12 @@ const AVATARS = [
 type Props = {
   onJoin: () => void;
   label?: string;
-  // hero: TRW-style warm gradient + sparkle + halo, hero instance only.
-  hero?: boolean;
 };
 
-export default function CtaStrip({ onJoin, label = "Join for $19.99/mo →", hero }: Props) {
+export default function CtaStrip({ onJoin, label = "Join for $19.99/mo →" }: Props) {
   return (
     <div className="lp-cta-strip">
-      <button className={`lp-cta-primary${hero ? " lp-cta-hero" : ""}`} onClick={onJoin}>
+      <button className="lp-cta-primary lp-cta-hero" onClick={onJoin}>
         {label}
       </button>
       <div className="lp-social">

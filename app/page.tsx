@@ -215,7 +215,7 @@ export default function Home() {
               {"We'll walk you there."}
             </h1>
             <p className="lp-hero-sub">{"We teach you live, hand you the tools, and send real buyers to your deals. No license, no capital, no experience needed."}</p>
-            <CtaStrip onJoin={openPricing} hero />
+            <CtaStrip onJoin={openPricing} />
             <div className="lp-trust">
               <div className="lp-trust-item"><span className="lp-trust-check">{"✓"}</span> Cancel anytime</div>
               <div className="lp-trust-dot" />

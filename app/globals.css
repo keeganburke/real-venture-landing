@@ -688,16 +688,77 @@ body.modal-open{overflow:hidden}
 .lp-avatar:nth-child(3){z-index:2}
 .lp-avatar:nth-child(4){z-index:1}
 
-.lp-carousel{display:flex;align-items:center;justify-content:center;gap:12px}
-.lp-carousel-frame{width:100%;max-width:340px}
-@media(min-width:900px){.lp-carousel-frame{max-width:420px}}
-.lp-carousel-card{aspect-ratio:9/8;background:var(--card-dark);border:1px solid rgba(229,181,71,.4);border-radius:16px;display:flex;align-items:center;justify-content:center;overflow:hidden;animation:lp-card-in .35s ease}
-.lp-payout-img{width:100%;height:100%;object-fit:contain;object-position:center;display:block;border-radius:inherit}
-@keyframes lp-card-in{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
-.lp-carousel-lbl{color:var(--gold);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:12px;letter-spacing:1px;text-transform:uppercase;text-align:center;padding:0 16px}
-.lp-carousel-arrow{width:40px;height:40px;border-radius:50%;background:var(--card-dark);border:1px solid var(--line-dark-hi);color:var(--gold);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:border-color .15s ease}
-.lp-carousel-arrow:hover{border-color:var(--gold)}
-.lp-carousel-arrow svg{width:18px;height:18px}
+.lp-payout-marquee {
+  overflow: hidden;
+  width: 100%;
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+.lp-payout-track {
+  display: flex;
+  gap: 16px;
+  width: max-content;
+  animation: payout-scroll 60s linear infinite;
+}
+
+.lp-payout-marquee:hover .lp-payout-track { animation-play-state: paused; }
+
+@keyframes payout-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.lp-payout-card {
+  flex: 0 0 auto;
+  width: 220px;
+  background: #1a1a1a;
+  border: 1px solid rgba(229,181,71,.4);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.lp-payout-img-wrap {
+  aspect-ratio: 9 / 8;
+  width: 100%;
+  overflow: hidden;
+  background: #0f0f0f;
+}
+
+.lp-payout-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.lp-payout-caption {
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-top: 1px solid rgba(229,181,71,.15);
+}
+
+.lp-payout-name {
+  font-size: 13px;
+  color: #e8e8e8;
+  font-weight: 500;
+}
+
+.lp-payout-fee {
+  font-size: 13px;
+  color: #E5B547;
+  font-weight: 700;
+}
+
+@media (min-width: 900px) {
+  .lp-payout-card { width: 260px; }
+  .lp-payout-name, .lp-payout-fee { font-size: 14px; }
+}
 
 /* LANDING V2 MOBILE SPACING PASS (max-width 640px only; desktop untouched)
    Change 4: all section vertical padding cut ~35 percent on mobile.
@@ -712,18 +773,11 @@ body.modal-open{overflow:hidden}
 /* LANDING V2 HERO CTA (TRW-style warm gradient + sparkle overlay + halo; hero button only) */
 .lp-cta-hero{
   background:
-    radial-gradient(circle at 12% 40%, rgba(255,255,255,.7) 0 1px, transparent 2px),
-    radial-gradient(circle at 34% 22%, rgba(255,240,200,.5) 0 1.5px, transparent 3px),
-    radial-gradient(circle at 55% 68%, rgba(255,255,255,.55) 0 1px, transparent 2px),
-    radial-gradient(circle at 72% 30%, rgba(255,244,214,.6) 0 1.5px, transparent 3px),
-    radial-gradient(circle at 88% 55%, rgba(255,255,255,.5) 0 1px, transparent 2px),
-    radial-gradient(circle at 20% 75%, rgba(255,240,200,.45) 0 1px, transparent 2px),
-    radial-gradient(circle at 45% 15%, rgba(255,255,255,.6) 0 1px, transparent 2px),
-    radial-gradient(circle at 63% 85%, rgba(255,244,214,.5) 0 1.5px, transparent 3px),
-    radial-gradient(circle at 80% 12%, rgba(255,255,255,.45) 0 1px, transparent 2px),
-    radial-gradient(circle at 8% 15%, rgba(255,240,200,.4) 0 1px, transparent 2px),
-    radial-gradient(circle at 92% 80%, rgba(255,255,255,.4) 0 1px, transparent 2px),
-    radial-gradient(circle at 28% 55%, rgba(255,244,214,.35) 0 1px, transparent 2px),
+    radial-gradient(circle at 18% 28%, rgba(255,250,220,.35) 0 1px, transparent 2px),
+    radial-gradient(circle at 32% 18%, rgba(255,255,240,.28) 0 .8px, transparent 1.6px),
+    radial-gradient(circle at 48% 32%, rgba(255,248,215,.32) 0 1px, transparent 2px),
+    radial-gradient(circle at 62% 22%, rgba(255,255,255,.25) 0 .9px, transparent 1.8px),
+    radial-gradient(circle at 78% 38%, rgba(255,245,210,.3) 0 1px, transparent 2px),
     linear-gradient(180deg,#FFE89A 0%,#F5C560 25%,#E5A544 55%,#C97D2E 80%,#A85F1A 100%);
   box-shadow:0 0 40px rgba(229,165,68,.45),0 4px 20px rgba(0,0,0,.3);
 }

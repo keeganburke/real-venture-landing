@@ -1,0 +1,77 @@
+[
+  {
+    "file": "01-rosely-10000.png",
+    "name": "Rosely",
+    "amount": 10000
+  },
+  {
+    "file": "02-dylan-6000.png",
+    "name": "Dylan",
+    "amount": 6000
+  },
+  {
+    "file": "03-yves-5000.png",
+    "name": "Yves",
+    "amount": 5000
+  },
+  {
+    "file": "04-rosely-7500.png",
+    "name": "Rosely",
+    "amount": 7500
+  },
+  {
+    "file": "05-zach-4000.png",
+    "name": "Zach",
+    "amount": 4000
+  },
+  {
+    "file": "06-dylan-6000-b.png",
+    "name": "Dylan",
+    "amount": 6000
+  },
+  {
+    "file": "07-yves-3000.png",
+    "name": "Yves",
+    "amount": 3000
+  },
+  {
+    "file": "08-melissa-4000.png",
+    "name": "Melissa",
+    "amount": 4000
+  },
+  {
+    "file": "09-dylan-5000.png",
+    "name": "Dylan",
+    "amount": 5000
+  },
+  {
+    "file": "10-mello-3000.png",
+    "name": "Mello",
+    "amount": 3000
+  },
+  {
+    "file": "11-alex-3000.png",
+    "name": "Alex",
+    "amount": 3000
+  },
+  {
+    "file": "12-dylan-3000.png",
+    "name": "Dylan",
+    "amount": 3000
+  },
+  {
+    "file": "13-faith-2500.png",
+    "name": "Faith",
+    "amount": 2500
+  },
+  {
+    "file": "14-wittman-3000.png",
+    "name": "Wittman",
+    "amount": 3000
+  },
+  {
+    "file": "15-zach-2000.png",
+    "name": "Zach",
+    "amount": 2000
+  }
+]
