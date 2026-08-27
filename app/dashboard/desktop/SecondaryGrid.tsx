@@ -51,8 +51,8 @@ const DESKTOP_TILES: DesktopTile[] = [
     title: "Education",
     sub: "Every course, breakdown, and quiz.",
     meta: "13 lessons · start at Lesson 1",
-    href: "https://realventurestudio.com/learn",
-    external: true,
+    href: "/dashboard/learn",
+    external: false,
     launched: true,
     icon: (
       <svg viewBox="0 0 24 24" {...stroke}>

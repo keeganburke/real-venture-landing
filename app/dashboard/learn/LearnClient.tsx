@@ -30,6 +30,9 @@ export default function LearnClient({ courses, lessonCounts, completedCounts }: 
   return (
     <div className="hub-page learn-page">
       <div className="learn-shell">
+        <Link className="learn-back" href="/dashboard">
+          {"←"} Hub
+        </Link>
         <header className="learn-header">
           <h1 className="learn-title">Learn Wholesaling</h1>
           <p className="learn-sub">Pick a section to get started</p>
