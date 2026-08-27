@@ -136,8 +136,8 @@ export default function Home() {
           <div className="shell">
             <div className="lp-hero-badge">Real Venture {"·"} Proven Path</div>
             <h1 className="lp-hero-h">
-              {"Your first real estate payday. "}
-              <br className="lp-h1-break" />
+              {"Your first real estate payday."}
+              <span className="lp-hero-break"> </span>
               {"We'll walk you there."}
             </h1>
             <p className="lp-hero-sub">{"We teach you live, hand you the tools, and send real buyers to your deals. No license, no capital, no experience needed."}</p>
@@ -154,7 +154,7 @@ export default function Home() {
           <div className="shell">
             <SectionHead
               heading={<>Student <span>payouts.</span></>}
-              sub="Every dollar closed by a Real Venture student."
+              sub="Real wins by real students."
             />
           </div>
           <PayoutCarousel />
