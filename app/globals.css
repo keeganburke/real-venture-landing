@@ -589,30 +589,6 @@ body.modal-open{overflow:hidden}
 .lp-phase-desc{color:var(--mut-dark-hi);font-size:clamp(13px,1.3vw,15px);line-height:1.5}
 
 .lp-pricing{padding:var(--sp-section) 0}
-.lp-tier-stack{display:grid;grid-template-columns:1fr;gap:16px;max-width:480px;margin:0 auto;align-items:stretch}
-@media(min-width:900px){.lp-tier-stack{grid-template-columns:repeat(3,1fr);gap:20px;max-width:1100px}}
-.lp-tier{background:var(--card-dark);border:1px solid var(--line-dark);border-radius:22px;padding:26px 22px;position:relative;display:flex;flex-direction:column}
-@media(min-width:900px){.lp-tier{padding:36px 32px}}
-.lp-tier.pro{border-color:var(--gold);background:linear-gradient(180deg,rgba(229,181,71,.08),var(--card-dark));box-shadow:0 0 60px rgba(229,181,71,.14)}
-@media(min-width:900px){.lp-tier.pro{transform:translateY(-8px)}}
-.lp-tier.ultra{opacity:.70}
-.lp-tier-crown{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:16px;background:linear-gradient(135deg,#5FB3E0,#3b82f6)}
-@media(min-width:900px){.lp-tier-crown{width:52px;height:52px;border-radius:14px;font-size:26px;margin-bottom:20px}}
-.lp-tier.pro .lp-tier-crown{background:var(--cta);box-shadow:0 0 28px rgba(229,181,71,.35)}
-.lp-tier.ultra .lp-tier-crown{background:linear-gradient(135deg,#a78bfa,#6d28d9)}
-.lp-tier-name{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:clamp(22px,2.4vw,28px);color:var(--txt-dark-hi);margin-bottom:6px;letter-spacing:-.02em}
-.lp-tier-price{color:var(--txt-dark);font-size:15px;margin-bottom:20px}
-.lp-tier-price b{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:clamp(28px,3.2vw,38px);color:var(--gold);letter-spacing:-.025em}
-.lp-tier-price span{color:var(--mut-dark);font-weight:400;font-size:14px}
-.lp-tier-badge{position:absolute;top:-12px;right:24px;font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:11px;padding:6px 12px;border-radius:8px;letter-spacing:.06em;text-transform:uppercase}
-.lp-tier.pro .lp-tier-badge{background:var(--cta);color:#1a1208}
-.lp-tier.ultra .lp-tier-badge{background:#6d28d9;color:var(--txt-dark-hi)}
-.lp-tier-feats{list-style:none;padding:0;margin:0 0 20px;display:flex;flex-direction:column;gap:10px;flex:1}
-.lp-tier-feats li{display:flex;align-items:flex-start;gap:10px;font-size:clamp(12.5px,1.2vw,14px);color:var(--txt-dark);line-height:1.45}
-.lp-tier-feats li::before{content:"✓";color:var(--gold);font-weight:800;font-size:13px;margin-top:1px;flex-shrink:0}
-.lp-tier-cta{background:var(--card-dark-hi);color:var(--txt-dark);border:1px solid var(--line-dark-hi);padding:15px;border-radius:14px;font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:15px;width:100%;letter-spacing:-.005em;cursor:pointer}
-.lp-tier.pro .lp-tier-cta{background:var(--cta);color:var(--cta-text);border:none;box-shadow:0 0 60px rgba(229,181,71,.45),0 0 120px rgba(229,181,71,.18)}
-.lp-tier.ultra .lp-tier-cta{background:var(--card-dark);color:var(--mut-dark);cursor:not-allowed}
 
 .lp-reviews{padding:var(--sp-section) 0;background:var(--bg-deep);border-top:1px solid var(--line-dark)}
 .lp-review-summary{display:flex;justify-content:center;align-items:center;gap:18px;margin:0 auto 28px;padding:20px 26px;background:var(--card-dark);border:1px solid var(--line-dark);border-radius:16px;max-width:400px}

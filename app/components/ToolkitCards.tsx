@@ -329,9 +329,9 @@ export default function ToolkitCards() {
           );
         }
       },
-      // Observation zone is a band 10-25% from the viewport top: cards flip
-      // once scrolled near the top, not on entry from the bottom.
-      { threshold: 0, rootMargin: "-10% 0px -75% 0px" }
+      // Observation zone is the top 15% of the viewport: cards flip as they
+      // cross the top edge, while the user is still reading them.
+      { threshold: 0, rootMargin: "0% 0px -85% 0px" }
     );
     cardRefs.current.forEach((el) => el && observer.observe(el));
     return () => observer.disconnect();

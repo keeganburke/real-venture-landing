@@ -9,7 +9,8 @@ import ToolkitCards from "./components/ToolkitCards";
 
 const LP_COMPARE_BAD = [
   "Watch YouTube for hours without taking action",
-  "Random advice from random people, trying to piece all the information together yourself, getting stuck with nowhere to ask questions",
+  "Trying to piece all the information together yourself",
+  "Getting stuck with nowhere to ask questions",
   "No idea how to actually spot a deal",
   "Never talked to a real cash buyer, no reliable path to finding buyers",
   "Quit after one week because it seems hopeless",
@@ -28,21 +29,21 @@ const LP_COMPARE_GOOD = [
 const LP_PHASES = [
   {
     num: "01",
-    step: "Phase 1 · Days 1-3",
+    step: "Phase 1 · Days 1-4",
     title: "Learn the fundamentals",
-    desc: "Live onboarding call. 3-lesson intensive. LLC + business bank setup. Discord tour with the founders.",
+    desc: "Watch the course content and jump in the live streams. Get the framework locked before you touch a single deal.",
   },
   {
     num: "02",
-    step: "Phase 2 · Days 4-9",
-    title: "Analyze your first deals",
-    desc: "Deal analyzer training. Pull comps like a pro. Run 10 deals through the calculator live with William.",
+    step: "Phase 2 · Days 5-9",
+    title: "Analyze deals and find buyers",
+    desc: "Start pulling comps and running deals through the analyzer. Build your buyer list. Take real action every day.",
   },
   {
     num: "03",
     step: "Phase 3 · Days 10-14",
-    title: "Send offers, sign contracts",
-    desc: "Contract templates. Outreach scripts. First offer sent. Buyer network unlocked. Assignment ready.",
+    title: "Send offers and get paid",
+    desc: "Use the vetted contracts to send offers, lock up your first deal, and collect your assignment fee.",
   },
 ];
 
@@ -282,9 +283,6 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            <div className="lp-cta-after">
-              <CtaStrip onJoin={openPricing} />
-            </div>
           </div>
         </section>
 
@@ -294,47 +292,68 @@ export default function Home() {
               heading={<>Three ways <span>in.</span></>}
               sub="Start on Base. Upgrade to Pro when you close."
             />
-            <div className="lp-tier-stack">
-              <div className="lp-tier">
-                <div className="lp-tier-crown">{"\u{1F451}"}</div>
-                <div className="lp-tier-name">Base</div>
-                <div className="lp-tier-price"><b>$19.99</b><span> / month</span></div>
-                <ul className="lp-tier-feats">
-                  <li>Discord community access</li>
-                  <li>3x/week live calls</li>
-                  <li>Full 13-lesson curriculum</li>
-                  <li>Deal analyzer + templates</li>
-                  <li>14-day First Deal Sprint</li>
+            <div className="modal-tiers lp-pricing-tiers">
+
+              <div className="tier base">
+                <div className="tier-icon"><img src="/crowns/base.png" alt="Base" width={62} height={54} /></div>
+                <div className="tier-name">Base</div>
+                <div className="tier-price"><span className="cur">$</span><span className="amt">19.99</span></div>
+                <div className="tier-per">per month</div>
+                <div className="tier-tag">Pull up a chair. Learn live.</div>
+                <div className="tier-divider"></div>
+                <ul className="tier-feats">
+                  <li><span className="chk">{"✓"}</span>Live calls Mon Wed Fri</li>
+                  <li><span className="chk">{"✓"}</span>Full 13 lesson curriculum</li>
+                  <li><span className="chk">{"✓"}</span>Discord community</li>
+                  <li><span className="chk">{"✓"}</span>Studio deal analyzer</li>
+                  <li><span className="chk">{"✓"}</span>Buyer CRM plus directory</li>
+                  <li><span className="chk">{"✓"}</span>Contract templates</li>
+                  <li><span className="chk">{"✓"}</span>LLC and Bank Playbook</li>
+                  <li><span className="chk">{"✓"}</span>14 day First Deal Sprint</li>
                 </ul>
-                <button className="lp-tier-cta" onClick={openPricing}>Get started {"\u2192"}</button>
+                <button className="tier-cta" onClick={openPricing}>Choose Base {"→"}</button>
               </div>
-              <div className="lp-tier pro">
-                <span className="lp-tier-badge">Most Popular</span>
-                <div className="lp-tier-crown">{"\u{1F451}"}</div>
-                <div className="lp-tier-name">Pro</div>
-                <div className="lp-tier-price"><b>$49.99</b><span> / month</span></div>
-                <ul className="lp-tier-feats">
-                  <li>Everything in Base</li>
-                  <li><b>We close deals with you {"\u00b7"} 60% to you</b></li>
-                  <li>Full buyer network access</li>
-                  <li>Auto-fill contracts + Proof of Funds</li>
-                  <li>All call recordings + priority DM</li>
+
+              <div className="tier pro">
+                <div className="ribbon">Most Popular</div>
+                <div className="tier-icon"><img src="/crowns/pro.png" alt="Pro" width={62} height={54} /></div>
+                <div className="tier-name">Pro</div>
+                <div className="tier-price"><span className="cur">$</span><span className="amt">49.99</span></div>
+                <div className="tier-per">per month</div>
+                <div className="tier-tag">Everything in Base plus we JV your deals.</div>
+                <div className="tier-divider"></div>
+                <ul className="tier-feats">
+                  <li className="hero"><span className="chk">{"✓"}</span>JV on your deals, keep 60%</li>
+                  <li><span className="chk">{"✓"}</span>Everything in Base</li>
+                  <li><span className="chk">{"✓"}</span>Contract generator (auto fill)</li>
+                  <li><span className="chk">{"✓"}</span>Proof of Funds letters</li>
+                  <li><span className="chk">{"✓"}</span>Complete buyer network access</li>
+                  <li><span className="chk">{"✓"}</span>All previous call recordings</li>
+                  <li><span className="chk">{"✓"}</span>Priority DM support</li>
                 </ul>
-                <button className="lp-tier-cta" onClick={openPricing}>Join Pro {"\u2192"}</button>
+                <button className="tier-cta" onClick={openPricing}>Choose Pro {"→"}</button>
               </div>
-              <div className="lp-tier ultra">
-                <span className="lp-tier-badge">Coming Soon</span>
-                <div className="lp-tier-crown">{"\u{1F451}"}</div>
-                <div className="lp-tier-name">Ultra</div>
-                <div className="lp-tier-price"><b>$249</b><span> / month</span></div>
-                <ul className="lp-tier-feats">
-                  <li>{"Direct DM with William & Keegan"}</li>
-                  <li>Monthly mastermind call</li>
-                  <li>Founder review of your offers</li>
-                  <li>First 10: $149/mo locked forever</li>
+
+              <div className="tier ultra">
+                <div className="ribbon coming">Coming Soon</div>
+                <div className="tier-icon"><img src="/crowns/ultra.png" alt="Ultra" width={62} height={54} /></div>
+                <div className="tier-name">Ultra</div>
+                <div className="tier-price"><span className="cur">$</span><span className="amt">249</span></div>
+                <div className="tier-per">per month {"•"} 25 seats</div>
+                <div className="tier-tag">Get in the room with William.</div>
+                <div className="tier-divider"></div>
+                <ul className="tier-feats">
+                  <li><span className="chk">{"✓"}</span>Everything in Pro</li>
+                  <li><span className="chk">{"✓"}</span>Direct DM to William</li>
+                  <li><span className="chk">{"✓"}</span>Monthly Mastermind Call</li>
+                  <li><span className="chk">{"✓"}</span>Founder review of first 3 offers</li>
+                  <li><span className="chk">{"✓"}</span>Priority JV queue (24hr)</li>
+                  <li><span className="chk">{"✓"}</span>Private Ultra Discord channel</li>
+                  <li><span className="chk">{"✓"}</span>First 10 lock $149 forever</li>
                 </ul>
-                <button className="lp-tier-cta" disabled>Notify me</button>
+                <button className="tier-cta">Coming Soon</button>
               </div>
+
             </div>
           </div>
         </section>
