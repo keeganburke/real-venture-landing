@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Real Venture | Learn Secured Wholesaling",
   description:
-    "Live coaching three days a week, a full course, deal analyzer, buyer CRM, and contract templates. Everything between you and your first assignment fee.",
+    "Live coaching 7x/week, a full course, deal analyzer, buyer CRM, and contract templates. Everything between you and your first assignment fee.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

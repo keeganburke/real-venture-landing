@@ -41,7 +41,7 @@ const LP_STORIES = [
 const PLANS = {
   base: {
     key: "base" as const,
-    name: "Base",
+    name: "Real Venture Studio",
     price: "$19.99",
     cadence: "per month",
     tagline: "The core wholesaling toolkit",
@@ -50,7 +50,7 @@ const PLANS = {
   },
   pro: {
     key: "pro" as const,
-    name: "Pro",
+    name: "Real Venture Studio Pro",
     price: "$49.99",
     cadence: "per month",
     tagline: "Everything to close your first deal fast",
@@ -332,14 +332,15 @@ export default function Home() {
             <div className="modal-tiers lp-pricing-tiers">
 
               <div className="tier base">
-                <div className="tier-icon"><img src="/crowns/base.png" alt="Base" width={62} height={54} /></div>
-                <div className="tier-name">Base</div>
+                <div className="tier-icon"><img src="/crowns/base.png" alt="Real Venture Studio" width={62} height={54} /></div>
+                <div className="tier-name">Real Venture Studio</div>
+                <div className="tier-tag">all-in-one software</div>
                 <div className="tier-price"><span className="cur">$</span><span className="amt">19.99</span></div>
                 <div className="tier-per">/ per month</div>
                 <div className="tier-tag">Learn the entire process, start to finish.</div>
                 <div className="tier-divider"></div>
                 <ul className="tier-feats">
-                  <li><span className="chk">{"✓"}</span>Live calls 7 days a week</li>
+                  <li><span className="chk">{"✓"}</span>Live coaching 7x/week</li>
                   <li><span className="chk">{"✓"}</span>JV deals, keep 50%</li>
                   <li><span className="chk">{"✓"}</span>Studio deal analyzer</li>
                   <li><span className="chk">{"✓"}</span>Buyer network access</li>
@@ -350,13 +351,14 @@ export default function Home() {
                   <li><span className="chk">{"✓"}</span>Call recordings</li>
                   <li><span className="chk">{"✓"}</span>LLC and Bank Playbook</li>
                 </ul>
-                <button type="button" className="tier-cta" onClick={() => openPricingAt("base")}>Choose Base {"→"}</button>
+                <button type="button" className="tier-cta" onClick={() => openPricingAt("base")}>Choose Real Venture Studio {"→"}</button>
               </div>
 
               <div className="tier pro">
                 <div className="ribbon">Most Popular</div>
-                <div className="tier-icon"><img src="/crowns/pro.png" alt="Pro" width={62} height={54} /></div>
-                <div className="tier-name">Pro</div>
+                <div className="tier-icon"><img src="/crowns/pro.png" alt="Real Venture Studio Pro" width={62} height={54} /></div>
+                <div className="tier-name">Real Venture Studio Pro</div>
+                <div className="tier-tag">everything unlocked</div>
                 <div className="tier-price"><span className="cur">$</span><span className="amt">49.99</span></div>
                 <div className="tier-per">/ per month</div>
                 <div className="tier-tag">Stop learning, start closing.</div>
@@ -369,7 +371,7 @@ export default function Home() {
                   <li><span className="chk">{"✓"}</span>First look at incoming buyers</li>
                   <li><span className="chk">{"✓"}</span>Priority DM + Deal support</li>
                 </ul>
-                <button type="button" className="tier-cta" onClick={() => openPricingAt("pro")}>Choose Pro {"→"}</button>
+                <button type="button" className="tier-cta" onClick={() => openPricingAt("pro")}>Choose Real Venture Studio Pro {"→"}</button>
               </div>
 
               <div className="tier ultra">
@@ -463,7 +465,7 @@ export default function Home() {
                   <li>Wake up on your own schedule</li>
                   <li>Get paid per deal, uncapped</li>
                   <li>Direct access to William + Keegan every day</li>
-                  <li>Live coaching 6x/week</li>
+                  <li>Live coaching 7x/week</li>
                   <li>Vetted buyer network on tap</li>
                   <li>Deal analyzer + contract templates</li>
                   <li>350+ members closing deals with you</li>
@@ -534,14 +536,15 @@ export default function Home() {
             <div className="modal-tiers">
 
               <div className="tier base">
-                <div className="tier-icon"><img src="/crowns/base.png" alt="Base" width={62} height={54} /></div>
-                <div className="tier-name">Base</div>
+                <div className="tier-icon"><img src="/crowns/base.png" alt="Real Venture Studio" width={62} height={54} /></div>
+                <div className="tier-name">Real Venture Studio</div>
+                <div className="tier-tag">all-in-one software</div>
                 <div className="tier-price"><span className="cur">$</span><span className="amt">19.99</span></div>
                 <div className="tier-per">/ per month</div>
                 <div className="tier-tag">Learn the entire process, start to finish.</div>
                 <div className="tier-divider"></div>
                 <ul className="tier-feats">
-                  <li><span className="chk">{"✓"}</span>Live calls 7 days a week</li>
+                  <li><span className="chk">{"✓"}</span>Live coaching 7x/week</li>
                   <li><span className="chk">{"✓"}</span>JV deals, keep 50%</li>
                   <li><span className="chk">{"✓"}</span>Studio deal analyzer</li>
                   <li><span className="chk">{"✓"}</span>Buyer network access</li>
@@ -552,13 +555,14 @@ export default function Home() {
                   <li><span className="chk">{"✓"}</span>Call recordings</li>
                   <li><span className="chk">{"✓"}</span>LLC and Bank Playbook</li>
                 </ul>
-                <button type="button" className="tier-cta" onClick={() => choosePlan("base")}>Choose Base {"→"}</button>
+                <button type="button" className="tier-cta" onClick={() => choosePlan("base")}>Choose Real Venture Studio {"→"}</button>
               </div>
 
               <div className="tier pro">
                 <div className="ribbon">Most Popular</div>
-                <div className="tier-icon"><img src="/crowns/pro.png" alt="Pro" width={62} height={54} /></div>
-                <div className="tier-name">Pro</div>
+                <div className="tier-icon"><img src="/crowns/pro.png" alt="Real Venture Studio Pro" width={62} height={54} /></div>
+                <div className="tier-name">Real Venture Studio Pro</div>
+                <div className="tier-tag">everything unlocked</div>
                 <div className="tier-price"><span className="cur">$</span><span className="amt">49.99</span></div>
                 <div className="tier-per">/ per month</div>
                 <div className="tier-tag">Stop learning, start closing.</div>
@@ -571,7 +575,7 @@ export default function Home() {
                   <li><span className="chk">{"✓"}</span>First look at incoming buyers</li>
                   <li><span className="chk">{"✓"}</span>Priority DM + Deal support</li>
                 </ul>
-                <button type="button" className="tier-cta" onClick={() => choosePlan("pro")}>Choose Pro {"→"}</button>
+                <button type="button" className="tier-cta" onClick={() => choosePlan("pro")}>Choose Real Venture Studio Pro {"→"}</button>
               </div>
 
               <div className="tier ultra">
