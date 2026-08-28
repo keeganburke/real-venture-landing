@@ -13,7 +13,7 @@ function formatRenewal(value: unknown): string | null {
 // field. TODO: confirm real field names against a production response.
 const FALLBACK: MembershipSummary = {
   membershipId: null,
-  planName: "Real Venture Studio Pro",
+  planName: "Pro",
   price: "$49.99 / month",
   status: "Active",
   renewalDate: null,

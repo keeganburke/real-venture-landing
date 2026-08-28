@@ -103,7 +103,7 @@ export default function ManageMembershipClient({ membership }: Props) {
         open={cancelOpen}
         onClose={() => setCancelOpen(false)}
         membershipId={membership.membershipId ?? ""}
-        plan={membership.planName || "Real Venture Studio Pro"}
+        plan={membership.planName || "Pro"}
       />
     </main>
   );
