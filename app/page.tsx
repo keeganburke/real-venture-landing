@@ -675,6 +675,35 @@ export default function Home() {
 
             {step === "checkout" && selectedPlan && (
               <div className="modal-step modal-step-narrow" key="step-checkout">
+                <div className="checkout-step-header">
+                  <div className="checkout-eyebrow">
+                    <span aria-hidden="true">🔒</span>
+                    <span>SECURE CHECKOUT</span>
+                  </div>
+                  <h2 className="checkout-title">Complete your purchase</h2>
+                  <div className="addons-tier-summary">
+                    <div className={`addons-tier-crown ${PLANS[selectedPlan].crownColor}`}>
+                      <img src={`/crowns/${PLANS[selectedPlan].key}.png`} alt={PLANS[selectedPlan].name} width={44} height={38} />
+                    </div>
+                    <div className="addons-tier-meta">
+                      <div className="co-plan-name">{PLANS[selectedPlan].name}</div>
+                      <div className="co-plan-tagline">{PLANS[selectedPlan].tagline}</div>
+                    </div>
+                    <div className="co-plan-right">
+                      <div className="co-plan-price">{PLANS[selectedPlan].price}</div>
+                      <div className="co-plan-cadence">{PLANS[selectedPlan].cadence}</div>
+                    </div>
+                  </div>
+                  <div className="checkout-trust-row">
+                    <span className="checkout-trust-item">
+                      <span aria-hidden="true">🔒</span> Encrypted
+                    </span>
+                    <span className="checkout-trust-dot" aria-hidden="true">·</span>
+                    <span className="checkout-trust-item">Cancel anytime</span>
+                    <span className="checkout-trust-dot" aria-hidden="true">·</span>
+                    <span className="checkout-trust-item">Powered by Whop</span>
+                  </div>
+                </div>
                 <div className="modal-checkout-wrap">
                   <WhopCheckoutEmbed
                     planId={PLANS[selectedPlan].planId}

@@ -4140,3 +4140,68 @@ a.tier-cta {
     transition: none;
   }
 }
+
+/* ============================================================================
+   CHECKOUT STEP HEADER
+   Trust framing above the embedded Whop checkout: eyebrow, title, order
+   summary (reuses addons-tier-summary), trust row.
+   ============================================================================ */
+
+.checkout-step-header {
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: center;
+}
+.checkout-step-header .addons-tier-summary {
+  text-align: left;
+}
+
+.checkout-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #F5C560;
+  background: rgba(245, 197, 96, 0.08);
+  border: 1px solid rgba(245, 197, 96, 0.3);
+  border-radius: 999px;
+  padding: 6px 12px;
+  margin-bottom: 16px;
+}
+
+.checkout-title {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin-bottom: 20px;
+}
+
+.checkout-trust-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.checkout-trust-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.checkout-trust-dot {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+@media (min-width: 900px) {
+  .checkout-title { font-size: 32px; }
+}
