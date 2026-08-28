@@ -1951,3 +1951,676 @@ a.learn-lesson-row {
     animation: none;
   }
 }
+
+/* ============================================================================
+   LEARN FEATURE — STUDIO DESIGN PORT
+   Redefines .learn-* and .lesson-* rules using Studio's design system.
+   Later rules win via cascade; existing class names unchanged so TSX is untouched.
+   Font: Cabinet Grotesk (substituted for Studio's Plus Jakarta Sans).
+   Animations: pure CSS (no framer-motion). Card stagger uses --i custom property.
+   Rules marked [Part 2] are defined-but-unused until that markup lands.
+   ============================================================================ */
+
+/* --- Scoped token block for learn/lesson surfaces --- */
+.learn-page,
+.lesson-page {
+  --lp-card: #141418;
+  --lp-line: #2a2a32;
+  --lp-line-soft: rgba(255,255,255,0.06);
+  --lp-gold: #E5B547;
+  --lp-gold-bright: #FFE89A;
+  --lp-gold-deep: #B8881F;
+  --lp-cta: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  --lp-radius: 14px;
+  --lp-radius-lg: 18px;
+  --lp-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  --lp-shadow-hover: 0 12px 48px rgba(229,181,71,0.15), 0 0 0 1px rgba(229,181,71,0.2);
+  --lp-mut: #8a8a92;
+  --lp-mut-hi: #b0b0b8;
+}
+
+/* --- Catalog + course shell: Studio width + tri-radial ambient glow --- */
+.learn-shell { position: relative; max-width: 1100px; }
+.learn-shell::before {
+  content: "";
+  position: absolute;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1000px;
+  max-width: 100vw;
+  height: 460px;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(600px 260px at 50% 0%, rgba(229, 181, 71, 0.10), transparent 68%),
+    radial-gradient(500px 300px at 15% 60%, rgba(95, 179, 224, 0.045), transparent 70%),
+    radial-gradient(500px 300px at 88% 70%, rgba(196, 187, 255, 0.05), transparent 70%);
+}
+.learn-shell > * { position: relative; z-index: 1; }
+
+/* --- Catalog header --- */
+.learn-header { text-align: center; margin-bottom: 34px; }
+.learn-title {
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.028em;
+  line-height: 1.05;
+}
+.learn-sub {
+  color: var(--lp-mut);
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.5;
+  max-width: 520px;
+  margin: 8px auto 0;
+}
+/* [Part 2] Studio eyebrow, no landing element yet */
+.learn-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--lp-gold);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+/* [Part 2] Studio combined progress card */
+.learn-progress {
+  background: linear-gradient(180deg, #1a1a20, #111116);
+  border: 1.5px solid var(--lp-line);
+  border-radius: var(--lp-radius-lg);
+  padding: 20px 22px;
+  margin-bottom: 28px;
+}
+.learn-progress-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.learn-progress-label {
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.learn-progress-count {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--lp-gold);
+}
+
+/* --- Progress bars (catalog cards + course head) --- */
+.learn-course-bar {
+  height: 6px;
+  background: #232328;
+  border: none;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.learn-course-fill {
+  display: block;
+  height: 100%;
+  background: var(--lp-cta);
+  border-radius: 99px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --- Stat tiles (Studio .stat construction) --- */
+.learn-stat-card {
+  background: var(--lp-card);
+  border: 1px solid var(--lp-line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  text-align: center;
+}
+.learn-stat-num {
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  background-image: var(--lp-cta);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.learn-stat-lbl {
+  margin-top: 6px;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--lp-mut);
+}
+
+/* --- Catalog sections become Studio's 3/2/1-col card grid --- */
+.learn-section {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.learn-section-head { grid-column: 1 / -1; margin-bottom: 0; }
+
+/* --- Course card: Studio .card construction, hairline wipe, stagger --- */
+.learn-course-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  background: linear-gradient(180deg, #1a1a20, #111116);
+  border: 1.5px solid var(--lp-line);
+  border-radius: 16px;
+  padding: 18px 18px 16px;
+  margin-bottom: 0;
+  text-decoration: none;
+  color: inherit;
+  overflow: hidden;
+  transition:
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s ease,
+    box-shadow 0.3s ease;
+  animation: fadeUpCard 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 0.035s);
+}
+.learn-course-card:hover {
+  background: linear-gradient(180deg, #1a1a20, #111116);
+  transform: translateY(-3px);
+  border-color: rgba(229, 181, 71, 0.55);
+  box-shadow: 0 18px 44px -22px rgba(229, 181, 71, 0.55);
+}
+.learn-course-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: var(--lp-cta);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.learn-course-card:hover::after { transform: scaleX(1); }
+
+.learn-course-thumb {
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.learn-course-card:hover .learn-course-thumb {
+  transform: rotate(-6deg) scale(1.14);
+}
+.learn-course-title {
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.012em;
+  line-height: 1.32;
+}
+.learn-course-status {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--lp-mut);
+}
+/* Studio .cardFoot: footer strip pinned to the card bottom */
+.learn-course-progress {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--lp-line);
+  width: 100%;
+}
+.learn-course-progress .learn-course-bar { flex: 1; width: auto; }
+.learn-course-pct {
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--lp-gold);
+}
+/* [Part 2] Studio card number pill + "Open" arrow */
+.learn-card-num {
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: var(--lp-mut);
+  border: 1px solid #3a3a44;
+  border-radius: 99px;
+  padding: 4px 10px;
+}
+.learn-card-go {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--lp-gold);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: gap 0.25s ease;
+}
+.learn-course-card:hover .learn-card-go { gap: 9px; }
+
+@keyframes fadeUpCard {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Course-detail lesson rows: Studio card treatment + stagger --- */
+.learn-lesson-row {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, #1a1a20, #111116);
+  border: 1.5px solid var(--lp-line);
+  border-radius: var(--lp-radius);
+  transition:
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.25s ease,
+    box-shadow 0.3s ease;
+  animation: fadeUpCard 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 0.035s);
+}
+.learn-lesson-row:not(.locked):hover {
+  background: linear-gradient(180deg, #1a1a20, #111116);
+  transform: translateY(-3px);
+  border-color: rgba(229, 181, 71, 0.55);
+  box-shadow: 0 18px 44px -22px rgba(229, 181, 71, 0.55);
+}
+.learn-lesson-row::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1.5px;
+  background: var(--lp-cta);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.learn-lesson-row:not(.locked):hover::after { transform: scaleX(1); }
+
+/* --- Back links: Studio gap-widening hover --- */
+.learn-back,
+.lesson-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--lp-mut);
+  text-decoration: none;
+  transition: color 0.2s ease, gap 0.2s ease;
+}
+.learn-back:hover,
+.lesson-back:hover {
+  color: var(--lp-gold);
+  gap: 11px;
+}
+
+/* --- Lesson player: Studio layout + sidebar --- */
+.lesson-shell {
+  display: grid;
+  grid-template-columns: 268px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 32px 24px 96px;
+}
+.lesson-main {
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+.lesson-sidebar {
+  position: sticky;
+  top: 92px;
+  background: linear-gradient(180deg, #1a1a20, #111116);
+  border: 1.5px solid var(--lp-line);
+  border-right: 1.5px solid var(--lp-line);
+  border-radius: 16px;
+  padding: 8px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+.lesson-sidebar-title {
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-size: 10.5px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: var(--lp-mut);
+  padding: 12px 12px 10px;
+  margin-bottom: 0;
+}
+.lesson-list-row { animation: fadeUpCard 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: calc(var(--i, 0) * 0.03s); }
+.lesson-list-inner {
+  padding: 9px 12px;
+  border-radius: 10px;
+  color: var(--lp-mut-hi);
+  border: 1px solid transparent;
+  font-size: 12.5px;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.lesson-list-row:not(.is-locked):not(.is-current) .lesson-list-inner:hover {
+  background: #1c1c22;
+  color: #f4f4f5;
+}
+.lesson-list-row.is-current .lesson-list-inner {
+  background: rgba(229, 181, 71, 0.10);
+  border-color: rgba(229, 181, 71, 0.35);
+  color: var(--lp-gold-bright);
+  box-shadow: none;
+}
+.lesson-list-num {
+  flex: 0 0 20px;
+  width: auto;
+  height: auto;
+  background: none;
+  border: none;
+  border-radius: 0;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.5;
+  color: var(--lp-mut);
+  font-variant-numeric: tabular-nums;
+  display: inline-flex;
+  justify-content: flex-start;
+}
+.lesson-list-row.is-current .lesson-list-num { color: var(--lp-gold); }
+.lesson-list-row.is-complete .lesson-list-num { background: none; color: var(--lp-gold); }
+.lesson-list-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* --- Lesson main column: Studio typography --- */
+.lesson-counter {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--lp-gold);
+  font-weight: 700;
+}
+.lesson-title {
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.028em;
+  line-height: 1.1;
+}
+/* [Part 2] Studio meta row + emoji + section labels */
+.lesson-title-emoji {
+  font-size: 30px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.55));
+}
+.lesson-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+  margin-bottom: 26px;
+  color: var(--lp-mut);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.lesson-sep { color: #3a3a40; user-select: none; }
+.lesson-section-head {
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: var(--lp-mut);
+  margin-bottom: 12px;
+}
+
+/* --- Video slot: Studio frame + gold play button on the placeholder --- */
+.lesson-video,
+.lesson-video-placeholder {
+  border-radius: 16px;
+  border: 1.5px solid var(--lp-line);
+}
+.lesson-video-placeholder {
+  position: relative;
+  background:
+    radial-gradient(500px 220px at 50% 0%, rgba(229, 181, 71, 0.07), transparent 70%),
+    linear-gradient(160deg, #17171b, #0d0d10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--lp-mut);
+  padding-top: 64px;
+}
+.lesson-video-placeholder::before {
+  content: "";
+  position: absolute;
+  top: calc(50% - 45px);
+  left: calc(50% - 31px);
+  width: 62px;
+  height: 62px;
+  border-radius: 99px;
+  background: var(--lp-cta);
+  box-shadow: 0 14px 40px -12px rgba(229, 181, 71, 0.6);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.lesson-video-placeholder::after {
+  content: "";
+  position: absolute;
+  top: calc(50% - 25px);
+  left: calc(50% - 6px);
+  border-left: 17px solid #1a1208;
+  border-top: 11px solid transparent;
+  border-bottom: 11px solid transparent;
+}
+.lesson-video-placeholder:hover::before { transform: scale(1.07); }
+/* [Part 2] Studio corner chips for the video frame */
+.lesson-video-len {
+  position: absolute;
+  bottom: 12px;
+  right: 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--lp-mut-hi);
+  background: rgba(0, 0, 0, 0.62);
+  padding: 4px 9px;
+  border-radius: 7px;
+}
+.lesson-video-note {
+  position: absolute;
+  bottom: 12px;
+  left: 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--lp-mut);
+}
+
+/* --- Written body: Studio panel --- */
+.lesson-text {
+  background: linear-gradient(180deg, #141418, #0e0e12);
+  border: 1px solid var(--lp-line);
+  border-radius: 16px;
+  padding: 22px 24px;
+}
+.lesson-text p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--lp-mut-hi);
+  margin: 0;
+}
+.lesson-text p + p { margin-top: 14px; }
+/* [Part 2] Studio monospace placeholder style */
+.lesson-placeholder {
+  color: var(--lp-mut);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+}
+
+/* --- Quiz: Studio panel + option construction --- */
+.lesson-quiz {
+  background: linear-gradient(180deg, #141418, #0e0e12);
+  border: 1px solid var(--lp-line);
+  border-radius: 16px;
+  padding: 22px 24px;
+}
+.lesson-quiz-question {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+  margin-bottom: 12px;
+}
+.lesson-quiz-options { gap: 8px; }
+.lesson-quiz-option {
+  background: var(--lp-card);
+  border: 1px solid var(--lp-line);
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 13px;
+  color: var(--lp-mut-hi);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.lesson-quiz-option:hover:not(:disabled) {
+  border-color: #3a3a44;
+  background: #1c1c22;
+}
+/* [Part 2] Studio question number accent */
+.lesson-quiz-num {
+  color: var(--lp-gold);
+  margin-right: 8px;
+  font-weight: 800;
+}
+
+/* [Part 2] Studio "Mark lesson complete" CTA with shine sweep */
+.lesson-complete {
+  margin-top: 30px;
+  width: 100%;
+  background: var(--lp-cta);
+  color: #1a1208;
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-size: 14.5px;
+  font-weight: 800;
+  padding: 15px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 32px -12px rgba(229, 181, 71, 0.6);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+}
+.lesson-complete:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 38px -12px rgba(229, 181, 71, 0.7);
+}
+.lesson-complete::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.7s ease;
+}
+.lesson-complete:hover::after { left: 120%; }
+
+/* [Part 2] Studio prev/next pager */
+.lesson-pager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+.lesson-pager-btn {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--lp-card);
+  border: 1px solid var(--lp-line);
+  border-radius: 12px;
+  padding: 13px 16px;
+  text-decoration: none;
+  color: #f4f4f5;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+.lesson-pager-btn:hover {
+  border-color: #3a3a44;
+  background: #1c1c22;
+  transform: translateY(-1px);
+}
+.lesson-pager-next { text-align: right; align-items: flex-end; }
+.lesson-pager-key {
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 800;
+  color: var(--lp-mut);
+}
+.lesson-pager-title {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.lesson-pager-disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* --- Responsive (Studio breakpoints, selector-remapped) --- */
+@media (max-width: 940px) {
+  .lesson-shell { grid-template-columns: 1fr; }
+  .lesson-sidebar { position: static; max-height: none; }
+}
+@media (max-width: 900px) {
+  .learn-section { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .learn-section { grid-template-columns: 1fr; }
+  .learn-title { font-size: 28px; }
+  .lesson-title { font-size: 24px; }
+  .lesson-shell { padding: 24px 16px 72px; }
+}
+
+/* --- prefers-reduced-motion (Studio guard, selector-remapped) --- */
+@media (prefers-reduced-motion: reduce) {
+  .learn-course-card,
+  .learn-course-card:hover,
+  .learn-course-thumb,
+  .learn-course-card:hover .learn-course-thumb,
+  .learn-course-card::after,
+  .learn-course-card:hover::after,
+  .learn-lesson-row,
+  .learn-lesson-row::after,
+  .learn-course-fill,
+  .lesson-list-row,
+  .lesson-video-placeholder::before,
+  .lesson-video-placeholder:hover::before,
+  .lesson-complete,
+  .lesson-complete:hover,
+  .lesson-complete::after,
+  .lesson-pager-btn,
+  .lesson-back,
+  .learn-back {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}

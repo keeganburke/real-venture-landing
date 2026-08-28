@@ -70,13 +70,18 @@ export default function LearnClient({ courses, lessonCounts, completedCounts }: 
                 <span className="learn-section-emoji">{cat.emoji}</span>
                 {cat.label}
               </div>
-              {catCourses.map((course) => {
+              {catCourses.map((course, index) => {
                 const total = lessonCounts[course.id] ?? 0;
                 const done = completedCounts[course.id] ?? 0;
                 const pct = total > 0 ? Math.round((done / total) * 100) : 0;
                 const status = courseStatus(done, total);
                 return (
-                  <Link className="learn-course-card" href={`/dashboard/learn/${course.slug}`} key={course.id}>
+                  <Link
+                    className="learn-course-card"
+                    href={`/dashboard/learn/${course.slug}`}
+                    key={course.id}
+                    style={{ "--i": String(index) } as React.CSSProperties}
+                  >
                     <div className="learn-course-thumb">📚</div>
                     <div className="learn-course-meta">
                       <div className="learn-course-title">

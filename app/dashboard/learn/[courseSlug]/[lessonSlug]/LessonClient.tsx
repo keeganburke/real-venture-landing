@@ -75,7 +75,7 @@ export default function LessonClient({
                 (isLocked ? " is-locked" : "");
 
               return (
-                <li key={lesson.id} className={rowClass}>
+                <li key={lesson.id} className={rowClass} style={{ "--i": String(i) } as React.CSSProperties}>
                   {isLocked ? (
                     <div className="lesson-list-inner" aria-disabled="true">
                       {inner}

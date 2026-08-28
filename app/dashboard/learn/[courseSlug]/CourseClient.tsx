@@ -115,6 +115,7 @@ export default function CourseClient({ course, lessons, completedLessonIds, user
                 className={rowClass}
                 key={lesson.id}
                 onClick={() => onRowClick(lesson, lockReason)}
+                style={{ "--i": String(index) } as React.CSSProperties}
               >
                 {inner}
               </button>
@@ -123,6 +124,7 @@ export default function CourseClient({ course, lessons, completedLessonIds, user
                 href={`/dashboard/learn/${course.slug}/${lesson.slug}`}
                 className={rowClass}
                 key={lesson.id}
+                style={{ "--i": String(index) } as React.CSSProperties}
               >
                 {inner}
               </Link>
