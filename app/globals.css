@@ -4090,16 +4090,17 @@ a.tier-cta {
   gap: 16px;
   padding: 18px 20px;
   background: #141418;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-left: 3px solid rgba(255, 255, 255, 0.2);
+  border: 1.5px solid rgba(255, 255, 255, 0.06);
   border-radius: 14px;
   margin-bottom: 20px;
 }
 .checkout-summary.tier-blue {
-  border-left-color: #5FB3E0;
+  border-color: rgba(95, 179, 224, 0.5);
+  box-shadow: inset 0 0 0 1px rgba(95, 179, 224, 0.15);
 }
 .checkout-summary.tier-gold {
-  border-left-color: #F5C560;
+  border-color: rgba(229, 181, 71, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(229, 181, 71, 0.2);
 }
 
 .checkout-summary-info {

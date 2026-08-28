@@ -521,7 +521,9 @@ export default function Home() {
         }}
       >
         <div className="modal">
-          <button className="modal-close" onClick={closePricing}>{"×"}</button>
+          {step !== "checkout" && (
+            <button className="modal-close" onClick={closePricing} aria-label="Close">{"×"}</button>
+          )}
           <div className="modal-body">
             {step === "pricing" && (
             <div className="modal-step" key="step-pricing">
