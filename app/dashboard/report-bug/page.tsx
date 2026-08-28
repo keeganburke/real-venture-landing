@@ -12,7 +12,7 @@ export default function ReportBugPage() {
         <p className="hub2-placeholder-sub">
           Bug report form coming here soon. For now, DM Keegan or William in Discord with the details.
         </p>
-        <a href="https://whop.com/realventure/" target="_blank" rel="noopener noreferrer" className="hub2-placeholder-cta">
+        <a href="/api/discord/connect" target="_blank" rel="noopener noreferrer" className="hub2-placeholder-cta">
           Open Discord ↗
         </a>
       </div>

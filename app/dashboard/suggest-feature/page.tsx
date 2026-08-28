@@ -12,7 +12,7 @@ export default function SuggestFeaturePage() {
         <p className="hub2-placeholder-sub">
           Feature request form coming here soon. For now, share ideas in Discord and Keegan will pick them up.
         </p>
-        <a href="https://whop.com/realventure/" target="_blank" rel="noopener noreferrer" className="hub2-placeholder-cta">
+        <a href="/api/discord/connect" target="_blank" rel="noopener noreferrer" className="hub2-placeholder-cta">
           Open Discord ↗
         </a>
       </div>
