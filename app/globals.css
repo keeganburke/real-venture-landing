@@ -3622,3 +3622,327 @@ a.hub2-menu {
     transition: none !important;
   }
 }
+
+/* ============================================================================
+   CHECKOUT (co- prefix)
+   /checkout/[plan]: plan summary + add-on picker + Whop hosted checkout CTA.
+   Public page; same gold/Cabinet Grotesk language as the landing.
+   ============================================================================ */
+
+.co-page {
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: #ffffff;
+  font-family: "Inter", ui-sans-serif, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+.co-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(245, 197, 96, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 197, 96, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+.co-page::after {
+  content: "";
+  position: fixed;
+  top: -120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 420px;
+  background: radial-gradient(circle, rgba(245, 197, 96, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.co-shell {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 24px 96px;
+}
+
+.co-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding: 4px 0 16px;
+  background: rgba(10, 10, 10, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.co-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+.co-back:hover {
+  color: #F5C560;
+}
+
+.co-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+.co-eyebrow {
+  display: inline-block;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #F5C560;
+  background: rgba(245, 197, 96, 0.12);
+  border: 1px solid rgba(245, 197, 96, 0.25);
+  border-radius: 6px;
+  padding: 6px 12px;
+  margin-bottom: 14px;
+}
+.co-title {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 40px;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin-bottom: 10px;
+}
+.co-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.co-step-dot {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.co-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+.co-progress-fill {
+  height: 100%;
+  width: 66%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #FFE89A, #F5C560, #E5A544);
+}
+
+.co-plan-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #141418;
+  border: 1.5px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 24px;
+}
+.co-plan-name {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  color: #ffffff;
+}
+.co-plan-tagline {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 4px;
+}
+.co-plan-right {
+  text-align: right;
+  flex-shrink: 0;
+}
+.co-plan-price {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 26px;
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.co-plan-cadence {
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.co-addons {
+  margin-top: 32px;
+}
+.co-addons-head {
+  margin-bottom: 20px;
+}
+.co-addons-title {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 28px;
+  color: #ffffff;
+}
+.co-addons-sub {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 6px;
+}
+.co-addons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.co-addon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #141418;
+  border: 1.5px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 20px 24px;
+  transition: border-color 0.2s ease;
+}
+.co-addon:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+.co-addon.is-added {
+  border-color: rgba(245, 197, 96, 0.4);
+  box-shadow: 0 0 24px rgba(245, 197, 96, 0.08);
+}
+.co-addon.is-soon {
+  opacity: 0.6;
+}
+.co-addon-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.co-addon-title {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  color: #ffffff;
+}
+.co-addon-sub {
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.co-addon-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+.co-addon-price {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.co-addon-btn {
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.co-addon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.co-addon-btn.is-added {
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  border-color: transparent;
+  color: #0a0a0a;
+}
+.co-addon-btn.is-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.co-checkout-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 40px;
+  padding: 22px 32px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  color: #0a0a0a;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 17px;
+  text-decoration: none;
+  box-shadow: 0 0 0 1px rgba(255, 232, 154, 0.4), 0 12px 40px rgba(197, 125, 46, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.co-checkout-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px rgba(255, 232, 154, 0.6), 0 16px 48px rgba(197, 125, 46, 0.4);
+}
+.co-checkout-note {
+  text-align: center;
+  margin-top: 16px;
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+@media (min-width: 900px) {
+  .co-shell {
+    max-width: 960px;
+    padding: 60px 40px 120px;
+  }
+  .co-title { font-size: 48px; }
+  .co-plan-summary { padding: 28px 32px; }
+  .co-addon { padding: 24px 28px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .co-checkout-cta,
+  .co-checkout-cta:hover,
+  .co-addon,
+  .co-addon-btn,
+  .co-back {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+/* Pricing tier CTAs are now <Link> anchors sharing .tier-cta; new appended
+   selector (existing .tier-cta untouched) restores the button box behavior. */
+a.tier-cta {
+  display: block;
+  text-decoration: none;
+}

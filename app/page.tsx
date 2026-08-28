@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import NavDrawer from "./components/NavDrawer";
 import CtaStrip from "./components/CtaStrip";
 import SectionHead from "./components/SectionHead";
@@ -270,7 +271,7 @@ export default function Home() {
                   <li><span className="chk">{"✓"}</span>Call recordings</li>
                   <li><span className="chk">{"✓"}</span>LLC and Bank Playbook</li>
                 </ul>
-                <button className="tier-cta" onClick={openPricing}>Choose Base {"→"}</button>
+                <Link href="/checkout/base" className="tier-cta">Choose Base {"→"}</Link>
               </div>
 
               <div className="tier pro">
@@ -289,7 +290,7 @@ export default function Home() {
                   <li><span className="chk">{"✓"}</span>First look at incoming buyers</li>
                   <li><span className="chk">{"✓"}</span>Priority DM + Deal support</li>
                 </ul>
-                <button className="tier-cta" onClick={openPricing}>Choose Pro {"→"}</button>
+                <Link href="/checkout/pro" className="tier-cta">Choose Pro {"→"}</Link>
               </div>
 
               <div className="tier ultra">
@@ -468,7 +469,7 @@ export default function Home() {
                   <li><span className="chk">{"✓"}</span>Call recordings</li>
                   <li><span className="chk">{"✓"}</span>LLC and Bank Playbook</li>
                 </ul>
-                <button className="tier-cta">Choose Base {"→"}</button>
+                <Link href="/checkout/base" className="tier-cta">Choose Base {"→"}</Link>
               </div>
 
               <div className="tier pro">
@@ -487,7 +488,7 @@ export default function Home() {
                   <li><span className="chk">{"✓"}</span>First look at incoming buyers</li>
                   <li><span className="chk">{"✓"}</span>Priority DM + Deal support</li>
                 </ul>
-                <button className="tier-cta">Choose Pro {"→"}</button>
+                <Link href="/checkout/pro" className="tier-cta">Choose Pro {"→"}</Link>
               </div>
 
               <div className="tier ultra">
