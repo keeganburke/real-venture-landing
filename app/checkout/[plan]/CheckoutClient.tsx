@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { WhopCheckoutEmbed } from "@whop/checkout/react";
 
 type PlanConfig = {
   key: "base" | "pro";
@@ -9,7 +11,8 @@ type PlanConfig = {
   price: string;
   cadence: string;
   tagline: string;
-  whopCheckoutUrl: string;
+  planId: string;
+  whopCheckoutUrl: string; // legacy fallback, unused
 };
 
 type AddOn = {
@@ -27,7 +30,28 @@ const ADDONS: AddOn[] = [
 ];
 
 export default function CheckoutClient({ plan }: { plan: PlanConfig }) {
+  const router = useRouter();
   const [added, setAdded] = useState<Set<string>>(new Set());
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    if (checkoutOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [checkoutOpen]);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!checkoutOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setCheckoutOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [checkoutOpen]);
 
   const toggleAddon = (id: string) => {
     setAdded((prev) => {
@@ -36,6 +60,13 @@ export default function CheckoutClient({ plan }: { plan: PlanConfig }) {
       else next.add(id);
       return next;
     });
+  };
+
+  const handleComplete = (planId: string, receiptId?: string) => {
+    // Fires once on success; Whop guarantees onComplete after payment.
+    // Redirect to /login so the user can OAuth in and land in the dashboard.
+    console.log("Whop checkout complete", { planId, receiptId });
+    router.push("/login?justpurchased=1");
   };
 
   return (
@@ -115,16 +146,56 @@ export default function CheckoutClient({ plan }: { plan: PlanConfig }) {
           </div>
         </section>
 
-        <a href={plan.whopCheckoutUrl} className="co-checkout-cta">
+        <button
+          type="button"
+          className="co-checkout-cta"
+          onClick={() => setCheckoutOpen(true)}
+        >
           <span>Continue to checkout</span>
           <span aria-hidden="true">→</span>
-        </a>
+        </button>
 
         <p className="co-checkout-note">
           Add-ons above are optional. You can skip straight to checkout.
         </p>
 
       </div>
+
+      {checkoutOpen && (
+        <div
+          className="co-modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setCheckoutOpen(false);
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Complete your purchase"
+        >
+          <div className="co-modal">
+            <button
+              type="button"
+              className="co-modal-close"
+              onClick={() => setCheckoutOpen(false)}
+              aria-label="Close checkout"
+            >
+              ✕
+            </button>
+            <div className="co-modal-body">
+              <WhopCheckoutEmbed
+                planId={plan.planId}
+                theme="dark"
+                themeOptions={{
+                  backgroundColor: "#0f0f12",
+                  accentColor: "#E5A544",
+                  borderRadius: 12,
+                }}
+                skipRedirect
+                onComplete={handleComplete}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

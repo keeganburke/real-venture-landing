@@ -14,6 +14,7 @@ type PlanConfig = {
   price: string;
   cadence: string;
   tagline: string;
+  planId: string;
   whopCheckoutUrl: string;
 };
 
@@ -24,6 +25,7 @@ const PLANS: Record<PlanKey, PlanConfig> = {
     price: "$19.99",
     cadence: "per month",
     tagline: "The core wholesaling toolkit",
+    planId: "plan_2NqC2WJzV87QY",
     whopCheckoutUrl: "https://whop.com/checkout/plan_2NqC2WJzV87QY",
   },
   pro: {
@@ -32,6 +34,7 @@ const PLANS: Record<PlanKey, PlanConfig> = {
     price: "$49.99",
     cadence: "per month",
     tagline: "Everything to close your first deal fast",
+    planId: "plan_J8vFpCWME75W3",
     whopCheckoutUrl: "https://whop.com/checkout/plan_J8vFpCWME75W3",
   },
 };
