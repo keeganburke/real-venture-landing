@@ -522,15 +522,6 @@ export default function Home() {
       >
         <div className="modal">
           <button className="modal-close" onClick={closePricing}>{"×"}</button>
-          {step !== "pricing" && (
-            <button
-              type="button"
-              className="pricing-modal-back"
-              onClick={() => setStep(step === "checkout" ? "addons" : "pricing")}
-            >
-              {"←"} Back
-            </button>
-          )}
           <div className="modal-body">
             {step === "pricing" && (
             <div className="modal-step" key="step-pricing">
@@ -617,18 +608,23 @@ export default function Home() {
                     {PLANS[selectedPlan].name} · {PLANS[selectedPlan].price} {PLANS[selectedPlan].cadence} · optional one-time add-ons
                   </p>
                 </div>
-                <div className="addons-tier-summary">
-                  <div className={`addons-tier-crown ${PLANS[selectedPlan].crownColor}`}>
-                    <img src={`/crowns/${PLANS[selectedPlan].key}.png`} alt={PLANS[selectedPlan].name} width={44} height={38} />
+                <div className={`checkout-summary tier-${PLANS[selectedPlan].crownColor}`}>
+                  <div className="checkout-summary-info">
+                    <div className="checkout-summary-name">{PLANS[selectedPlan].name}</div>
+                    <div className="checkout-summary-tagline">{PLANS[selectedPlan].tagline}</div>
                   </div>
-                  <div className="addons-tier-meta">
-                    <div className="co-plan-name">{PLANS[selectedPlan].name}</div>
-                    <div className="co-plan-tagline">{PLANS[selectedPlan].tagline}</div>
+                  <div className="checkout-summary-price">
+                    <div className="checkout-summary-amount">{PLANS[selectedPlan].price}</div>
+                    <div className="checkout-summary-cadence">{PLANS[selectedPlan].cadence}</div>
                   </div>
-                  <div className="co-plan-right">
-                    <div className="co-plan-price">{PLANS[selectedPlan].price}</div>
-                    <div className="co-plan-cadence">{PLANS[selectedPlan].cadence}</div>
-                  </div>
+                  <button
+                    type="button"
+                    className="checkout-summary-back"
+                    onClick={() => setStep("pricing")}
+                  >
+                    <span aria-hidden="true">{"←"}</span>
+                    <span>Back</span>
+                  </button>
                 </div>
                 <div className="co-addons-list">
                   {ADDONS.map((addon) => {
@@ -675,34 +671,23 @@ export default function Home() {
 
             {step === "checkout" && selectedPlan && (
               <div className="modal-step modal-step-narrow" key="step-checkout">
-                <div className="checkout-step-header">
-                  <div className="checkout-eyebrow">
-                    <span aria-hidden="true">🔒</span>
-                    <span>SECURE CHECKOUT</span>
+                <div className={`checkout-summary tier-${PLANS[selectedPlan].crownColor}`}>
+                  <div className="checkout-summary-info">
+                    <div className="checkout-summary-name">{PLANS[selectedPlan].name}</div>
+                    <div className="checkout-summary-tagline">{PLANS[selectedPlan].tagline}</div>
                   </div>
-                  <h2 className="checkout-title">Complete your purchase</h2>
-                  <div className="addons-tier-summary">
-                    <div className={`addons-tier-crown ${PLANS[selectedPlan].crownColor}`}>
-                      <img src={`/crowns/${PLANS[selectedPlan].key}.png`} alt={PLANS[selectedPlan].name} width={44} height={38} />
-                    </div>
-                    <div className="addons-tier-meta">
-                      <div className="co-plan-name">{PLANS[selectedPlan].name}</div>
-                      <div className="co-plan-tagline">{PLANS[selectedPlan].tagline}</div>
-                    </div>
-                    <div className="co-plan-right">
-                      <div className="co-plan-price">{PLANS[selectedPlan].price}</div>
-                      <div className="co-plan-cadence">{PLANS[selectedPlan].cadence}</div>
-                    </div>
+                  <div className="checkout-summary-price">
+                    <div className="checkout-summary-amount">{PLANS[selectedPlan].price}</div>
+                    <div className="checkout-summary-cadence">{PLANS[selectedPlan].cadence}</div>
                   </div>
-                  <div className="checkout-trust-row">
-                    <span className="checkout-trust-item">
-                      <span aria-hidden="true">🔒</span> Encrypted
-                    </span>
-                    <span className="checkout-trust-dot" aria-hidden="true">·</span>
-                    <span className="checkout-trust-item">Cancel anytime</span>
-                    <span className="checkout-trust-dot" aria-hidden="true">·</span>
-                    <span className="checkout-trust-item">Powered by Whop</span>
-                  </div>
+                  <button
+                    type="button"
+                    className="checkout-summary-back"
+                    onClick={() => setStep("addons")}
+                  >
+                    <span aria-hidden="true">{"←"}</span>
+                    <span>Back</span>
+                  </button>
                 </div>
                 <div className="modal-checkout-wrap">
                   <WhopCheckoutEmbed
@@ -716,6 +701,9 @@ export default function Home() {
                     skipRedirect
                     onComplete={handleCheckoutComplete}
                   />
+                </div>
+                <div className="checkout-trust-footer">
+                  Secured by Whop <span aria-hidden="true">·</span> Encrypted <span aria-hidden="true">·</span> Cancel anytime
                 </div>
               </div>
             )}

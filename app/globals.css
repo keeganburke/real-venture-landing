@@ -4052,30 +4052,6 @@ a.tier-cta {
    Existing modal-* and co-* rules are reused untouched.
    ============================================================================ */
 
-.pricing-modal-back {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  height: 36px;
-  padding: 0 14px;
-  background: rgba(244, 233, 208, 0.08);
-  border: none;
-  border-radius: 99px;
-  color: var(--txt-dark);
-  font-family: "Cabinet Grotesk", sans-serif;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  z-index: 10;
-  transition: background 0.15s ease;
-}
-.pricing-modal-back:hover {
-  background: rgba(244, 233, 208, 0.14);
-}
-
 .modal-step {
   animation: modal-step-fade 0.2s ease-out;
 }
@@ -4090,44 +4066,6 @@ a.tier-cta {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.addons-tier-summary {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  background: #141418;
-  border: 1.5px solid rgba(255, 255, 255, 0.06);
-  border-radius: 14px;
-  padding: 20px 24px;
-  margin: 20px 0;
-  text-align: left;
-}
-.addons-tier-summary .co-plan-right {
-  margin-left: auto;
-  text-align: right;
-}
-.addons-tier-crown {
-  flex-shrink: 0;
-  width: 52px;
-  height: 46px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.addons-tier-crown img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-.addons-tier-crown.blue {
-  filter: drop-shadow(0 0 14px rgba(95, 179, 224, 0.5));
-}
-.addons-tier-crown.gold {
-  filter: drop-shadow(0 0 14px rgba(229, 181, 71, 0.55));
-}
-.addons-tier-meta {
-  min-width: 0;
-}
-
 .modal-checkout-wrap {
   padding: 12px 0 4px;
 }
@@ -4136,72 +4074,122 @@ a.tier-cta {
   .modal-step {
     animation: none;
   }
-  .pricing-modal-back {
-    transition: none;
-  }
 }
 
 /* ============================================================================
-   CHECKOUT STEP HEADER
-   Trust framing above the embedded Whop checkout: eyebrow, title, order
-   summary (reuses addons-tier-summary), trust row.
+   CHECKOUT SUMMARY ROW
+   Compact plan summary shared by the addons + checkout steps: name and
+   tagline left, price right, inline back pill. Tier color = left accent.
+   Trust footer sits below the Whop embed.
    ============================================================================ */
 
-.checkout-step-header {
-  padding-bottom: 20px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  text-align: center;
+.checkout-summary {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  background: #141418;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 3px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  margin-bottom: 20px;
 }
-.checkout-step-header .addons-tier-summary {
-  text-align: left;
+.checkout-summary.tier-blue {
+  border-left-color: #5FB3E0;
+}
+.checkout-summary.tier-gold {
+  border-left-color: #F5C560;
 }
 
-.checkout-eyebrow {
+.checkout-summary-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.checkout-summary-name {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  color: #ffffff;
+}
+.checkout-summary-tagline {
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checkout-summary-price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+.checkout-summary-amount {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 20px;
+  background: linear-gradient(135deg, #FFE89A, #E5A544);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.checkout-summary-cadence {
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.02em;
+}
+
+.checkout-summary-back {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: "Cabinet Grotesk", sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: #F5C560;
-  background: rgba(245, 197, 96, 0.08);
-  border: 1px solid rgba(245, 197, 96, 0.3);
+  padding: 8px 14px;
   border-radius: 999px;
-  padding: 6px 12px;
-  margin-bottom: 16px;
-}
-
-.checkout-title {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
   font-family: "Cabinet Grotesk", sans-serif;
-  font-weight: 800;
-  font-size: 28px;
-  letter-spacing: -0.02em;
-  color: #ffffff;
-  margin-bottom: 20px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+.checkout-summary-back:hover {
+  background: rgba(255, 255, 255, 0.12);
 }
 
-.checkout-trust-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+.checkout-trust-footer {
   margin-top: 16px;
+  text-align: center;
   font-family: "Inter", sans-serif;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-}
-.checkout-trust-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.checkout-trust-dot {
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.02em;
 }
 
-@media (min-width: 900px) {
-  .checkout-title { font-size: 32px; }
+@media (max-width: 640px) {
+  .checkout-summary-back span:last-child {
+    display: none;
+  }
+  .checkout-summary-tagline {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .checkout-summary-back {
+    transition: none;
+  }
 }
