@@ -173,7 +173,7 @@ export default function HubClient({
             300+ members closing deals every week. Ask questions, share wins, get help.
           </p>
           <a
-            href="https://whop.com/realventure/exp_iRUZ9PnpCiT7xN"
+            href="https://whop.com/realventure/"
             target="_blank"
             rel="noopener noreferrer"
             className="hub2-discord-cta"
