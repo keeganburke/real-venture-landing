@@ -4194,3 +4194,78 @@ a.tier-cta {
     transition: none;
   }
 }
+
+/* ============================================================================
+   HUB STATUS BANNER
+   Used for post-OAuth callback confirmations (e.g. Discord join status).
+   Auto-hides after 5s; dismissible via X.
+   ============================================================================ */
+
+.hub2-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  animation: hub2-banner-in 0.3s ease-out;
+  border: 1px solid transparent;
+}
+
+.hub2-banner-success {
+  background: rgba(76, 175, 80, 0.1);
+  border-color: rgba(76, 175, 80, 0.3);
+  color: #A5D6A7;
+}
+
+.hub2-banner-info {
+  background: rgba(245, 197, 96, 0.1);
+  border-color: rgba(245, 197, 96, 0.3);
+  color: #F5C560;
+}
+
+.hub2-banner-error {
+  background: rgba(220, 53, 69, 0.1);
+  border-color: rgba(220, 53, 69, 0.3);
+  color: #FF6B7A;
+}
+
+.hub2-banner-message {
+  flex: 1;
+  min-width: 0;
+}
+
+.hub2-banner-close {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  color: currentColor;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.hub2-banner-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+@keyframes hub2-banner-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub2-banner {
+    animation: none;
+  }
+}

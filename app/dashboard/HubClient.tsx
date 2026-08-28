@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Destination, FeedbackAction, Livestream } from "./hub-copy";
 
@@ -47,6 +48,23 @@ function isToday(iso: string) {
   return d.toDateString() === new Date().toDateString();
 }
 
+function getDiscordStatusInfo(status: string): { message: string; variant: "success" | "info" | "error" } {
+  switch (status) {
+    case "connected":
+      return { message: "🎉 You're in the Discord.", variant: "success" };
+    case "already_in_server":
+      return { message: "✓ Discord role updated.", variant: "success" };
+    case "cancelled":
+      return { message: "Discord connection cancelled.", variant: "info" };
+    case "role_failed":
+      return { message: "Almost there. Reach out in Discord if you don't see the role.", variant: "info" };
+    case "misconfigured":
+      return { message: "Discord isn't set up. Contact support.", variant: "error" };
+    default:
+      return { message: "Something went wrong. Try again.", variant: "error" };
+  }
+}
+
 export default function HubClient({
   displayName,
   doneCount,
@@ -56,6 +74,27 @@ export default function HubClient({
   destinations,
   feedback,
 }: Props) {
+  const [discordStatus, setDiscordStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("discord");
+    if (!status) return;
+
+    setDiscordStatus(status);
+
+    // Strip the query param so refresh doesn't re-show
+    params.delete("discord");
+    const newSearch = params.toString();
+    const newUrl = window.location.pathname + (newSearch ? "?" + newSearch : "") + window.location.hash;
+    window.history.replaceState({}, "", newUrl);
+
+    // Auto-hide after 5 seconds
+    const timer = setTimeout(() => setDiscordStatus(null), 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const featured = livestreams.find((l) => l.isFeatured) ?? livestreams[0];
   const rest = livestreams.filter((l) => l.id !== featured?.id).slice(0, 3);
   const progressPct = totalLessons > 0 ? Math.round((doneCount / totalLessons) * 100) : 0;
@@ -64,6 +103,23 @@ export default function HubClient({
   return (
     <div className="hub2-page">
       <div className="hub2-shell">
+
+        {discordStatus && (() => {
+          const info = getDiscordStatusInfo(discordStatus);
+          return (
+            <div className={`hub2-banner hub2-banner-${info.variant}`}>
+              <span className="hub2-banner-message">{info.message}</span>
+              <button
+                type="button"
+                className="hub2-banner-close"
+                onClick={() => setDiscordStatus(null)}
+                aria-label="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+          );
+        })()}
 
         {/* Top nav */}
         <nav className="hub2-nav">
