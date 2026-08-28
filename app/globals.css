@@ -4045,3 +4045,98 @@ a.tier-cta {
     animation: none;
   }
 }
+
+/* ============================================================================
+   PRICING MODAL 3-STEP WIZARD
+   Back button + step fade for the pricing -> addons -> checkout flow.
+   Existing modal-* and co-* rules are reused untouched.
+   ============================================================================ */
+
+.pricing-modal-back {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  height: 36px;
+  padding: 0 14px;
+  background: rgba(244, 233, 208, 0.08);
+  border: none;
+  border-radius: 99px;
+  color: var(--txt-dark);
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 10;
+  transition: background 0.15s ease;
+}
+.pricing-modal-back:hover {
+  background: rgba(244, 233, 208, 0.14);
+}
+
+.modal-step {
+  animation: modal-step-fade 0.2s ease-out;
+}
+.modal-step-narrow {
+  max-width: 560px;
+  margin: 0 auto;
+  text-align: left;
+  padding-top: 16px;
+}
+@keyframes modal-step-fade {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.addons-tier-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #141418;
+  border: 1.5px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 20px 24px;
+  margin: 20px 0;
+  text-align: left;
+}
+.addons-tier-summary .co-plan-right {
+  margin-left: auto;
+  text-align: right;
+}
+.addons-tier-crown {
+  flex-shrink: 0;
+  width: 52px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.addons-tier-crown img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.addons-tier-crown.blue {
+  filter: drop-shadow(0 0 14px rgba(95, 179, 224, 0.5));
+}
+.addons-tier-crown.gold {
+  filter: drop-shadow(0 0 14px rgba(229, 181, 71, 0.55));
+}
+.addons-tier-meta {
+  min-width: 0;
+}
+
+.modal-checkout-wrap {
+  padding: 12px 0 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-step {
+    animation: none;
+  }
+  .pricing-modal-back {
+    transition: none;
+  }
+}

@@ -1,43 +1,4 @@
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import CheckoutClient from "./CheckoutClient";
-
-export const metadata: Metadata = {
-  title: "Real Venture | Checkout",
-};
-
-type PlanKey = "base" | "pro";
-
-type PlanConfig = {
-  key: PlanKey;
-  name: string;
-  price: string;
-  cadence: string;
-  tagline: string;
-  planId: string;
-  whopCheckoutUrl: string;
-};
-
-const PLANS: Record<PlanKey, PlanConfig> = {
-  base: {
-    key: "base",
-    name: "Base",
-    price: "$19.99",
-    cadence: "per month",
-    tagline: "The core wholesaling toolkit",
-    planId: "plan_2NqC2WJzV87QY",
-    whopCheckoutUrl: "https://whop.com/checkout/plan_2NqC2WJzV87QY",
-  },
-  pro: {
-    key: "pro",
-    name: "Pro",
-    price: "$49.99",
-    cadence: "per month",
-    tagline: "Everything to close your first deal fast",
-    planId: "plan_J8vFpCWME75W3",
-    whopCheckoutUrl: "https://whop.com/checkout/plan_J8vFpCWME75W3",
-  },
-};
+import { redirect } from "next/navigation";
 
 export default async function CheckoutPage({
   params,
@@ -45,9 +6,7 @@ export default async function CheckoutPage({
   params: Promise<{ plan: string }>;
 }) {
   const { plan } = await params;
-  if (plan !== "base" && plan !== "pro") {
-    notFound();
-  }
-  const config = PLANS[plan as PlanKey];
-  return <CheckoutClient plan={config} />;
+  // Route deprecated: checkout now lives in the pricing modal on the landing page.
+  // Redirect to home with the pricing params so the modal opens at the right step.
+  redirect(`/?pricing=1&plan=${plan}`);
 }
