@@ -155,3 +155,96 @@ export const TILES: {
 
 export const SPRINT_ICON =
   '<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.09 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.09-1.62 0-5 0-5"/>';
+
+/* ========================================================================
+   HUB v2 (single-column Duolingo-style hub). The exports above stay so the
+   old hub components remain compilable until the cleanup pass.
+   ======================================================================== */
+
+export type Livestream = {
+  id: string;
+  title: string;
+  host: string;
+  dateISO: string; // e.g. "2026-08-28T19:00:00-05:00"
+  isFeatured?: boolean; // renders in the big featured card, not the compact list
+};
+
+export type Destination = {
+  id: string;
+  emoji: string;
+  title: string;
+  sub: string;
+  href: string;
+  external?: boolean;
+};
+
+export type FeedbackAction = {
+  id: string;
+  emoji: string;
+  label: string;
+  href: string;
+};
+
+// TODO: wire to real schedule. Group calls happen 7 days a week.
+// Update these dates weekly or wire to a real source.
+export const LIVESTREAMS: Livestream[] = [
+  {
+    id: "ls-featured",
+    title: "Deal Analysis Live",
+    host: "with William",
+    dateISO: "2026-08-28T19:00:00-05:00",
+    isFeatured: true,
+  },
+  {
+    id: "ls-2",
+    title: "Buyer Building Workshop",
+    host: "with Keegan",
+    dateISO: "2026-08-29T18:00:00-05:00",
+  },
+  {
+    id: "ls-3",
+    title: "Weekly Q&A",
+    host: "with William",
+    dateISO: "2026-08-31T14:00:00-05:00",
+  },
+];
+
+export const DESTINATIONS: Destination[] = [
+  {
+    id: "courses",
+    emoji: "📚",
+    title: "Course library",
+    sub: "All 13 lessons across 4 courses",
+    href: "/dashboard/learn",
+  },
+  {
+    id: "studio",
+    emoji: "🛠",
+    title: "Real Venture Studio",
+    sub: "Deal analyzer, buyers, pipeline",
+    href: "https://realventurestudio.com/auth",
+    external: true,
+  },
+  {
+    id: "resources",
+    emoji: "📎",
+    title: "Tools & resources",
+    sub: "Contracts, scripts, checklists",
+    href: "/dashboard/resources",
+  },
+];
+
+export const FEEDBACK: FeedbackAction[] = [
+  {
+    id: "bug",
+    emoji: "🐛",
+    label: "Report a bug",
+    href: "/dashboard/report-bug",
+  },
+  {
+    id: "suggest",
+    emoji: "💡",
+    label: "Suggest a feature",
+    href: "/dashboard/suggest-feature",
+  },
+];

@@ -2950,3 +2950,634 @@ a.learn-lesson-row {
     animation: none;
   }
 }
+
+/* ============================================================================
+   HUB v2 (hub2- prefix)
+   Single-column Duolingo-style hub, ported from hub-mobile-mockup.html.
+   Desktop = mobile stretched: centered shell, max-width 720px.
+   Old .hub-*, .tile, .t-* rules above stay untouched during transition.
+   ============================================================================ */
+
+.hub2-page {
+  min-height: 100vh;
+  background: #0a0a0a;
+  color: #ffffff;
+  font-family: "Inter", ui-sans-serif, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
+}
+.hub2-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(245, 197, 96, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 197, 96, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+.hub2-page::after {
+  content: "";
+  position: fixed;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(245, 197, 96, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hub2-shell {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 24px 96px;
+}
+@media (max-width: 640px) {
+  .hub2-shell { padding: 20px 20px 64px; }
+}
+
+/* --- Top nav --- */
+.hub2-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0 24px;
+}
+.hub2-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 900;
+  color: #0a0a0a;
+  font-size: 14px;
+}
+.hub2-menu {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+}
+
+/* --- Greeting --- */
+.hub2-greeting {
+  margin: 8px 0 4px;
+}
+.hub2-greeting-eyebrow {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(245, 197, 96, 0.7);
+  margin-bottom: 6px;
+}
+.hub2-greeting-name {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 28px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+.hub2-greeting-sub {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 6px;
+}
+
+/* --- Hero: next lesson --- */
+.hub2-hero {
+  margin-top: 28px;
+  background: linear-gradient(180deg, rgba(245, 197, 96, 0.14) 0%, rgba(245, 197, 96, 0.04) 100%);
+  border: 1px solid rgba(245, 197, 96, 0.35);
+  border-radius: 20px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.hub2-hero::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -30%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(245, 197, 96, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hub2-hero-eyebrow {
+  display: inline-block;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #F5C560;
+  background: rgba(245, 197, 96, 0.12);
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 197, 96, 0.25);
+  margin-bottom: 16px;
+  position: relative;
+}
+.hub2-hero-course {
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 6px;
+  position: relative;
+}
+.hub2-hero-title {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin-bottom: 12px;
+  position: relative;
+}
+.hub2-hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 20px;
+  position: relative;
+}
+.hub2-hero-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.hub2-hero-meta-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+}
+.hub2-hero-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  position: relative;
+}
+.hub2-hero-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.hub2-hero-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #F5C560, #E5A544);
+  border-radius: 999px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hub2-hero-progress-num {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+}
+.hub2-hero-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 18px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  color: #0a0a0a;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  text-decoration: none;
+  box-shadow: 0 0 0 1px rgba(255, 232, 154, 0.4), 0 12px 32px rgba(197, 125, 46, 0.3);
+  position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.hub2-hero-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px rgba(255, 232, 154, 0.6), 0 16px 40px rgba(197, 125, 46, 0.4);
+}
+.hub2-hero-cta-arrow {
+  font-size: 18px;
+}
+.hub2-hero-complete-sub {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  position: relative;
+}
+
+/* --- Section header --- */
+.hub2-section-head {
+  margin: 32px 0 14px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.hub2-section-title {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+.hub2-section-link {
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(245, 197, 96, 0.7);
+  text-decoration: none;
+}
+
+/* --- Featured livestream --- */
+.hub2-livestream {
+  background: linear-gradient(135deg, rgba(220, 53, 69, 0.08) 0%, rgba(20, 20, 24, 1) 100%);
+  border: 1px solid rgba(220, 53, 69, 0.2);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.hub2-livestream-date {
+  flex-shrink: 0;
+  width: 56px;
+  height: 62px;
+  border-radius: 12px;
+  background: rgba(220, 53, 69, 0.12);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.hub2-livestream-date-month {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #FF6B7A;
+}
+.hub2-livestream-date-day {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1;
+  margin-top: 2px;
+}
+.hub2-livestream-body {
+  flex: 1;
+  min-width: 0;
+}
+.hub2-livestream-label {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #FF6B7A;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hub2-livestream-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #FF6B7A;
+  box-shadow: 0 0 0 0 rgba(255, 107, 122, 0.6);
+  animation: hub2-pulse 2s infinite;
+}
+@keyframes hub2-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 107, 122, 0.6); }
+  70% { box-shadow: 0 0 0 8px rgba(255, 107, 122, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 107, 122, 0); }
+}
+.hub2-livestream-title {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 3px;
+  line-height: 1.25;
+}
+.hub2-livestream-time {
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* --- Upcoming livestreams --- */
+.hub2-upcoming {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hub2-upcoming-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+}
+.hub2-upcoming-day {
+  flex-shrink: 0;
+  width: 44px;
+  text-align: center;
+}
+.hub2-upcoming-day-name {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+}
+.hub2-upcoming-day-num {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.1;
+}
+.hub2-upcoming-body {
+  flex: 1;
+  min-width: 0;
+}
+.hub2-upcoming-title {
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hub2-upcoming-time {
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* --- Discord CTA --- */
+.hub2-discord {
+  margin-top: 28px;
+  background: linear-gradient(135deg, rgba(88, 101, 242, 0.1) 0%, rgba(88, 101, 242, 0.02) 100%);
+  border: 1px solid rgba(88, 101, 242, 0.3);
+  border-radius: 18px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.hub2-discord::before {
+  content: "";
+  position: absolute;
+  top: -40%;
+  right: -20%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(88, 101, 242, 0.2) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hub2-discord-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #5865F2, #4752C4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-bottom: 14px;
+  position: relative;
+  box-shadow: 0 8px 24px rgba(88, 101, 242, 0.35);
+}
+.hub2-discord-title {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  color: #ffffff;
+  margin-bottom: 4px;
+  position: relative;
+}
+.hub2-discord-sub {
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.5;
+  margin-bottom: 16px;
+  position: relative;
+}
+.hub2-discord-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  background: rgba(88, 101, 242, 0.9);
+  color: #ffffff;
+  border-radius: 999px;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  text-decoration: none;
+  position: relative;
+  transition: background 0.15s ease;
+}
+.hub2-discord-cta:hover {
+  background: #5865F2;
+}
+
+/* --- Destinations --- */
+.hub2-destinations {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.hub2-destination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.85);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.hub2-destination:hover {
+  background: rgba(245, 197, 96, 0.05);
+  border-color: rgba(245, 197, 96, 0.2);
+}
+.hub2-destination-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(245, 197, 96, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.hub2-destination-body {
+  flex: 1;
+  min-width: 0;
+}
+.hub2-destination-title {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffffff;
+}
+.hub2-destination-sub {
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 2px;
+}
+.hub2-destination-arrow {
+  color: rgba(245, 197, 96, 0.7);
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+/* --- Feedback --- */
+.hub2-feedback {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.hub2-feedback-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.85);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.hub2-feedback-btn:hover {
+  background: rgba(245, 197, 96, 0.05);
+  border-color: rgba(245, 197, 96, 0.2);
+}
+.hub2-feedback-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(245, 197, 96, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.hub2-feedback-label {
+  flex: 1;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+.hub2-feedback-arrow {
+  color: rgba(245, 197, 96, 0.7);
+  font-size: 14px;
+}
+@media (max-width: 420px) {
+  .hub2-feedback { grid-template-columns: 1fr; }
+}
+
+/* --- Placeholder pages (resources / report-bug / suggest-feature) --- */
+.hub2-placeholder {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.hub2-placeholder-title {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 32px;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+.hub2-placeholder-sub {
+  font-family: "Inter", sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.6);
+  max-width: 420px;
+  margin-bottom: 28px;
+}
+.hub2-placeholder-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  color: #0a0a0a;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  box-shadow: 0 0 0 1px rgba(255, 232, 154, 0.4), 0 8px 24px rgba(197, 125, 46, 0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub2-livestream-pulse { animation: none; }
+  .hub2-hero-cta,
+  .hub2-hero-progress-fill,
+  .hub2-destination,
+  .hub2-feedback-btn,
+  .hub2-discord-cta {
+    transition: none !important;
+    transform: none !important;
+  }
+}
