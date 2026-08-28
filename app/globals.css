@@ -2624,3 +2624,329 @@ a.learn-lesson-row {
     opacity: 1 !important;
   }
 }
+
+/* ============================================================================
+   LESSON QUIZ GATE
+   In-place transform below the lesson body: start button → quiz form →
+   fail review or pass complete card. No modal, no page swap.
+   ============================================================================ */
+
+.lesson-gate {
+  margin-top: 48px;
+  padding-top: 40px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.lesson-gate-start {
+  width: 100%;
+  padding: 22px 28px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  border: none;
+  color: #0a0a0a;
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(255, 232, 154, 0.4), 0 12px 40px rgba(197, 125, 46, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.lesson-gate-start:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px rgba(255, 232, 154, 0.6), 0 16px 48px rgba(197, 125, 46, 0.4);
+}
+
+.lesson-gate-quiz {
+  animation: lesson-gate-fadein 0.35s ease-out;
+}
+
+.lesson-gate-heading {
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 800;
+  font-size: 28px;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.lesson-gate-subheading {
+  font-family: "Inter", sans-serif;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 32px;
+}
+
+.lesson-gate-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  margin-bottom: 32px;
+}
+
+.lesson-gate-question {
+  background: #141418;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 24px 28px;
+}
+
+.lesson-gate-question-text {
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.4;
+  color: #ffffff;
+  margin-bottom: 18px;
+}
+
+.lesson-gate-question-num {
+  color: #F5C560;
+  margin-right: 6px;
+}
+
+.lesson-gate-options {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lesson-gate-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: "Inter", sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.lesson-gate-option:hover {
+  background: rgba(245, 197, 96, 0.06);
+  border-color: rgba(245, 197, 96, 0.25);
+}
+.lesson-gate-option.is-selected {
+  background: rgba(245, 197, 96, 0.12);
+  border-color: rgba(245, 197, 96, 0.5);
+  color: #ffffff;
+}
+
+.lesson-gate-option-letter {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+}
+.lesson-gate-option.is-selected .lesson-gate-option-letter {
+  background: linear-gradient(135deg, #F5C560, #E5A544);
+  color: #0a0a0a;
+}
+
+.lesson-gate-option-text {
+  flex: 1;
+}
+
+.lesson-gate-submit {
+  width: 100%;
+  padding: 20px 28px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  border: none;
+  color: #0a0a0a;
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(255, 232, 154, 0.4), 0 8px 32px rgba(197, 125, 46, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+.lesson-gate-submit:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px rgba(255, 232, 154, 0.6), 0 12px 40px rgba(197, 125, 46, 0.35);
+}
+.lesson-gate-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* --- Fail state --- */
+.lesson-gate-fail {
+  animation: lesson-gate-fadein 0.35s ease-out;
+}
+
+.lesson-gate-fail-score {
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 800;
+  font-size: 28px;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+.lesson-gate-fail-sub {
+  font-family: "Inter", sans-serif;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 28px;
+}
+.lesson-gate-fail-review {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 28px;
+}
+.lesson-gate-review-item {
+  padding: 20px 24px;
+  background: rgba(220, 53, 69, 0.05);
+  border: 1px solid rgba(220, 53, 69, 0.2);
+  border-radius: 12px;
+}
+.lesson-gate-review-q {
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  color: #ffffff;
+  margin-bottom: 10px;
+}
+.lesson-gate-review-num {
+  color: #F5C560;
+}
+.lesson-gate-review-your,
+.lesson-gate-review-correct {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 4px;
+}
+.lesson-gate-review-your .is-wrong {
+  color: #FF6B7A;
+  font-weight: 600;
+}
+.lesson-gate-review-correct .is-correct {
+  color: #4CAF50;
+  font-weight: 600;
+}
+.lesson-gate-review-explain {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.lesson-gate-retry {
+  width: 100%;
+  padding: 18px 28px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.lesson-gate-retry:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* --- Pass state --- */
+.lesson-gate-pass {
+  padding: 48px 32px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(245, 197, 96, 0.08) 0%, rgba(245, 197, 96, 0.02) 100%);
+  border: 1px solid rgba(245, 197, 96, 0.25);
+  border-radius: 18px;
+  animation: lesson-gate-fadein 0.5s ease-out;
+}
+.lesson-gate-pass-check {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: 800;
+  color: #0a0a0a;
+  margin-bottom: 20px;
+  box-shadow: 0 0 0 1px rgba(255, 232, 154, 0.4), 0 12px 40px rgba(197, 125, 46, 0.3);
+}
+.lesson-gate-pass-title {
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 800;
+  font-size: 32px;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+.lesson-gate-pass-score {
+  font-family: "Inter", sans-serif;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 28px;
+}
+.lesson-gate-pass-next {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 28px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  color: #0a0a0a;
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  text-decoration: none;
+  box-shadow: 0 0 0 1px rgba(255, 232, 154, 0.4), 0 8px 24px rgba(197, 125, 46, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.lesson-gate-pass-next:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 0 1px rgba(255, 232, 154, 0.6), 0 12px 32px rgba(197, 125, 46, 0.35);
+}
+
+@keyframes lesson-gate-fadein {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 900px) {
+  .lesson-gate {
+    margin-top: 32px;
+    padding-top: 28px;
+  }
+  .lesson-gate-question {
+    padding: 18px 20px;
+  }
+  .lesson-gate-pass {
+    padding: 32px 20px;
+  }
+  .lesson-gate-pass-title {
+    font-size: 24px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lesson-gate-quiz,
+  .lesson-gate-fail,
+  .lesson-gate-pass {
+    animation: none;
+  }
+}

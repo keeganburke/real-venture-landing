@@ -79,6 +79,42 @@ export default async function LessonPage({
     redirect(`/dashboard/learn/${courseSlug}`);
   }
 
+  // Compute "next lesson" href: next in this course, or first of next course, or null.
+  let nextLessonHref: string | null = null;
+  let isLastLessonOfCourse = false;
+  let isLastLessonOverall = false;
+
+  if (currentIndex < lessons.length - 1) {
+    const next = lessons[currentIndex + 1];
+    nextLessonHref = `/dashboard/learn/${course.slug}/${next.slug}`;
+  } else {
+    isLastLessonOfCourse = true;
+    // Find next course by sort_order + first published lesson
+    const { data: allCourses } = await supabase
+      .from("courses")
+      .select("id,slug,sort_order")
+      .eq("is_published", true)
+      .order("sort_order", { ascending: true });
+    const idx = (allCourses ?? []).findIndex((c) => c.id === course.id);
+    const nextCourse = idx >= 0 && idx < (allCourses?.length ?? 0) - 1 ? allCourses![idx + 1] : null;
+    if (nextCourse) {
+      const { data: nextLessons } = await supabase
+        .from("lessons")
+        .select("slug")
+        .eq("course_id", nextCourse.id)
+        .eq("is_published", true)
+        .order("sort_order", { ascending: true })
+        .limit(1);
+      if (nextLessons && nextLessons.length > 0) {
+        nextLessonHref = `/dashboard/learn/${nextCourse.slug}/${nextLessons[0].slug}`;
+      } else {
+        isLastLessonOverall = true;
+      }
+    } else {
+      isLastLessonOverall = true;
+    }
+  }
+
   return (
     <LessonClient
       course={course as Course}
@@ -86,6 +122,9 @@ export default async function LessonPage({
       currentLesson={currentLesson}
       currentIndex={currentIndex}
       completedLessonIds={Array.from(completedLessonIds)}
+      nextLessonHref={nextLessonHref}
+      isLastLessonOfCourse={isLastLessonOfCourse}
+      isLastLessonOverall={isLastLessonOverall}
     />
   );
 }
