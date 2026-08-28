@@ -125,7 +125,7 @@ export default function HubClient({
         {/* Livestreams */}
         <div className="hub2-section-head">
           <div className="hub2-section-title">Group Calls</div>
-          <span className="hub2-section-link" aria-hidden="true">Full schedule →</span>
+          <Link href="/dashboard/livestreams" className="hub2-section-link">Full schedule →</Link>
         </div>
 
         {featured && (
@@ -173,7 +173,7 @@ export default function HubClient({
             300+ members closing deals every week. Ask questions, share wins, get help.
           </p>
           <a
-            href="https://discord.gg/realventure"
+            href="https://whop.com/realventure/exp_iRUZ9PnpCiT7xN"
             target="_blank"
             rel="noopener noreferrer"
             className="hub2-discord-cta"
