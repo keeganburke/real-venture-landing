@@ -54,7 +54,7 @@ const FRONTS = [
     title: "Discord community",
     desc: (
       <>
-        <strong>300+ members</strong>. <strong>24/7</strong> wins channel. Ask anything, get answers in minutes.
+        <strong>350+ members</strong>. <strong>24/7</strong> wins channel. Ask anything, get answers in minutes.
       </>
     ),
     emoji: "💬",

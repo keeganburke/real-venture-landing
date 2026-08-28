@@ -170,7 +170,7 @@ export default function HubClient({
           <div className="hub2-discord-icon" aria-hidden="true">💬</div>
           <div className="hub2-discord-title">Join the community</div>
           <p className="hub2-discord-sub">
-            300+ members closing deals every week. Ask questions, share wins, get help.
+            350+ members closing deals every week. Ask questions, share wins, get help.
           </p>
           <a
             href="https://whop.com/realventure/"

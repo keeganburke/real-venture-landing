@@ -32,7 +32,7 @@ export default function CtaStrip({ onJoin, label = "Join for $19.99/mo →" }: P
           ))}
         </div>
         <div className="lp-social-lbl">
-          <b>300+</b> active students
+          <b>350+</b> active students
         </div>
       </div>
     </div>

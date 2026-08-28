@@ -386,7 +386,7 @@ export default function Home() {
                   <li>Live coaching 6x/week</li>
                   <li>Vetted buyer network on tap</li>
                   <li>Deal analyzer + contract templates</li>
-                  <li>300+ members closing deals with you</li>
+                  <li>350+ members closing deals with you</li>
                   <li>Finally start your journey in entrepreneurship</li>
                 </ul>
                 <button
@@ -405,7 +405,7 @@ export default function Home() {
         <section className="lp-final">
           <div className="shell">
             <h2 className="lp-section-h2">Your first payday <span>starts today.</span></h2>
-            <p className="lp-section-sub lp-final-sub">Join 300+ students who stopped watching and started closing.</p>
+            <p className="lp-section-sub lp-final-sub">Join 350+ students who stopped watching and started closing.</p>
             <CtaStrip onJoin={openPricing} />
             <div className="lp-trust">
               <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Cancel anytime</div>
