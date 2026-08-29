@@ -72,6 +72,6 @@ export const RESOURCES: Resource[] = [
     emoji: "📄",
     title: "Contract Templates",
     description: "PSAs, assignment agreements, and other core contract files.",
-    content: "Coming soon. Templates will drop here as they're prepped for release.\n\nFor now, ask in the Discord and we'll send you what you need for your specific deal."
+    content: "Contract PDFs coming this week. Check back, or ask in the Discord and we'll send you what you need for your specific deal."
   }
 ];

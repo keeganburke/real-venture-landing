@@ -1,30 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import type { Course } from "./learn-types";
+import type { CatalogLesson } from "./learn-types";
 
-const CATEGORIES = [
+const TIERS = [
   { key: "beginner", emoji: "🌱", label: "Beginner" },
   { key: "intermediate", emoji: "💪", label: "Intermediate" },
   { key: "advanced", emoji: "🧠", label: "Advanced" },
-  { key: "bonus", emoji: "🎁", label: "Bonus" },
 ] as const;
 
 type Props = {
-  courses: Course[];
-  lessonCounts: Record<string, number>;
-  completedCounts: Record<string, number>;
+  lessons: CatalogLesson[];
 };
 
-function courseStatus(done: number, total: number) {
-  if (total > 0 && done >= total) return "Complete";
-  if (done > 0) return "In progress";
-  return "Not started";
+function lessonTime(seconds: number | null) {
+  if (!seconds || seconds <= 0) return null;
+  return `${Math.max(1, Math.round(seconds / 60))} min`;
 }
 
-export default function LearnClient({ courses, lessonCounts, completedCounts }: Props) {
-  const totalLessons = Object.values(lessonCounts).reduce((sum, n) => sum + n, 0);
-  const totalCompleted = Object.values(completedCounts).reduce((sum, n) => sum + n, 0);
+export default function LearnClient({ lessons }: Props) {
+  const totalLessons = lessons.length;
+  const totalCompleted = lessons.filter((l) => l.completed).length;
   const overallPct = totalLessons > 0 ? Math.round((totalCompleted / totalLessons) * 100) : 0;
 
   return (
@@ -35,77 +31,72 @@ export default function LearnClient({ courses, lessonCounts, completedCounts }: 
         </Link>
         <header className="learn-header">
           <h1 className="learn-title">Learn Wholesaling</h1>
-          <p className="learn-sub">Pick a section to get started</p>
+          <p className="learn-sub">All 13 lessons, start to finish</p>
         </header>
 
         <div className="learn-stats-grid">
           <div className="learn-stat-card">
             <span className="learn-stat-icn">📚</span>
-            <span className="learn-stat-num">{courses.length}</span>
-            <span className="learn-stat-lbl">Courses {"·"} {overallPct}% complete</span>
+            <span className="learn-stat-num">{overallPct}%</span>
+            <span className="learn-stat-lbl">Course complete</span>
           </div>
           <div className="learn-stat-card">
             <span className="learn-stat-icn">🎓</span>
             <span className="learn-stat-num">{totalCompleted}/{totalLessons}</span>
             <span className="learn-stat-lbl">Lessons completed</span>
           </div>
-          <div className="learn-stat-card locked">
-            <span className="learn-stat-icn">❓</span>
-            <span className="learn-stat-num">🔒</span>
-            <span className="learn-stat-lbl">Quizzes {"·"} coming soon</span>
-          </div>
-          <div className="learn-stat-card locked">
-            <span className="learn-stat-icn">🎥</span>
-            <span className="learn-stat-num">🔒</span>
-            <span className="learn-stat-lbl">Videos {"·"} coming soon</span>
-          </div>
         </div>
 
-        {CATEGORIES.map((cat) => {
-          const catCourses = courses.filter((course) => course.category === cat.key);
-          if (catCourses.length === 0) return null;
+        {TIERS.map((tier) => {
+          const tierLessons = lessons.filter((l) => l.difficulty === tier.key);
+          if (tierLessons.length === 0) return null;
           return (
-            <section className="learn-section" key={cat.key}>
+            <section className="learn-section" key={tier.key}>
               <div className="learn-section-head">
-                <span className="learn-section-emoji">{cat.emoji}</span>
-                {cat.label}
+                <span className="learn-section-emoji">{tier.emoji}</span>
+                {tier.label}
               </div>
-              {catCourses.map((course, index) => {
-                const total = lessonCounts[course.id] ?? 0;
-                const done = completedCounts[course.id] ?? 0;
-                const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-                const status = courseStatus(done, total);
-                return (
-                  <Link
-                    className="learn-course-card"
-                    href={`/dashboard/learn/${course.slug}`}
-                    key={course.id}
-                    style={{ "--i": String(index) } as React.CSSProperties}
-                  >
-                    <div className="learn-course-thumb">📚</div>
-                    <div className="learn-course-meta">
-                      <div className="learn-course-title">
-                        {course.title}
-                        {course.tier === "pro" && <span className="learn-pro-badge">PRO</span>}
-                      </div>
-                      <div className="learn-course-status">
-                        {status} {"·"} {done} of {total} lessons
-                      </div>
-                    </div>
-                    <div className="learn-course-progress">
-                      <span className={`learn-course-pct${status === "Complete" ? " done" : ""}`}>
-                        {done}/{total}
+              <div className="learn-lesson-list">
+                {tierLessons.map((lesson, index) => {
+                  const rowClass = `learn-lesson-row${lesson.completed ? " complete" : ""}${lesson.locked ? " locked" : ""}`;
+                  const time = lessonTime(lesson.durationSeconds);
+                  const inner = (
+                    <>
+                      <span className="learn-lesson-num">{lesson.completed ? "✓" : lesson.number}</span>
+                      <span className="learn-lesson-body">
+                        <span className="learn-lesson-title">
+                          {lesson.title}
+                          {lesson.requiresPro && <span className="learn-pro-badge">PRO</span>}
+                        </span>
+                        {lesson.description && (
+                          <span className="learn-lesson-desc">{lesson.description}</span>
+                        )}
+                        {time && <span className="learn-lesson-meta">{time}</span>}
                       </span>
-                      <span className="learn-course-bar">
-                        <span
-                          className={`learn-course-fill${status === "Complete" ? " done" : ""}`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </span>
-                    </div>
-                  </Link>
-                );
-              })}
+                      <span className="learn-lesson-arw">{lesson.locked ? "🔒" : "→"}</span>
+                    </>
+                  );
+                  return lesson.locked ? (
+                    <button
+                      type="button"
+                      className={rowClass}
+                      key={lesson.id}
+                      style={{ "--i": String(index) } as React.CSSProperties}
+                    >
+                      {inner}
+                    </button>
+                  ) : (
+                    <Link
+                      href={`/dashboard/learn/${lesson.courseSlug}/${lesson.slug}`}
+                      className={rowClass}
+                      key={lesson.id}
+                      style={{ "--i": String(index) } as React.CSSProperties}
+                    >
+                      {inner}
+                    </Link>
+                  );
+                })}
+              </div>
             </section>
           );
         })}

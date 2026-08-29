@@ -5177,3 +5177,31 @@ select.pf-input { appearance: none; }
     transition: none;
   }
 }
+
+/* ============================================================================
+   CONTINUE LESSON HERO · SIZE REDUCTION (~20%)
+   Cascade overrides of the hub2-hero sizing; structure unchanged.
+   ============================================================================ */
+
+.hub2-hero {
+  padding: 19px 20px;
+}
+.hub2-hero-title {
+  font-size: 21px;
+}
+.hub2-hero-cta {
+  padding: 13px 20px;
+  font-size: 14px;
+}
+
+@media (min-width: 900px) {
+  .hub2-hero {
+    padding: 38px 44px;
+  }
+  .hub2-hero-title {
+    font-size: 32px;
+  }
+  .hub2-hero-cta {
+    width: 200px;
+  }
+}

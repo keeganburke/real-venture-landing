@@ -17,6 +17,22 @@ export type ContentBlock = {
   [key: string]: unknown;
 };
 
+// Flattened catalog row for the learn index: lessons grouped by difficulty
+// tier instead of course; courseSlug is kept purely for the lesson href.
+export type CatalogLesson = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  courseSlug: string;
+  difficulty: "beginner" | "intermediate" | "advanced";
+  durationSeconds: number | null;
+  number: number;
+  completed: boolean;
+  locked: boolean;
+  requiresPro: boolean;
+};
+
 export type Lesson = {
   id: string;
   course_id: string;

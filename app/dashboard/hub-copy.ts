@@ -19,6 +19,7 @@ export type FeedbackAction = {
   emoji: string;
   label: string;
   href: string;
+  external?: boolean;
 };
 
 export const DESTINATIONS: Destination[] = [
@@ -51,13 +52,15 @@ export const FEEDBACK: FeedbackAction[] = [
     id: "bug",
     emoji: "🐛",
     label: "Report a bug",
-    href: "/dashboard/report-bug",
+    href: "https://docs.google.com/forms/d/1_6w6JI5derd9pxEm4G2850pTWtfu0wwiCM-i6XA3pgA/viewform",
+    external: true,
   },
   {
     id: "suggest",
     emoji: "💡",
     label: "Suggest a feature",
-    href: "/dashboard/suggest-feature",
+    href: "https://docs.google.com/forms/d/1_6w6JI5derd9pxEm4G2850pTWtfu0wwiCM-i6XA3pgA/viewform",
+    external: true,
   },
 ];
 

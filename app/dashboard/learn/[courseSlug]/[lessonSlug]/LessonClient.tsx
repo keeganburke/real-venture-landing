@@ -352,9 +352,6 @@ function BlockRenderer({ block }: { block: ContentBlock }) {
 }
 
 function VideoBlock({ youtubeId }: { youtubeId: string }) {
-  if (!youtubeId || youtubeId === "PLACEHOLDER") {
-    return <div className="lesson-video-placeholder">Video coming soon</div>;
-  }
   const src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(youtubeId)}?rel=0`;
   return (
     <div className="lesson-video">
