@@ -7,6 +7,28 @@ import type { Destination, FeedbackAction } from "./hub-copy";
 import { getNextCalls } from "./lib/next-calls";
 import MenuDropdown from "./MenuDropdown";
 
+const GREETINGS = [
+  "Welcome back, {name}",
+  "Back to the grind, {name}",
+  "What are we doing today, {name}?",
+  "Ready to close a deal, {name}?",
+  "Good to see you, {name}",
+  "Let's get to work, {name}",
+  "Time to hunt, {name}",
+  "Locked in, {name}?",
+];
+
+const GREETINGS_NO_NAME = [
+  "Welcome back",
+  "Back to the grind",
+  "What are we doing today?",
+  "Ready to close a deal?",
+  "Good to see you",
+  "Let's get to work",
+  "Time to hunt",
+  "Locked in?",
+];
+
 type NextLessonInfo = {
   title: string;
   courseTitle: string;
@@ -114,6 +136,16 @@ export default function HubClient({
     }
   }, []);
 
+  // Random pick happens after mount so SSR and hydration render the same
+  // default; the flip to a random phrase on load is expected.
+  const [greetingIndex, setGreetingIndex] = useState(0);
+  useEffect(() => {
+    setGreetingIndex(Math.floor(Math.random() * GREETINGS.length));
+  }, []);
+  const greeting = displayName
+    ? GREETINGS[greetingIndex].replace("{name}", displayName)
+    : GREETINGS_NO_NAME[greetingIndex];
+
   const upcomingCalls = getNextCalls(WEEKLY_SCHEDULE, new Date(), 4);
   const featured = upcomingCalls[0];
   const rest = upcomingCalls.slice(1);
@@ -147,10 +179,9 @@ export default function HubClient({
           <MenuDropdown />
         </nav>
 
-        {/* Greeting. Nameless fallback: "Welcome back" becomes the heading. */}
+        {/* Greeting. Rotating phrase; personalized when a profile name exists. */}
         <header className="hub2-greeting">
-          {displayName && <div className="hub2-greeting-eyebrow">Welcome back</div>}
-          <h1 className="hub2-greeting-name">{displayName ?? "Welcome back"}</h1>
+          <h1 className="hub2-greeting-name">{greeting}</h1>
           <p className="hub2-greeting-sub">
             {isComplete
               ? "You've completed the curriculum. Nice work."
@@ -292,8 +323,8 @@ export default function HubClient({
                 <span className="hub2-livestream-pulse" aria-hidden="true"></span>
                 {dayLabel(featured.occursAt)}
               </div>
-              <div className="hub2-livestream-title">Live with {featured.call.host}</div>
-              <div className="hub2-livestream-time">{featured.call.startTime} - {featured.call.endTime} PST</div>
+              <div className="hub2-livestream-title">{featured.call.type}</div>
+              <div className="hub2-livestream-time">with {featured.call.host} · {featured.call.startTime} - {featured.call.endTime} PST</div>
             </div>
           </div>
         )}
@@ -309,8 +340,8 @@ export default function HubClient({
                     <div className="hub2-upcoming-day-num">{d.day}</div>
                   </div>
                   <div className="hub2-upcoming-body">
-                    <div className="hub2-upcoming-title">Live with {call.host}</div>
-                    <div className="hub2-upcoming-time">{call.startTime} - {call.endTime} PST</div>
+                    <div className="hub2-upcoming-title">{call.type}</div>
+                    <div className="hub2-upcoming-time">with {call.host} · {call.startTime} - {call.endTime} PST</div>
                   </div>
                 </div>
               );

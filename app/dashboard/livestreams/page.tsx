@@ -41,14 +41,9 @@ export default function LivestreamsPage() {
               <div key={call.id} className="hub2-schedule-row">
                 <div className="hub2-schedule-day">{call.day}</div>
                 <div className="hub2-schedule-body">
-                  <div className="hub2-schedule-title">{call.startTime} - {call.endTime} PST</div>
-                  <div className="hub2-schedule-hosts">with {call.host}</div>
+                  <div className="hub2-schedule-title">{call.type}</div>
+                  <div className="hub2-schedule-hosts">with {call.host} · {call.startTime} - {call.endTime} PST</div>
                 </div>
-                {call.type && (
-                  <div className={`hub2-schedule-type hub2-schedule-type-${call.type === "Q&A" ? "qa" : "grind"}`}>
-                    {call.type}
-                  </div>
-                )}
               </div>
             ))}
           </div>

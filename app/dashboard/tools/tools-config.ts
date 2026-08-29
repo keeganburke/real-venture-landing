@@ -23,7 +23,12 @@ export const TOOL_ITEMS: ToolItem[] = [
     description: r.description,
     icon: r.emoji,
     tab: "resources" as const,
-    resource: r,
+    // POF ships as an embedded image only in resources-data; add a download
+    // here so the sub-page reuses the same res-download rendering VA uses.
+    resource:
+      r.id === "pof"
+        ? { ...r, downloads: [{ label: "Download Proof of Funds", href: "/resources/pof.png" }] }
+        : r,
   })),
   ...SOFTWARE.map((s) => ({
     slug: s.id,

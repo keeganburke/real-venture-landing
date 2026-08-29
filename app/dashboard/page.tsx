@@ -27,13 +27,13 @@ export default async function DashboardPage() {
   const userId = session?.whopUserId ?? "";
 
   // No name source exists yet (the intake cookie carries no name and there is
-  // no Whop profile fetch). Null renders the nameless "Welcome back" heading;
-  // wire a real name here later and the greeting picks it up.
-  const displayName: string | null = null;
+  // no Whop profile fetch). Filled from member_profiles below when the user
+  // has saved a display name; null keeps the nameless greeting variants.
+  let displayName: string | null = null;
 
   const supabase = createAdminClient();
 
-  const [coursesRes, lessonsRes, progressRes] = await Promise.all([
+  const [coursesRes, lessonsRes, progressRes, profileRes] = await Promise.all([
     supabase
       .from("courses")
       .select("id,slug,title,sort_order")
@@ -48,7 +48,17 @@ export default async function DashboardPage() {
       .select("lesson_id,completed_at")
       .eq("user_id", userId)
       .not("completed_at", "is", null),
+    supabase
+      .from("member_profiles")
+      .select("display_name")
+      .eq("whop_user_id", userId)
+      .maybeSingle(),
   ]);
+
+  const profileName = profileRes.data?.display_name;
+  if (typeof profileName === "string" && profileName.trim().length > 0) {
+    displayName = profileName.trim();
+  }
 
   const courses = coursesRes.data ?? [];
   const lessons = (lessonsRes.data ?? []) as LessonRow[];
