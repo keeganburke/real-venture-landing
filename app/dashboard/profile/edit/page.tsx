@@ -35,13 +35,13 @@ export default function ProfileEditPage() {
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    let stale = false;
     (async () => {
       try {
         const res = await fetch("/api/profile/get");
         if (!res.ok) throw new Error();
         const data = await res.json();
-        if (cancelled || !data?.ok) return;
+        if (stale || !data?.ok) return;
         setDisplayName(data.profile.displayName ?? "");
         setPhone(data.profile.phone ?? "");
         setTimezone(data.profile.timezone ?? "America/Los_Angeles");
@@ -50,13 +50,13 @@ export default function ProfileEditPage() {
         setPhotoUrl(data.profile.photoUrl ?? null);
         setEmail(data.email ?? null);
       } catch {
-        if (!cancelled) setError("Could not load your profile. Try refreshing.");
+        if (!stale) setError("Could not load your profile. Try refreshing.");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!stale) setLoading(false);
       }
     })();
     return () => {
-      cancelled = true;
+      stale = true;
     };
   }, []);
 
@@ -220,10 +220,22 @@ export default function ProfileEditPage() {
                 <button type="button" className="pf-save-btn" onClick={save} disabled={saving || uploading}>
                   {saving ? "Saving…" : "Save"}
                 </button>
-                <Link href="/dashboard/profile" className="pf-cancel-btn">
-                  Cancel
+                <Link href="/dashboard/profile" className="pf-discard-btn">
+                  Discard
                 </Link>
               </div>
+
+              <div className="hub2-section-head">
+                <div className="hub2-section-title">Billing &amp; Subscription</div>
+              </div>
+              <Link href="/manage-membership" className="pf-billing-card">
+                <div className="pf-billing-icon" aria-hidden="true">💳</div>
+                <div className="pf-billing-body">
+                  <div className="pf-billing-title">Manage Membership</div>
+                  <div className="pf-billing-sub">View your plan, upgrade, or manage billing</div>
+                </div>
+                <div className="pf-billing-arrow" aria-hidden="true">{"›"}</div>
+              </Link>
             </div>
           )}
         </div>

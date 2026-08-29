@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { WEEKLY_SCHEDULE } from "./hub-copy";
 import type { Destination, FeedbackAction } from "./hub-copy";
-import { getNextCalls } from "./lib/next-calls";
+import { getLiveCall, getNextCalls } from "./lib/next-calls";
 import MenuDropdown from "./MenuDropdown";
 
 const GREETINGS = [
@@ -39,6 +39,7 @@ type NextLessonInfo = {
 
 type Props = {
   displayName: string | null;
+  avatarUrl: string | null;
   doneCount: number;
   totalLessons: number;
   nextLesson: NextLessonInfo | null;
@@ -96,6 +97,7 @@ function getDiscordStatusInfo(status: string): { message: string; variant: "succ
 
 export default function HubClient({
   displayName,
+  avatarUrl,
   doneCount,
   totalLessons,
   nextLesson,
@@ -147,6 +149,7 @@ export default function HubClient({
     : GREETINGS_NO_NAME[greetingIndex];
 
   const upcomingCalls = getNextCalls(WEEKLY_SCHEDULE, new Date(), 4);
+  const liveCall = getLiveCall(WEEKLY_SCHEDULE);
   const featured = upcomingCalls[0];
   const rest = upcomingCalls.slice(1);
   const progressPct = totalLessons > 0 ? Math.round((doneCount / totalLessons) * 100) : 0;
@@ -176,12 +179,12 @@ export default function HubClient({
         {/* Top nav */}
         <nav className="hub2-nav">
           <img src="/rv-logo.png" alt="" aria-hidden="true" width={40} height={40} style={{ display: "block", objectFit: "contain" }} />
-          <MenuDropdown />
+          <MenuDropdown avatarUrl={avatarUrl} initial={(displayName?.trim().charAt(0) || "M").toUpperCase()} />
         </nav>
 
         {/* Greeting. Rotating phrase; personalized when a profile name exists. */}
         <header className="hub2-greeting">
-          <h1 className="hub2-greeting-name">{greeting}</h1>
+          <h1 className="hub2-greeting-name">{greeting}{displayName ? " 👋" : ""}</h1>
           <p className="hub2-greeting-sub">
             {isComplete
               ? "You've completed the curriculum. Nice work."
@@ -322,6 +325,7 @@ export default function HubClient({
               <div className="hub2-livestream-label">
                 <span className="hub2-livestream-pulse" aria-hidden="true"></span>
                 {dayLabel(featured.occursAt)}
+                {liveCall && <span className="hub2-live-dot" aria-hidden="true"></span>}
               </div>
               <div className="hub2-livestream-title">{featured.call.type}</div>
               <div className="hub2-livestream-time">with {featured.call.host} · {featured.call.startTime} - {featured.call.endTime} PST</div>
@@ -378,11 +382,16 @@ export default function HubClient({
         </div>
         <div className="hub2-feedback">
           {feedback.map((f) => (
-            <Link key={f.id} href={f.href} className="hub2-feedback-btn">
+            <a
+              key={f.id}
+              href={f.href}
+              className="hub2-feedback-btn"
+              {...(f.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            >
               <span className="hub2-feedback-icon" aria-hidden="true">{f.emoji}</span>
               <span className="hub2-feedback-label">{f.label}</span>
               <span className="hub2-feedback-arrow" aria-hidden="true">→</span>
-            </Link>
+            </a>
           ))}
         </div>
 

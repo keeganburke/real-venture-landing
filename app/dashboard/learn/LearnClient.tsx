@@ -3,6 +3,24 @@
 import Link from "next/link";
 import type { CatalogLesson } from "./learn-types";
 
+// Lesson emojis keyed by DB slug. Three slugs corrected from the spec list
+// to the real DB values (same lessons, same order, same emojis).
+const LESSON_EMOJI: Record<string, string> = {
+  "orientation-and-expectations": "🧭",
+  "what-wholesaling-actually-is": "🎯",
+  "traditional-vs-secured-wholesaling": "⚖️",
+  "how-to-find-a-buyer": "💎",
+  "on-market-strategy": "🏡",
+  "off-market-strategy": "🔍",
+  "deal-analysis-and-underwriting": "📊",
+  "acquisitions-and-getting-the-contract": "🔒",
+  "how-to-fill-out-and-sign-the-contract": "📝",
+  "dispositions-and-selling-the-contract": "🤝",
+  "title-work-and-getting-paid": "💵",
+  "reinvesting-and-scaling": "🚀",
+  "case-studies": "🏆",
+};
+
 const TIERS = [
   { key: "beginner", emoji: "🌱", label: "Beginner" },
   { key: "intermediate", emoji: "💪", label: "Intermediate" },
@@ -62,7 +80,9 @@ export default function LearnClient({ lessons }: Props) {
                   const time = lessonTime(lesson.durationSeconds);
                   const inner = (
                     <>
-                      <span className="learn-lesson-num">{lesson.completed ? "✓" : lesson.number}</span>
+                      <span className="learn-lesson-num" style={{ fontSize: 15 }}>
+                        {lesson.completed ? "✓" : LESSON_EMOJI[lesson.slug] ?? lesson.number}
+                      </span>
                       <span className="learn-lesson-body">
                         <span className="learn-lesson-title">
                           {lesson.title}

@@ -27,7 +27,7 @@ export const DESTINATIONS: Destination[] = [
     id: "courses",
     emoji: "📚",
     title: "Course library",
-    sub: "All 13 lessons across 4 courses",
+    sub: "All 13 lessons, start to finish",
     href: "/dashboard/learn",
   },
   {
@@ -40,7 +40,7 @@ export const DESTINATIONS: Destination[] = [
   },
   {
     id: "resources",
-    emoji: "📎",
+    emoji: "💰",
     title: "Tools",
     sub: "Contracts, scripts, checklists",
     href: "/dashboard/tools",

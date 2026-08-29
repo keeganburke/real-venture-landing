@@ -63,6 +63,21 @@ function laWallTimeToDate(year: number, month: number, day: number, minutes: num
   return new Date(ts);
 }
 
+// The call happening right now in LA terms, if any. Additive helper for the
+// hub's live indicator; getNextCalls excludes in-progress calls by design.
+export function getLiveCall(schedule: WeeklyCall[], now: Date = new Date()): WeeklyCall | null {
+  const nowLA = laParts(now);
+  const nowDay = DAY_INDEX[nowLA.weekday as WeeklyCall["day"]] ?? 0;
+  const nowMinutes = nowLA.hour * 60 + nowLA.minute;
+  for (const call of schedule) {
+    if (DAY_INDEX[call.day] !== nowDay) continue;
+    const start = parseTimeToMinutes(call.startTime);
+    const end = parseTimeToMinutes(call.endTime);
+    if (nowMinutes >= start && nowMinutes < end) return call;
+  }
+  return null;
+}
+
 // Next occurrence >= now for every call in the schedule, sorted ascending,
 // sliced to `count`. A call whose start time has passed today projects to
 // next week.

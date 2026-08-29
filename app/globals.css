@@ -5205,3 +5205,159 @@ select.pf-input { appearance: none; }
     width: 200px;
   }
 }
+
+/* ============================================================================
+   HUB POLISH PASS
+   Greeting hero treatment, avatar menu button, card resizing, live effects,
+   colored destination cards, profile edit billing. Cascade overrides only.
+   ============================================================================ */
+
+/* Greeting: centered hero */
+.hub2-greeting {
+  text-align: center;
+}
+.hub2-greeting-name {
+  font-size: 40px;
+}
+
+/* Avatar menu button */
+.hub2-avatar-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 197, 96, 0.4);
+  background: linear-gradient(135deg, rgba(245, 197, 96, 0.2), rgba(229, 165, 68, 0.08));
+  color: #F5C560;
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.hub2-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Discord + Studio cards: ~15-20% smaller */
+.hub2-discord {
+  padding: 17px;
+}
+.hub2-discord-title {
+  font-size: 15px;
+}
+.hub2-discord-sub {
+  font-size: 12.5px;
+}
+.hub2-discord-cta {
+  padding: 10px 16px;
+  font-size: 13px;
+}
+.hub2-studio {
+  padding: 23px;
+}
+.hub2-studio-icon {
+  width: 42px;
+  height: 42px;
+  font-size: 21px;
+  margin-bottom: 13px;
+}
+.hub2-studio-title {
+  font-size: 19px;
+}
+.hub2-studio-sub {
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.hub2-studio-cta {
+  padding: 10px 17px;
+  font-size: 13px;
+}
+
+/* Livestream: live-now dot + gentle featured shimmer */
+.hub2-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #FF4D5E;
+  display: inline-block;
+  margin-left: 8px;
+  animation: hub2-live-pulse 1.5s ease-in-out infinite;
+}
+@keyframes hub2-live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.hub2-livestream {
+  animation: hub2-live-shimmer 4s ease-in-out infinite;
+}
+@keyframes hub2-live-shimmer {
+  0%, 100% {
+    border-color: rgba(220, 53, 69, 0.2);
+    box-shadow: 0 0 0 0 rgba(229, 181, 71, 0);
+  }
+  50% {
+    border-color: rgba(245, 197, 96, 0.4);
+    box-shadow: 0 0 18px -6px rgba(229, 181, 71, 0.3);
+  }
+}
+
+/* Course library + Tools cards: sibling weight to Discord/Studio */
+.hub2-destination {
+  padding: 20px;
+  border-radius: 16px;
+}
+.hub2-destination-icon {
+  width: 48px;
+  height: 48px;
+  font-size: 24px;
+}
+.hub2-destination-title {
+  font-size: 17px;
+}
+.hub2-destination:first-child {
+  background: linear-gradient(135deg, rgba(74, 222, 128, 0.1), rgba(74, 222, 128, 0.02));
+  border-color: rgba(74, 222, 128, 0.3);
+}
+.hub2-destination:first-child:hover {
+  background: rgba(74, 222, 128, 0.08);
+  border-color: rgba(74, 222, 128, 0.5);
+}
+.hub2-destination:last-child {
+  background: linear-gradient(135deg, rgba(245, 197, 96, 0.1), rgba(245, 197, 96, 0.02));
+  border-color: rgba(245, 197, 96, 0.35);
+}
+.hub2-destination:last-child:hover {
+  background: rgba(245, 197, 96, 0.08);
+  border-color: rgba(245, 197, 96, 0.55);
+}
+
+/* Profile edit: discard link (styled like the old cancel pill) */
+.pf-discard-btn {
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+@media (min-width: 900px) {
+  .hub2-greeting-name { font-size: 64px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub2-live-dot,
+  .hub2-livestream {
+    animation: none;
+  }
+}

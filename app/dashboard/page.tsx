@@ -50,7 +50,7 @@ export default async function DashboardPage() {
       .not("completed_at", "is", null),
     supabase
       .from("member_profiles")
-      .select("display_name")
+      .select("display_name, photo_url")
       .eq("whop_user_id", userId)
       .maybeSingle(),
   ]);
@@ -59,6 +59,8 @@ export default async function DashboardPage() {
   if (typeof profileName === "string" && profileName.trim().length > 0) {
     displayName = profileName.trim();
   }
+  const rawPhoto = profileRes.data?.photo_url;
+  const avatarUrl = typeof rawPhoto === "string" && rawPhoto.length > 0 ? rawPhoto : null;
 
   const courses = coursesRes.data ?? [];
   const lessons = (lessonsRes.data ?? []) as LessonRow[];
@@ -97,6 +99,7 @@ export default async function DashboardPage() {
   return (
     <HubClient
       displayName={displayName}
+      avatarUrl={avatarUrl}
       doneCount={doneCount}
       totalLessons={totalLessons}
       nextLesson={nextLessonInfo}

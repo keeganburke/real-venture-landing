@@ -31,7 +31,21 @@ function SignOutIcon() {
   );
 }
 
-export default function MenuDropdown() {
+function CompassIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M15.5 8.5l-2 5-5 2 2-5z" />
+    </svg>
+  );
+}
+
+type Props = {
+  avatarUrl: string | null;
+  initial: string;
+};
+
+export default function MenuDropdown({ avatarUrl, initial }: Props) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -64,12 +78,17 @@ export default function MenuDropdown() {
     <div className="hub2-menu-wrap" ref={wrapRef}>
       <button
         type="button"
-        className="hub2-menu"
+        className="hub2-avatar-btn"
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-label="Open menu"
         onClick={() => setOpen((v) => !v)}
       >
-        MENU
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="" className="hub2-avatar-img" width={40} height={40} />
+        ) : (
+          <span aria-hidden="true">{initial}</span>
+        )}
       </button>
       {open && (
         <div className="hub2-menu-dropdown" role="menu">
@@ -90,6 +109,15 @@ export default function MenuDropdown() {
           >
             <GearIcon />
             <span>Profile Settings</span>
+          </Link>
+          <Link
+            href="/onboarding?force=1"
+            className="hub2-menu-item"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+          >
+            <CompassIcon />
+            <span>Take the Tour</span>
           </Link>
           <div className="hub2-menu-sep" aria-hidden="true"></div>
           <button type="button" className="hub2-menu-item is-danger" role="menuitem" onClick={signOut}>

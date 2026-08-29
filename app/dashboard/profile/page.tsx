@@ -88,17 +88,6 @@ export default async function ProfilePage() {
             </Link>
           </section>
 
-          <div className="hub2-section-head">
-            <div className="hub2-section-title">Billing &amp; Subscription</div>
-          </div>
-          <Link href="/manage-membership" className="pf-billing-card">
-            <div className="pf-billing-icon" aria-hidden="true">💳</div>
-            <div className="pf-billing-body">
-              <div className="pf-billing-title">Manage Membership</div>
-              <div className="pf-billing-sub">Plan, billing, pause, or cancel</div>
-            </div>
-            <div className="pf-billing-arrow" aria-hidden="true">{"→"}</div>
-          </Link>
         </div>
       </div>
     </div>
