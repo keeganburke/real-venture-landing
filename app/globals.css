@@ -4749,3 +4749,39 @@ a.tier-cta {
     grid-column: 1 / -1;
   }
 }
+
+/* ============================================================================
+   HUB PROMO CARD ICONS · real logos
+   ============================================================================ */
+
+.hub2-discord-svg {
+  width: 26px;
+  height: 26px;
+  color: #ffffff;
+  display: block;
+}
+
+.hub2-studio-logo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  display: block;
+}
+
+/* Livestreams page note */
+.livestreams-note {
+  padding: 16px 20px;
+  background: rgba(245, 197, 96, 0.06);
+  border: 1px solid rgba(245, 197, 96, 0.2);
+  border-radius: 12px;
+  margin-bottom: 24px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.5;
+}
+
+.livestreams-note-link {
+  color: #F5C560;
+  text-decoration: underline;
+}

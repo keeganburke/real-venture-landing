@@ -22,27 +22,33 @@ export default function LivestreamsPage() {
           <div className="hub2-greeting-eyebrow">Group calls</div>
           <h1 className="hub2-greeting-name">Weekly schedule</h1>
           <p className="hub2-greeting-sub">
-            Live calls 6 days a week. Same time every day.
+            Live calls 7 days a week. All times PST.
           </p>
         </header>
 
-        <section className="hub2-schedule-card">
-          <div className="hub2-schedule-time">
-            <div className="hub2-schedule-time-label">Every call</div>
-            <div className="hub2-schedule-time-value">4:00 PM PST · 7:00 PM EST</div>
-          </div>
+        <section className="livestreams-note">
+          <p>
+            All times PST. Live streams are held in the Discord{" "}
+            <a href="/api/discord/connect" className="livestreams-note-link">
+              voice channel
+            </a>.
+          </p>
+        </section>
 
+        <section className="hub2-schedule-card">
           <div className="hub2-schedule-list">
             {WEEKLY_SCHEDULE.map((call) => (
-              <div key={call.day} className="hub2-schedule-row">
+              <div key={call.id} className="hub2-schedule-row">
                 <div className="hub2-schedule-day">{call.day}</div>
                 <div className="hub2-schedule-body">
-                  <div className="hub2-schedule-title">{call.title}</div>
-                  <div className="hub2-schedule-hosts">with {call.hosts}</div>
+                  <div className="hub2-schedule-title">{call.startTime} - {call.endTime} PST</div>
+                  <div className="hub2-schedule-hosts">with {call.host}</div>
                 </div>
-                <div className={`hub2-schedule-type hub2-schedule-type-${call.type === "Q&A" ? "qa" : "grind"}`}>
-                  {call.type}
-                </div>
+                {call.type && (
+                  <div className={`hub2-schedule-type hub2-schedule-type-${call.type === "Q&A" ? "qa" : "grind"}`}>
+                    {call.type}
+                  </div>
+                )}
               </div>
             ))}
           </div>
