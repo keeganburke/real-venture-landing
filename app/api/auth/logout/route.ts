@@ -7,3 +7,8 @@ export async function GET(request: NextRequest) {
   response.cookies.set(SESSION_COOKIE_NAME, "", { maxAge: 0, path: "/" });
   return response;
 }
+
+// The hub menu signs out with a fetch POST, then navigates itself.
+export async function POST(request: NextRequest) {
+  return GET(request);
+}

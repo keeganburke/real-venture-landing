@@ -5,6 +5,7 @@ import Link from "next/link";
 import { WEEKLY_SCHEDULE } from "./hub-copy";
 import type { Destination, FeedbackAction } from "./hub-copy";
 import { getNextCalls } from "./lib/next-calls";
+import MenuDropdown from "./MenuDropdown";
 
 type NextLessonInfo = {
   title: string;
@@ -143,7 +144,7 @@ export default function HubClient({
         {/* Top nav */}
         <nav className="hub2-nav">
           <div className="hub2-logo" aria-hidden="true">RV</div>
-          <button type="button" className="hub2-menu">MENU</button>
+          <MenuDropdown />
         </nav>
 
         {/* Greeting. Nameless fallback: "Welcome back" becomes the heading. */}
