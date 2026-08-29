@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../../lib/session";
 import { createAdminClient } from "../../lib/supabase/server";
-import { getWhopMemberSummary } from "../../lib/whop-member";
+import { getWhopMemberSummary, resolveDisplayName } from "../../lib/whop-member";
 import HubClient from "./HubClient";
 import { DESTINATIONS, FEEDBACK } from "./hub-copy";
 
@@ -63,7 +63,7 @@ export default async function DashboardPage() {
   if (typeof profileName === "string" && profileName.trim().length > 0) {
     displayName = profileName.trim();
   } else {
-    displayName = whopMember.name ?? whopMember.username;
+    displayName = resolveDisplayName(whopMember);
   }
   const rawPhoto = profileRes.data?.photo_url;
   const avatarUrl =
