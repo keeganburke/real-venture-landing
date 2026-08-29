@@ -30,6 +30,22 @@ export const RESOURCES: Resource[] = [
     content: "We're an unrepresented buyer, so if you would please present this offer and then write up the PSA once approved that would be great. Please send it over to (insert email). Thank you.\n\n(Insert Approved Price) All cash. 14 day inspection period. $500 EMD. 30 day close.\n\nBuyers agent fee: Not Applicable / Seller pays buyers agent commission if you are to represent me. Buyer pays traditional closing costs for buyer's side.\n\nUsing (insert wholesale friendly title co) as our title company. Buyer: (insert buyers name).\n\nWhat This Does: This message is designed to help you submit offers on-market while protecting your position and maximizing profit. By stating you are an unrepresented buyer, you are making it clear that you are not working with an agent. This forces the listing agent to write the contract for you, saving you time and keeping control of the deal."
   },
   {
+    id: "contract-templates",
+    emoji: "📄",
+    title: "Contract Templates",
+    description: "PSAs, assignment agreements, and other core contract files.",
+    content: "Download and upload to DocuSign to sign digitally.\n\n📝 Assignment Contract\nAssign your equitable interest to an end buyer for your assignment fee.\n\n💵 Cash Purchase Agreement\nStandard PSA for straight cash acquisitions.\n\n🏦 Seller Finance Purchase\nPurchase contract with seller carryback financing terms.\n\n🤝 JV Agreement\nSplit fees on a joint venture deal between two wholesalers.",
+    links: [
+      { label: "Open DocuSign", href: "https://www.docusign.com", external: true }
+    ],
+    downloads: [
+      { label: "Assignment Contract", href: "/resources/contracts/assignment-docusign.pdf" },
+      { label: "Cash Purchase Agreement", href: "/resources/contracts/cash-purchase-docusign.pdf" },
+      { label: "Seller Finance Purchase", href: "/resources/contracts/seller-finance-docusign.pdf" },
+      { label: "JV Agreement", href: "/resources/contracts/jv-docusign.pdf" }
+    ]
+  },
+  {
     id: "wholesaling-terms",
     emoji: "📚",
     title: "Wholesaling Terms",
@@ -67,11 +83,4 @@ export const RESOURCES: Resource[] = [
       { label: "VA Cold Call Script", href: "/resources/va-cold-call-script.pdf" }
     ]
   },
-  {
-    id: "contract-templates",
-    emoji: "📄",
-    title: "Contract Templates",
-    description: "PSAs, assignment agreements, and other core contract files.",
-    content: "Contract PDFs coming this week. Check back, or ask in the Discord and we'll send you what you need for your specific deal."
-  }
 ];

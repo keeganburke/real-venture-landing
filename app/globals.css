@@ -5656,3 +5656,23 @@ body:has(.hub-page) {
 .hub2-destination-sub {
   font-size: 13.5px;
 }
+
+/* ============================================================================
+   NAV PILL TRUE-CENTER + DESTINATION SECTION SPACING
+   ============================================================================ */
+
+/* Equal outer-segment widths so the logo sits visually centered between
+   MENU and the avatar (min-width, not flex: 1, so the rounded hover pills
+   keep their natural size). */
+.dash-nav .lp-nav-segment:not(.lp-nav-logo-seg) {
+  min-width: 104px;
+}
+.dash-nav .lp-nav-avatar-seg {
+  justify-content: flex-end;
+}
+
+/* Destination row regained its section gap after the header removal. */
+.hub2-destinations {
+  margin-top: 28px;
+  gap: 12px;
+}
