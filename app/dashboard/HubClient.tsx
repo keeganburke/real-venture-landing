@@ -239,13 +239,10 @@ export default function HubClient({
             <p className="hub2-discord-sub">
               350+ members closing deals every week. Ask questions, share wins, get help.
             </p>
-            <a
-              href="/api/discord/connect"
-              className="hub2-discord-cta"
-            >
+            <Link href="/dashboard/discord-help" className="hub2-discord-cta">
               <span>Join Discord</span>
-              <span aria-hidden="true">↗</span>
-            </a>
+              <span aria-hidden="true">→</span>
+            </Link>
           </section>
         )}
 

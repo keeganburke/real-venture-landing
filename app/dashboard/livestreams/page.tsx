@@ -65,29 +65,29 @@ export default function LivestreamsPage() {
           <div className="hub2-schedule-note">
             <div className="hub2-schedule-note-icon" aria-hidden="true">🎙</div>
             <div>
-              <div className="hub2-schedule-note-title">Live Q&A + Deal Review</div>
+              <div className="hub2-schedule-note-title">Coaching, Q&A + Deal Review</div>
               <div className="hub2-schedule-note-body">
-                Bring any question and get your deals reviewed live. Nothing is too beginner.
+                Get unstuck with the coaches: mentorship, questions answered, and your deals reviewed live.
               </div>
             </div>
           </div>
 
           <div className="hub2-schedule-note">
-            <div className="hub2-schedule-note-icon" aria-hidden="true">💻</div>
+            <div className="hub2-schedule-note-icon" aria-hidden="true">📞</div>
             <div>
-              <div className="hub2-schedule-note-title">Live working sessions</div>
+              <div className="hub2-schedule-note-title">Buyer Outreach + Cold Calls</div>
               <div className="hub2-schedule-note-body">
-                Coaching, buyer outreach, deal underwriting, and cold calls, live on screen with the coaches.
+                Hands-on working sessions: dial sellers and build your buyer list live alongside the team.
               </div>
             </div>
           </div>
 
           <div className="hub2-schedule-note">
-            <div className="hub2-schedule-note-icon" aria-hidden="true">🎥</div>
+            <div className="hub2-schedule-note-icon" aria-hidden="true">📊</div>
             <div>
-              <div className="hub2-schedule-note-title">Every call is recorded</div>
+              <div className="hub2-schedule-note-title">Underwriting + Deal Breakdowns</div>
               <div className="hub2-schedule-note-body">
-                Miss one? Recordings drop in Discord under #call-recordings.
+                Learn the numbers: watch real deals get analyzed and broken down step by step.
               </div>
             </div>
           </div>

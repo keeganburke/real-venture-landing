@@ -21,6 +21,7 @@ for (const file of readdirSync(reviewsDir)) {
   entries.push({ file });
 }
 
-entries.sort((a, b) => a.file.localeCompare(b.file));
+// Newest first: higher review number = more recent.
+entries.sort((a, b) => b.file.localeCompare(a.file));
 writeFileSync(outFile, JSON.stringify(entries, null, 2) + "\n");
 console.log(`${entries.length} files processed -> app/reviews-manifest.json`);
