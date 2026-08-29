@@ -5,7 +5,6 @@ import Link from "next/link";
 import { WEEKLY_SCHEDULE } from "./hub-copy";
 import type { Destination, FeedbackAction } from "./hub-copy";
 import { getLiveCall, getNextCalls } from "./lib/next-calls";
-import MenuDropdown from "./MenuDropdown";
 
 const GREETINGS = [
   "Welcome back, {name}",
@@ -39,7 +38,6 @@ type NextLessonInfo = {
 
 type Props = {
   displayName: string | null;
-  avatarUrl: string | null;
   doneCount: number;
   totalLessons: number;
   nextLesson: NextLessonInfo | null;
@@ -97,7 +95,6 @@ function getDiscordStatusInfo(status: string): { message: string; variant: "succ
 
 export default function HubClient({
   displayName,
-  avatarUrl,
   doneCount,
   totalLessons,
   nextLesson,
@@ -175,15 +172,6 @@ export default function HubClient({
             </div>
           );
         })()}
-
-        {/* Top nav */}
-        <nav className="hub2-nav">
-          <div className="rv-wordmark">
-            <img src="/logo.png" alt="" aria-hidden="true" />
-            <span>REAL VENTURE</span>
-          </div>
-          <MenuDropdown avatarUrl={avatarUrl} initial={(displayName?.trim().charAt(0) || "M").toUpperCase()} />
-        </nav>
 
         {/* Greeting. Rotating phrase; personalized when a profile name exists. */}
         <header className="hub2-greeting">

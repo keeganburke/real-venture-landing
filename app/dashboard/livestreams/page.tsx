@@ -12,12 +12,6 @@ export default function LivestreamsPage() {
       <div className="hub2-shell">
 
         <nav className="hub2-nav">
-          <Link href="/dashboard" className="hub2-logo-link" aria-label="Back to hub">
-            <div className="rv-wordmark">
-              <img src="/logo.png" alt="" aria-hidden="true" />
-              <span>REAL VENTURE</span>
-            </div>
-          </Link>
           <Link href="/dashboard" className="hub2-menu">← Back</Link>
         </nav>
 

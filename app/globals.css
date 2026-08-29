@@ -5492,3 +5492,42 @@ html:has(.hub-page) {
   background-clip: text;
   color: transparent;
 }
+
+/* ============================================================================
+   DASHBOARD NAV (landing pill reused)
+   Avatar segment sizing, drawer link/signout variants, dark body ground.
+   ============================================================================ */
+
+.lp-nav-avatar-seg {
+  padding: 4px 10px;
+}
+.lp-nav-avatar-seg .hub2-avatar-btn {
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+}
+
+a.lp-drawer-item {
+  text-decoration: none;
+}
+.dash-drawer-sep {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 8px 0;
+}
+.lp-drawer-item.dash-drawer-signout {
+  color: #FF6B7A;
+}
+.lp-drawer-item.dash-drawer-signout:hover {
+  background: rgba(220, 53, 69, 0.08);
+}
+.lp-drawer-item.dash-drawer-signout .lp-drawer-num {
+  color: #FF6B7A;
+}
+
+/* Match the document ground to the dark dashboard so the sticky nav band
+   never sits on a light strip. */
+body:has(.hub2-page),
+body:has(.hub-page) {
+  background: #0a0a0a;
+}

@@ -51,7 +51,7 @@ export default async function DashboardPage() {
       .not("completed_at", "is", null),
     supabase
       .from("member_profiles")
-      .select("display_name, photo_url")
+      .select("display_name")
       .eq("whop_user_id", userId)
       .maybeSingle(),
     getWhopMemberSummary(userId),
@@ -65,9 +65,6 @@ export default async function DashboardPage() {
   } else {
     displayName = resolveDisplayName(whopMember);
   }
-  const rawPhoto = profileRes.data?.photo_url;
-  const avatarUrl =
-    typeof rawPhoto === "string" && rawPhoto.length > 0 ? rawPhoto : whopMember.photoUrl;
 
   const courses = coursesRes.data ?? [];
   const lessons = (lessonsRes.data ?? []) as LessonRow[];
@@ -106,7 +103,6 @@ export default async function DashboardPage() {
   return (
     <HubClient
       displayName={displayName}
-      avatarUrl={avatarUrl}
       doneCount={doneCount}
       totalLessons={totalLessons}
       nextLesson={nextLessonInfo}

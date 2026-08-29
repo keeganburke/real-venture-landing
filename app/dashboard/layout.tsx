@@ -3,6 +3,9 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../../lib/session";
 import { getIntakeCookie } from "../../lib/intake-cookie";
+import { createAdminClient } from "../../lib/supabase/server";
+import { getWhopMemberSummary, resolveDisplayName } from "../../lib/whop-member";
+import DashboardNav from "./DashboardNav";
 
 export const metadata: Metadata = {
   title: "Real Venture | Hub",
@@ -20,5 +23,31 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
   const intake = await getIntakeCookie();
   if (!intake?.completedAt) redirect("/onboarding");
 
-  return children;
+  // Nav identity: saved profile wins, Whop's embedded user record fills gaps.
+  const [profileRes, whopMember] = await Promise.all([
+    createAdminClient()
+      .from("member_profiles")
+      .select("display_name, photo_url")
+      .eq("whop_user_id", session.whopUserId)
+      .maybeSingle(),
+    getWhopMemberSummary(session.whopUserId),
+  ]);
+  const profileName = profileRes.data?.display_name;
+  const displayName =
+    typeof profileName === "string" && profileName.trim().length > 0
+      ? profileName.trim()
+      : resolveDisplayName(whopMember);
+  const rawPhoto = profileRes.data?.photo_url;
+  const avatarUrl =
+    typeof rawPhoto === "string" && rawPhoto.length > 0 ? rawPhoto : whopMember.photoUrl;
+
+  return (
+    <>
+      <DashboardNav
+        avatarUrl={avatarUrl}
+        initial={(displayName?.trim().charAt(0) || "M").toUpperCase()}
+      />
+      {children}
+    </>
+  );
 }
