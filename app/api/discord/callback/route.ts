@@ -10,6 +10,74 @@ function redirectWithStatus(status: string) {
   return NextResponse.redirect(new URL(`/dashboard?discord=${status}`, SITE_URL));
 }
 
+const ROLE_IDS = {
+  BASE: process.env.DISCORD_BASE_ROLE_ID,
+  PRO: process.env.DISCORD_PRO_ROLE_ID,
+  FALLBACK: process.env.DISCORD_ROLE_ID,
+};
+
+// Same hosted plan ids as the landing PLANS config and the profile tier
+// check (app/api/profile/get); duplicated here on purpose, that module
+// keeps its logic private.
+const PLAN_TIERS: Record<string, "Base" | "Pro"> = {
+  plan_2NqC2WJzV87QY: "Base",
+  plan_J8vFpCWME75W3: "Pro",
+};
+
+// Best-effort tier from the caller's Whop memberships. Any failure returns
+// nulls so the caller falls back to the original single role: no one is
+// ever left roleless because tier detection hiccuped.
+async function getWhopTier(
+  whopUserId: string
+): Promise<{ tier: "Base" | "Pro" | null; planId: string | null }> {
+  const productId = process.env.WHOP_PRODUCT_ID;
+  const companyId = process.env.WHOP_COMPANY_ID;
+  if (!productId || !companyId) return { tier: null, planId: null };
+
+  try {
+    const params = new URLSearchParams({ company_id: companyId });
+    params.append("user_ids", whopUserId);
+    params.append("product_ids", productId);
+    params.append("statuses", "active");
+    params.append("statuses", "trialing");
+    params.append("statuses", "completed");
+
+    const res = await fetch(`https://api.whop.com/api/v1/memberships?${params.toString()}`, {
+      headers: {
+        Authorization: `Bearer ${process.env.WHOP_API_KEY ?? ""}`,
+        Accept: "application/json",
+      },
+      cache: "no-store",
+    });
+    if (!res.ok) return { tier: null, planId: null };
+
+    const page = await res.json();
+    const rows: Record<string, unknown>[] = Array.isArray(page?.data) ? page.data : [];
+    let tier: "Base" | "Pro" | null = null;
+    let planId: string | null = null;
+    for (const row of rows) {
+      const rowPlanId =
+        typeof row.plan_id === "string"
+          ? row.plan_id
+          : typeof (row.plan as Record<string, unknown> | undefined)?.id === "string"
+            ? ((row.plan as Record<string, unknown>).id as string)
+            : null;
+      const rowTier = rowPlanId ? PLAN_TIERS[rowPlanId] : undefined;
+      // Pro wins when both memberships exist.
+      if (rowTier === "Pro") {
+        tier = "Pro";
+        planId = rowPlanId;
+      } else if (rowTier === "Base" && tier !== "Pro") {
+        tier = "Base";
+        planId = rowPlanId;
+      }
+    }
+    return { tier, planId };
+  } catch {
+    return { tier: null, planId: null };
+  }
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
@@ -36,13 +104,36 @@ export async function GET(request: NextRequest) {
   const clientSecret = process.env.DISCORD_CLIENT_SECRET;
   const botToken = process.env.DISCORD_BOT_TOKEN;
   const guildId = process.env.DISCORD_GUILD_ID;
-  const roleId = process.env.DISCORD_ROLE_ID;
   const redirectUri = `${SITE_URL}/api/discord/callback`;
 
-  if (!clientId || !clientSecret || !botToken || !guildId || !roleId) {
+  if (!ROLE_IDS.FALLBACK) {
+    console.error("[discord/callback] Missing DISCORD_ROLE_ID");
+    return redirectWithStatus("misconfigured");
+  }
+  if (!clientId || !clientSecret || !botToken || !guildId) {
     console.error("Discord env vars missing");
     return redirectWithStatus("misconfigured");
   }
+
+  // Tier-split role: Pro and Base get their own role when configured;
+  // unknown plan, missing membership, Whop API error, or missing tier env
+  // all fall back to the original single role.
+  const { tier, planId } = await getWhopTier(session.whopUserId);
+  let roleId = ROLE_IDS.FALLBACK;
+  let resolvedTier = "fallback";
+  if (tier === "Pro" && ROLE_IDS.PRO) {
+    roleId = ROLE_IDS.PRO;
+    resolvedTier = "Pro";
+  } else if (tier === "Base" && ROLE_IDS.BASE) {
+    roleId = ROLE_IDS.BASE;
+    resolvedTier = "Base";
+  }
+  console.log("[discord/callback] Assigning role", {
+    whopUserId: session.whopUserId,
+    planId,
+    roleId,
+    tier: resolvedTier,
+  });
 
   try {
     // Step 1: Exchange code for user access token
