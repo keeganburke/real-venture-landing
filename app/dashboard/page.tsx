@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../../lib/session";
 import { createAdminClient } from "../../lib/supabase/server";
 import HubClient from "./HubClient";
-import { LIVESTREAMS, DESTINATIONS, FEEDBACK } from "./hub-copy";
+import { DESTINATIONS, FEEDBACK } from "./hub-copy";
 
 export const metadata: Metadata = {
   title: "Real Venture | Hub",
@@ -90,7 +90,6 @@ export default async function DashboardPage() {
       doneCount={doneCount}
       totalLessons={totalLessons}
       nextLesson={nextLessonInfo}
-      livestreams={LIVESTREAMS}
       destinations={DESTINATIONS}
       feedback={FEEDBACK}
     />

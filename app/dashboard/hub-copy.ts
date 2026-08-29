@@ -2,17 +2,8 @@
 // group-calls schedule page.
 
 /* ========================================================================
-   HUB v2 (single-column Duolingo-style hub). The exports above stay so the
-   old hub components remain compilable until the cleanup pass.
+   HUB v2 (single-column Duolingo-style hub)
    ======================================================================== */
-
-export type Livestream = {
-  id: string;
-  title: string;
-  host: string;
-  dateISO: string; // e.g. "2026-08-28T19:00:00-05:00"
-  isFeatured?: boolean; // renders in the big featured card, not the compact list
-};
 
 export type Destination = {
   id: string;
@@ -29,30 +20,6 @@ export type FeedbackAction = {
   label: string;
   href: string;
 };
-
-// TODO: wire to real schedule. Group calls happen 7 days a week.
-// Update these dates weekly or wire to a real source.
-export const LIVESTREAMS: Livestream[] = [
-  {
-    id: "ls-featured",
-    title: "Deal Analysis Live",
-    host: "with William",
-    dateISO: "2026-08-28T19:00:00-05:00",
-    isFeatured: true,
-  },
-  {
-    id: "ls-2",
-    title: "Buyer Building Workshop",
-    host: "with Keegan",
-    dateISO: "2026-08-29T18:00:00-05:00",
-  },
-  {
-    id: "ls-3",
-    title: "Weekly Q&A",
-    host: "with William",
-    dateISO: "2026-08-31T14:00:00-05:00",
-  },
-];
 
 export const DESTINATIONS: Destination[] = [
   {

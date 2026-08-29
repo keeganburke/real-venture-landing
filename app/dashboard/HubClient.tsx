@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { Destination, FeedbackAction, Livestream } from "./hub-copy";
+import { WEEKLY_SCHEDULE } from "./hub-copy";
+import type { Destination, FeedbackAction } from "./hub-copy";
+import { getNextCalls } from "./lib/next-calls";
 
 type NextLessonInfo = {
   title: string;
@@ -17,35 +19,39 @@ type Props = {
   doneCount: number;
   totalLessons: number;
   nextLesson: NextLessonInfo | null;
-  livestreams: Livestream[];
   destinations: Destination[];
   feedback: FeedbackAction[];
 };
 
-const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// Schedule times are Pacific wall-clock; render everything in LA terms so
+// server timezone and viewer timezone never shift the labels.
+const LA_TZ = "America/Los_Angeles";
 
-function formatDay(iso: string) {
-  const d = new Date(iso);
-  return { month: MONTH_NAMES[d.getMonth()], day: d.getDate(), weekday: DAY_NAMES[d.getDay()] };
+function laDay(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: LA_TZ,
+    month: "short",
+    day: "numeric",
+    weekday: "short",
+  }).formatToParts(date);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  return { month: get("month"), day: get("day"), weekday: get("weekday") };
 }
 
-function formatTime(iso: string) {
-  const d = new Date(iso);
-  const opts: Intl.DateTimeFormatOptions = { hour: "numeric", minute: "2-digit", timeZoneName: "short" };
-  return d.toLocaleTimeString("en-US", opts);
+function laDateKey(date: Date) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: LA_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
 }
 
-function isTomorrow(iso: string) {
-  const d = new Date(iso);
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  return d.toDateString() === tomorrow.toDateString();
-}
-
-function isToday(iso: string) {
-  const d = new Date(iso);
-  return d.toDateString() === new Date().toDateString();
+function dayLabel(occursAt: Date) {
+  const now = new Date();
+  if (laDateKey(occursAt) === laDateKey(now)) return "Today";
+  if (laDateKey(occursAt) === laDateKey(new Date(now.getTime() + 86400000))) return "Tomorrow";
+  return new Intl.DateTimeFormat("en-US", { timeZone: LA_TZ, weekday: "long" }).format(occursAt);
 }
 
 function getDiscordStatusInfo(status: string): { message: string; variant: "success" | "info" | "error" } {
@@ -70,7 +76,6 @@ export default function HubClient({
   doneCount,
   totalLessons,
   nextLesson,
-  livestreams,
   destinations,
   feedback,
 }: Props) {
@@ -108,8 +113,9 @@ export default function HubClient({
     }
   }, []);
 
-  const featured = livestreams.find((l) => l.isFeatured) ?? livestreams[0];
-  const rest = livestreams.filter((l) => l.id !== featured?.id).slice(0, 3);
+  const upcomingCalls = getNextCalls(WEEKLY_SCHEDULE, new Date(), 4);
+  const featured = upcomingCalls[0];
+  const rest = upcomingCalls.slice(1);
   const progressPct = totalLessons > 0 ? Math.round((doneCount / totalLessons) * 100) : 0;
   const isComplete = nextLesson === null && totalLessons > 0;
 
@@ -270,40 +276,40 @@ export default function HubClient({
 
         {/* Livestreams */}
         <div className="hub2-section-head">
-          <div className="hub2-section-title">Group Calls</div>
+          <div className="hub2-section-title">Livestreams</div>
           <Link href="/dashboard/livestreams" className="hub2-section-link">Full schedule →</Link>
         </div>
 
         {featured && (
           <div className="hub2-livestream">
             <div className="hub2-livestream-date">
-              <div className="hub2-livestream-date-month">{formatDay(featured.dateISO).month}</div>
-              <div className="hub2-livestream-date-day">{formatDay(featured.dateISO).day}</div>
+              <div className="hub2-livestream-date-month">{laDay(featured.occursAt).month}</div>
+              <div className="hub2-livestream-date-day">{laDay(featured.occursAt).day}</div>
             </div>
             <div className="hub2-livestream-body">
               <div className="hub2-livestream-label">
                 <span className="hub2-livestream-pulse" aria-hidden="true"></span>
-                {isToday(featured.dateISO) ? "Today" : isTomorrow(featured.dateISO) ? "Tomorrow" : formatDay(featured.dateISO).weekday}
+                {dayLabel(featured.occursAt)}
               </div>
-              <div className="hub2-livestream-title">{featured.title}</div>
-              <div className="hub2-livestream-time">{formatTime(featured.dateISO)} · {featured.host}</div>
+              <div className="hub2-livestream-title">Live with {featured.call.host}</div>
+              <div className="hub2-livestream-time">{featured.call.startTime} - {featured.call.endTime} PST</div>
             </div>
           </div>
         )}
 
         {rest.length > 0 && (
           <div className="hub2-upcoming">
-            {rest.map((ls) => {
-              const d = formatDay(ls.dateISO);
+            {rest.map(({ call, occursAt }) => {
+              const d = laDay(occursAt);
               return (
-                <div key={ls.id} className="hub2-upcoming-row">
+                <div key={call.id} className="hub2-upcoming-row">
                   <div className="hub2-upcoming-day">
                     <div className="hub2-upcoming-day-name">{d.weekday}</div>
                     <div className="hub2-upcoming-day-num">{d.day}</div>
                   </div>
                   <div className="hub2-upcoming-body">
-                    <div className="hub2-upcoming-title">{ls.title}</div>
-                    <div className="hub2-upcoming-time">{formatTime(ls.dateISO)} · {ls.host}</div>
+                    <div className="hub2-upcoming-title">Live with {call.host}</div>
+                    <div className="hub2-upcoming-time">{call.startTime} - {call.endTime} PST</div>
                   </div>
                 </div>
               );
