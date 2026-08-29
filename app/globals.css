@@ -4480,3 +4480,272 @@ a.tier-cta {
     transition: none;
   }
 }
+
+/* ============================================================================
+   TOOLS PAGE · TABS
+   ============================================================================ */
+
+.tools-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+}
+
+.tools-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tools-tab:hover:not(.is-active) {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.tools-tab.is-active {
+  background: linear-gradient(135deg, rgba(245, 197, 96, 0.15), rgba(245, 197, 96, 0.05));
+  color: #F5C560;
+  box-shadow: inset 0 0 0 1px rgba(245, 197, 96, 0.3);
+}
+
+.tools-tab-icon {
+  font-size: 16px;
+}
+
+/* --- Software list --- */
+.soft-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.soft-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 22px;
+  background: #141418;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.soft-card:hover {
+  background: rgba(245, 197, 96, 0.04);
+  border-color: rgba(245, 197, 96, 0.25);
+}
+
+.soft-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(245, 197, 96, 0.1);
+  border: 1px solid rgba(245, 197, 96, 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.soft-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.soft-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.soft-title {
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.soft-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(245, 197, 96, 0.12);
+  border: 1px solid rgba(245, 197, 96, 0.25);
+  color: #F5C560;
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.soft-desc {
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.5;
+}
+
+.soft-arrow {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 16px;
+}
+
+/* --- POF image inside resource card --- */
+.res-image-wrap {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.res-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ============================================================================
+   HUB PROMO CARDS (Studio + Discord promoted to hero-adjacent)
+   ============================================================================ */
+
+.hub2-studio {
+  position: relative;
+  background: linear-gradient(135deg, rgba(245, 197, 96, 0.12), rgba(245, 197, 96, 0.03));
+  border: 1px solid rgba(245, 197, 96, 0.3);
+  border-radius: 18px;
+  padding: 28px;
+  margin-top: 24px;
+  overflow: hidden;
+}
+
+.hub2-studio-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #F5C560, #E5A544);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 24px rgba(197, 125, 46, 0.3);
+}
+
+.hub2-studio-title {
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  color: #ffffff;
+  margin-bottom: 6px;
+}
+
+.hub2-studio-sub {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.hub2-studio-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  color: #0a0a0a;
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(197, 125, 46, 0.25);
+  transition: transform 0.15s ease;
+}
+
+.hub2-studio-cta:hover {
+  transform: translateY(-1px);
+}
+
+/* --- Dismiss button on both promo cards --- */
+.hub2-promo-dismiss {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+  z-index: 2;
+}
+
+.hub2-promo-dismiss:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub2-studio-cta,
+  .hub2-promo-dismiss,
+  .tools-tab,
+  .soft-card {
+    transition: none;
+  }
+}
+
+/* ============================================================================
+   HUB v2 DESKTOP · PROMO CARD PLACEMENT
+   Discord + Studio share the right column beside the Group Calls block.
+   order: 1 lets the grid place the section head and call rows first, then
+   dense-packs both cards into column 2 alongside them. Mobile (block flow)
+   keeps the promoted DOM order.
+   ============================================================================ */
+
+@media (min-width: 900px) {
+  .hub2-discord {
+    grid-row: span 1;
+    order: 1;
+  }
+  .hub2-studio {
+    grid-column: 2;
+    grid-row: span 1;
+    order: 1;
+    margin-top: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .hub2-banner {
+    grid-column: 1 / -1;
+  }
+}

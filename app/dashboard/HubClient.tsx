@@ -95,6 +95,19 @@ export default function HubClient({
     return () => clearTimeout(timer);
   }, []);
 
+  const [discordDismissed, setDiscordDismissed] = useState(false);
+  const [studioDismissed, setStudioDismissed] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      if (localStorage.getItem("rv_discord_dismissed") === "1") setDiscordDismissed(true);
+      if (localStorage.getItem("rv_studio_dismissed") === "1") setStudioDismissed(true);
+    } catch {
+      // localStorage unavailable; keep cards visible
+    }
+  }, []);
+
   const featured = livestreams.find((l) => l.isFeatured) ?? livestreams[0];
   const rest = livestreams.filter((l) => l.id !== featured?.id).slice(0, 3);
   const progressPct = totalLessons > 0 ? Math.round((doneCount / totalLessons) * 100) : 0;
@@ -178,6 +191,65 @@ export default function HubClient({
           </section>
         )}
 
+        {/* Promoted cards: Discord + Studio. Dismissible via localStorage. */}
+        {!discordDismissed && (
+          <section className="hub2-discord">
+            <button
+              type="button"
+              className="hub2-promo-dismiss"
+              onClick={() => {
+                localStorage.setItem("rv_discord_dismissed", "1");
+                setDiscordDismissed(true);
+              }}
+              aria-label="Hide, I'm already in Discord"
+            >
+              ✕
+            </button>
+            <div className="hub2-discord-icon" aria-hidden="true">💬</div>
+            <div className="hub2-discord-title">Join the community</div>
+            <p className="hub2-discord-sub">
+              350+ members closing deals every week. Ask questions, share wins, get help.
+            </p>
+            <a
+              href="/api/discord/connect"
+              className="hub2-discord-cta"
+            >
+              <span>Join Discord</span>
+              <span aria-hidden="true">↗</span>
+            </a>
+          </section>
+        )}
+
+        {!studioDismissed && (
+          <section className="hub2-studio">
+            <button
+              type="button"
+              className="hub2-promo-dismiss"
+              onClick={() => {
+                localStorage.setItem("rv_studio_dismissed", "1");
+                setStudioDismissed(true);
+              }}
+              aria-label="Hide, I'm already logged in"
+            >
+              ✕
+            </button>
+            <div className="hub2-studio-icon" aria-hidden="true">🛠</div>
+            <div className="hub2-studio-title">Real Venture Studio</div>
+            <p className="hub2-studio-sub">
+              Deal analyzer, buyers, pipeline. Everything to run your business.
+            </p>
+            <a
+              href="https://realventurestudio.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hub2-studio-cta"
+            >
+              <span>Enter the Studio</span>
+              <span aria-hidden="true">↗</span>
+            </a>
+          </section>
+        )}
+
         {/* Livestreams */}
         <div className="hub2-section-head">
           <div className="hub2-section-title">Group Calls</div>
@@ -221,28 +293,13 @@ export default function HubClient({
           </div>
         )}
 
-        {/* Discord CTA. Always visible tonight. Detection later. */}
-        <section className="hub2-discord">
-          <div className="hub2-discord-icon" aria-hidden="true">💬</div>
-          <div className="hub2-discord-title">Join the community</div>
-          <p className="hub2-discord-sub">
-            350+ members closing deals every week. Ask questions, share wins, get help.
-          </p>
-          <a
-            href="/api/discord/connect"
-            className="hub2-discord-cta"
-          >
-            <span>Join Discord</span>
-            <span aria-hidden="true">↗</span>
-          </a>
-        </section>
-
         {/* Destinations */}
         <div className="hub2-section-head">
           <div className="hub2-section-title">Everything else</div>
         </div>
         <div className="hub2-destinations">
-          {destinations.map((d) => (
+          {/* Studio is promoted to its own card above; keep the data entry, skip it here. */}
+          {destinations.filter((d) => d.id !== "studio").map((d) => (
             <a
               key={d.id}
               href={d.href}

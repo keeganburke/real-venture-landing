@@ -18,6 +18,7 @@ export type Resource = {
   content: string; // long-form text, uses \n\n for paragraph breaks
   links?: ResourceLink[];
   downloads?: ResourceDownload[];
+  image?: string;
 };
 
 export const RESOURCES: Resource[] = [
@@ -40,7 +41,8 @@ export const RESOURCES: Resource[] = [
     emoji: "💸",
     title: "Proof of Funds",
     description: "The current POF for one of our VIP buyers. Use to secure verbal agreements.",
-    content: "This is the current proof of funds for one of our VIP buyers. You're cleared to use this POF to secure verbal agreements on your offers.\n\nOnce we have buyer commitment and we're ready to sign the contract, Real Venture will issue a personalized proof of funds PDF for that specific deal.\n\nLock in the verbal first. Then once the underwriting team approves and we have buyer commitment, we'll get you the official POF to close.\n\n(POF screenshot / file coming soon. Ask in the Discord for the current version.)"
+    content: "This is the current proof of funds for one of our VIP buyers. You're cleared to use this POF to secure verbal agreements on your offers.\n\nOnce we have buyer commitment and we're ready to sign the contract, Real Venture will issue a personalized proof of funds PDF for that specific deal.\n\nLock in the verbal first. Then once the underwriting team approves and we have buyer commitment, we'll get you the official POF to close.",
+    image: "/resources/pof.png"
   },
   {
     id: "llc-and-bank-setup",

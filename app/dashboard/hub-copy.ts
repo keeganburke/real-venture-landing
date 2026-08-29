@@ -73,9 +73,9 @@ export const DESTINATIONS: Destination[] = [
   {
     id: "resources",
     emoji: "📎",
-    title: "Tools & resources",
+    title: "Tools",
     sub: "Contracts, scripts, checklists",
-    href: "/dashboard/resources",
+    href: "/dashboard/tools",
   },
 ];
 
