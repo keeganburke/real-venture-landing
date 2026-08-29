@@ -345,9 +345,6 @@ export default function HubClient({
         )}
 
         {/* Destinations */}
-        <div className="hub2-section-head">
-          <div className="hub2-section-title">Everything else</div>
-        </div>
         <div className="hub2-destinations">
           {/* Studio is promoted to its own card above; keep the data entry, skip it here. */}
           {destinations.filter((d) => d.id !== "studio").map((d) => (

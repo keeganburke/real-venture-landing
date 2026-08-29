@@ -5626,3 +5626,33 @@ body:has(.hub-page) {
     transform: none;
   }
 }
+
+/* ============================================================================
+   NAV PILL SYMMETRY + DESTINATION CARDS AT SIBLING WEIGHT
+   ============================================================================ */
+
+/* Avatar segment matches MENU's padding; pill gutters match the shell's. */
+.dash-nav .lp-nav-avatar-seg {
+  padding: 8px 16px;
+}
+.dash-nav {
+  padding: 14px 24px;
+}
+
+/* Course library + Tools sized like the Studio card above them; their green
+   and gold gradient borders stay from the earlier pass. */
+.hub2-destination {
+  padding: 23px;
+  gap: 16px;
+}
+.hub2-destination-icon {
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+}
+.hub2-destination-title {
+  font-size: 19px;
+}
+.hub2-destination-sub {
+  font-size: 13.5px;
+}
