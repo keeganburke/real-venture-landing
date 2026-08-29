@@ -178,7 +178,10 @@ export default function HubClient({
 
         {/* Top nav */}
         <nav className="hub2-nav">
-          <img src="/logo.png" alt="" aria-hidden="true" width={120} height={120} style={{ display: "block", objectFit: "contain" }} />
+          <div className="rv-wordmark">
+            <img src="/logo.png" alt="" aria-hidden="true" />
+            <span>REAL VENTURE</span>
+          </div>
           <MenuDropdown avatarUrl={avatarUrl} initial={(displayName?.trim().charAt(0) || "M").toUpperCase()} />
         </nav>
 

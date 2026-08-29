@@ -5465,3 +5465,30 @@ html:has(.hub-page) {
 .pf-edit-btn {
   margin-top: 28px;
 }
+
+/* ============================================================================
+   RV WORDMARK
+   Hub nav brand mark: icon + REAL VENTURE text, gold, Cabinet Grotesk.
+   ============================================================================ */
+
+.rv-wordmark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rv-wordmark img {
+  height: 48px;
+  width: auto;
+  display: block;
+}
+.rv-wordmark span {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 23px;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--gold-bright) 0%, var(--gold) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
