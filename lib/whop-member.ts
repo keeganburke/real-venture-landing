@@ -36,6 +36,37 @@ function str(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
 }
 
+function emailLocal(email: string | null): string | null {
+  if (!email) return null;
+  const at = email.indexOf("@");
+  return at > 0 ? email.slice(0, at) : null;
+}
+
+// Display-name priority: Whop's real name field from checkout, unless it just
+// mirrors the auto-handle (Whop sometimes copies username into name); then the
+// email local part (cleaner than random handles); then username as the last
+// resort. Null when nothing usable exists so callers show no-name variants.
+export function resolveDisplayName(summary: WhopMemberSummary): string | null {
+  if (summary.name && summary.name !== summary.username) return summary.name;
+  return emailLocal(summary.email) ?? summary.username;
+}
+
+// ui-avatars renders 64px by default, which blurs at display sizes; request a
+// retina-friendly size. Real uploads on assets-2-prod.whop.com are full-res.
+function normalizePhotoUrl(url: string | null): string | null {
+  if (!url) return null;
+  if (url.includes("ui-avatars.com")) {
+    try {
+      const parsed = new URL(url);
+      parsed.searchParams.set("size", "256");
+      return parsed.toString();
+    } catch {
+      return url;
+    }
+  }
+  return url;
+}
+
 export async function getWhopMemberSummary(whopUserId: string): Promise<WhopMemberSummary> {
   const productId = process.env.WHOP_PRODUCT_ID;
   const companyId = process.env.WHOP_COMPANY_ID;
@@ -79,7 +110,7 @@ export async function getWhopMemberSummary(whopUserId: string): Promise<WhopMemb
         summary.name = summary.name ?? str(user.name);
         summary.username = summary.username ?? str(user.username);
         summary.email = summary.email ?? str(user.email);
-        summary.photoUrl = summary.photoUrl ?? str(user.profile_pic);
+        summary.photoUrl = summary.photoUrl ?? normalizePhotoUrl(str(user.profile_pic));
       }
     }
     return summary;

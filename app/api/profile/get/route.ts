@@ -31,5 +31,6 @@ export async function GET(request: NextRequest) {
     },
     tier,
     email,
+    whopPhotoUrl: whopMember.photoUrl,
   });
 }

@@ -33,6 +33,8 @@ export default function ProfileEditPage() {
   const [headline, setHeadline] = useState("");
   const [bio, setBio] = useState("");
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  // Whop's photo, display-only fallback; never written back on save.
+  const [whopPhoto, setWhopPhoto] = useState<string | null>(null);
 
   useEffect(() => {
     let stale = false;
@@ -48,6 +50,7 @@ export default function ProfileEditPage() {
         setHeadline(data.profile.headline ?? "");
         setBio(data.profile.bio ?? "");
         setPhotoUrl(data.profile.photoUrl ?? null);
+        setWhopPhoto(data.whopPhotoUrl ?? null);
         setEmail(data.email ?? null);
       } catch {
         if (!stale) setError("Could not load your profile. Try refreshing.");
@@ -124,8 +127,8 @@ export default function ProfileEditPage() {
           ) : (
             <div className="pf-form">
               <div className="pf-photo-row">
-                {photoUrl ? (
-                  <img className="pf-photo pf-photo-small" src={photoUrl} alt="Profile photo" width={80} height={80} />
+                {photoUrl || whopPhoto ? (
+                  <img className="pf-photo pf-photo-small" src={photoUrl ?? whopPhoto ?? undefined} alt="Profile photo" width={80} height={80} />
                 ) : (
                   <div className="pf-photo pf-photo-small pf-photo-fallback" aria-hidden="true">{initial}</div>
                 )}

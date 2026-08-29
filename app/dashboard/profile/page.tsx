@@ -2,7 +2,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../../../lib/session";
 import { createAdminClient } from "../../../lib/supabase/server";
-import { getWhopMemberSummary } from "../../../lib/whop-member";
+import { getWhopMemberSummary, resolveDisplayName } from "../../../lib/whop-member";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,7 @@ export default async function ProfilePage() {
   ]);
 
   const tier = whopMember.tier;
-  const name = profile?.display_name || whopMember.name || whopMember.username || "Member";
+  const name = profile?.display_name || resolveDisplayName(whopMember) || "Member";
   const photoUrl = profile?.photo_url || whopMember.photoUrl;
   const initial = name.trim().charAt(0).toUpperCase() || "M";
 
@@ -38,12 +38,14 @@ export default async function ProfilePage() {
 
           <section className="pf-card">
             {photoUrl ? (
-              <img className="pf-photo" src={photoUrl} alt={name} width={112} height={112} />
+              <img className="pf-photo" src={photoUrl} alt={name} width={140} height={140} />
             ) : (
               <div className="pf-photo pf-photo-fallback" aria-hidden="true">{initial}</div>
             )}
             <h1 className="pf-name">{name}</h1>
-            <div className={`pf-tier${tier === "Pro" ? " is-pro" : ""}`}>{tier ? `${tier} member` : "Member"}</div>
+            <div className={`pf-tier${tier === "Pro" ? " pf-badge-pro" : tier === "Base" ? " pf-badge-base" : ""}`}>
+              {tier ? `👑 ${tier} member` : "Member"}
+            </div>
             <Link href="/dashboard/profile/edit" className="pf-edit-btn">
               Edit profile
             </Link>

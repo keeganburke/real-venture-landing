@@ -5397,3 +5397,71 @@ html:has(.hub-page) {
     transform: none;
   }
 }
+
+/* ============================================================================
+   PROFILE PRESENCE PASS
+   Tier badges with crowns, bigger photo, card breathing room + accent.
+   ============================================================================ */
+
+.pf-badge-base {
+  background: linear-gradient(135deg, #4a9eff 0%, #2563eb 100%);
+  border-color: rgba(74, 158, 255, 0.6);
+  color: #ffffff;
+  box-shadow:
+    0 0 20px rgba(74, 158, 255, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  padding: 7px 18px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.pf-badge-pro {
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 100%);
+  border-color: rgba(245, 197, 96, 0.6);
+  color: #1a1208;
+  box-shadow:
+    0 0 20px rgba(229, 181, 71, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  padding: 7px 18px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.pf-card {
+  position: relative;
+  overflow: hidden;
+  padding: 52px 32px;
+}
+.pf-card::before {
+  content: "";
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  height: 240px;
+  background: radial-gradient(ellipse at center, rgba(245, 197, 96, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+.pf-card > * {
+  position: relative;
+}
+
+.pf-card .pf-photo {
+  width: 140px;
+  height: 140px;
+  border-width: 3px;
+}
+.pf-card .pf-photo-fallback {
+  font-size: 48px;
+}
+.pf-name {
+  margin-top: 22px;
+  font-size: 30px;
+}
+.pf-card .pf-tier {
+  margin-top: 14px;
+}
+.pf-edit-btn {
+  margin-top: 28px;
+}
