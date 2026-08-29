@@ -24,6 +24,7 @@ const PLAN_TIERS: Record<string, "Base" | "Pro"> = {
   plan_J8vFpCWME75W3: "Pro",
   plan_SIYHeHyFp1dbR: "Pro",   // legacy $75/mo plan
   plan_SGscR3JhdTtKh: "Base",  // legacy $1 entry plan
+  plan_9nyRNbuhQF0pk: "Pro",   // Pro 3-month, $130
 };
 
 // Best-effort tier from the caller's Whop memberships. Any failure returns

@@ -5747,3 +5747,54 @@ body:has(.hub-page) {
     margin-left: 0;
   }
 }
+
+/* ============================================================================
+   PRO BILLING TERM TOGGLE (1 month / 3 months on the Pro tier cards)
+   ============================================================================ */
+
+.tier-term-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 8px auto 2px;
+  padding: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+}
+.tier-term {
+  border: none;
+  background: none;
+  color: var(--mut-dark);
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.tier-term.on {
+  background: var(--cta);
+  color: var(--cta-text);
+}
+.tier-save-badge {
+  margin-left: 4px;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  padding: 3px 7px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tier-term {
+    transition: none;
+  }
+}

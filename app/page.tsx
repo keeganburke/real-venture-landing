@@ -59,11 +59,11 @@ const PLANS = {
   },
 };
 
-const ADDONS = [
-  { id: "call-william", title: "1-on-1 with William", subtitle: "45-min strategy call", price: "$249" },
-  { id: "call-keegan", title: "1-on-1 with Keegan", subtitle: "45-min systems review", price: "$249" },
-  { id: "playbook", title: "Wholesaling Playbook PDF", subtitle: "The exact playbook we use", price: "$39", comingSoon: true },
-];
+// Pro billing terms: monthly, or 3 months at $130 (saves $20 vs 3 x $49.99).
+const PRO_TERMS = {
+  monthly: { planId: "plan_J8vFpCWME75W3", amount: "49.99", price: "$49.99", cadence: "per month" },
+  quarterly: { planId: "plan_9nyRNbuhQF0pk", amount: "130", price: "$130", cadence: "per 3 months" },
+} as const;
 
 function CheckIcon() {
   return (
@@ -77,13 +77,13 @@ export default function Home() {
   const router = useRouter();
   const [pricingOpen, setPricingOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  // 3-step wizard inside the pricing modal: tiers -> add-ons -> embedded checkout.
-  const [step, setStep] = useState<"pricing" | "addons" | "checkout">("pricing");
+  // 2-step wizard inside the pricing modal: tiers -> embedded checkout.
+  const [step, setStep] = useState<"pricing" | "checkout">("pricing");
   const [selectedPlan, setSelectedPlan] = useState<"base" | "pro" | null>(null);
-  const [addedAddons, setAddedAddons] = useState<Set<string>>(new Set());
+  const [proTerm, setProTerm] = useState<"monthly" | "quarterly">("monthly");
 
   // Deep link: /?pricing=1 opens the modal; &plan=base|pro (the old /checkout
-  // routes redirect here) jumps straight to the add-ons step.
+  // routes redirect here) jumps straight to checkout.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("pricing") === "1") {
@@ -91,7 +91,7 @@ export default function Home() {
       const planParam = params.get("plan");
       if (planParam === "base" || planParam === "pro") {
         setSelectedPlan(planParam);
-        setStep("addons");
+        setStep("checkout");
       }
     }
   }, []);
@@ -102,7 +102,6 @@ export default function Home() {
         setPricingOpen(false);
         setStep("pricing");
         setSelectedPlan(null);
-        setAddedAddons(new Set());
       }
     };
     document.addEventListener("keydown", onKeyDown);
@@ -121,28 +120,18 @@ export default function Home() {
     setPricingOpen(false);
     setStep("pricing");
     setSelectedPlan(null);
-    setAddedAddons(new Set());
   };
 
-  // Inline pricing-section CTAs: open the modal directly at the add-ons step.
+  // Inline pricing-section CTAs: open the modal directly at checkout.
   const openPricingAt = (plan: "base" | "pro") => {
     setSelectedPlan(plan);
-    setStep("addons");
+    setStep("checkout");
     setPricingOpen(true);
   };
 
   const choosePlan = (plan: "base" | "pro") => {
     setSelectedPlan(plan);
-    setStep("addons");
-  };
-
-  const toggleAddon = (id: string) => {
-    setAddedAddons((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    setStep("checkout");
   };
 
   const handleCheckoutComplete = (planId: string, receiptId?: string) => {
@@ -152,6 +141,13 @@ export default function Home() {
     closePricing();
     router.push("/login?justpurchased=1");
   };
+
+  // Checkout target: Base is monthly-only; Pro follows the selected term.
+  const activePlan = selectedPlan
+    ? selectedPlan === "pro"
+      ? { ...PLANS.pro, ...PRO_TERMS[proTerm] }
+      : PLANS.base
+    : null;
 
   const toggleDrawer = () => setDrawerOpen((open) => !open);
   const closeDrawer = () => setDrawerOpen(false);
@@ -357,8 +353,29 @@ export default function Home() {
                 <div className="ribbon">Most Popular</div>
                 <div className="tier-icon"><img src="/crowns/pro.png" alt="Pro" width={62} height={54} /></div>
                 <div className="tier-name">Pro</div>
-                <div className="tier-price"><span className="cur">$</span><span className="amt">49.99</span></div>
-                <div className="tier-per">/ per month</div>
+                <div className="tier-price"><span className="cur">$</span><span className="amt">{PRO_TERMS[proTerm].amount}</span></div>
+                <div className="tier-per">/ {PRO_TERMS[proTerm].cadence}</div>
+                <div className="tier-term-toggle" role="tablist">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={proTerm === "monthly"}
+                    className={`tier-term${proTerm === "monthly" ? " on" : ""}`}
+                    onClick={() => setProTerm("monthly")}
+                  >
+                    1 month
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={proTerm === "quarterly"}
+                    className={`tier-term${proTerm === "quarterly" ? " on" : ""}`}
+                    onClick={() => setProTerm("quarterly")}
+                  >
+                    3 months
+                  </button>
+                  {proTerm === "quarterly" && <span className="tier-save-badge">Save $20</span>}
+                </div>
                 <div className="tier-tag">Stop learning, start closing.</div>
                 <div className="tier-divider"></div>
                 <ul className="tier-feats">
@@ -560,8 +577,29 @@ export default function Home() {
                 <div className="ribbon">Most Popular</div>
                 <div className="tier-icon"><img src="/crowns/pro.png" alt="Pro" width={62} height={54} /></div>
                 <div className="tier-name">Pro</div>
-                <div className="tier-price"><span className="cur">$</span><span className="amt">49.99</span></div>
-                <div className="tier-per">/ per month</div>
+                <div className="tier-price"><span className="cur">$</span><span className="amt">{PRO_TERMS[proTerm].amount}</span></div>
+                <div className="tier-per">/ {PRO_TERMS[proTerm].cadence}</div>
+                <div className="tier-term-toggle" role="tablist">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={proTerm === "monthly"}
+                    className={`tier-term${proTerm === "monthly" ? " on" : ""}`}
+                    onClick={() => setProTerm("monthly")}
+                  >
+                    1 month
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={proTerm === "quarterly"}
+                    className={`tier-term${proTerm === "quarterly" ? " on" : ""}`}
+                    onClick={() => setProTerm("quarterly")}
+                  >
+                    3 months
+                  </button>
+                  {proTerm === "quarterly" && <span className="tier-save-badge">Save $20</span>}
+                </div>
                 <div className="tier-tag">Stop learning, start closing.</div>
                 <div className="tier-divider"></div>
                 <ul className="tier-feats">
@@ -604,22 +642,16 @@ export default function Home() {
             </div>
             )}
 
-            {step === "addons" && selectedPlan && (
-              <div className="modal-step modal-step-narrow" key="step-addons">
-                <div className="co-addons-head">
-                  <h2 className="co-addons-title">Add to your plan?</h2>
-                  <p className="co-addons-sub">
-                    {PLANS[selectedPlan].name} · {PLANS[selectedPlan].price} {PLANS[selectedPlan].cadence} · optional one-time add-ons
-                  </p>
-                </div>
-                <div className={`checkout-summary tier-${PLANS[selectedPlan].crownColor}`}>
+            {step === "checkout" && activePlan && (
+              <div className="modal-step modal-step-narrow" key="step-checkout">
+                <div className={`checkout-summary tier-${activePlan.crownColor}`}>
                   <div className="checkout-summary-info">
-                    <div className="checkout-summary-name">{PLANS[selectedPlan].name}</div>
-                    <div className="checkout-summary-tagline">{PLANS[selectedPlan].tagline}</div>
+                    <div className="checkout-summary-name">{activePlan.name}</div>
+                    <div className="checkout-summary-tagline">{activePlan.tagline}</div>
                   </div>
                   <div className="checkout-summary-price">
-                    <div className="checkout-summary-amount">{PLANS[selectedPlan].price}</div>
-                    <div className="checkout-summary-cadence">{PLANS[selectedPlan].cadence}</div>
+                    <div className="checkout-summary-amount">{activePlan.price}</div>
+                    <div className="checkout-summary-cadence">{activePlan.cadence}</div>
                   </div>
                   <button
                     type="button"
@@ -630,72 +662,9 @@ export default function Home() {
                     <span>Back</span>
                   </button>
                 </div>
-                <div className="co-addons-list">
-                  {ADDONS.map((addon) => {
-                    const isAdded = addedAddons.has(addon.id);
-                    return (
-                      <div key={addon.id} className={`co-addon${isAdded ? " is-added" : ""}${addon.comingSoon ? " is-soon" : ""}`}>
-                        <div className="co-addon-body">
-                          <div className="co-addon-title">{addon.title}</div>
-                          <div className="co-addon-sub">{addon.subtitle}</div>
-                        </div>
-                        <div className="co-addon-right">
-                          <div className="co-addon-price">{addon.price}</div>
-                          {addon.comingSoon ? (
-                            <button type="button" className="co-addon-btn is-disabled" disabled>
-                              Coming soon
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              className={`co-addon-btn${isAdded ? " is-added" : ""}`}
-                              onClick={() => toggleAddon(addon.id)}
-                            >
-                              {isAdded ? "Added ✓" : "Add"}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <button
-                  type="button"
-                  className="co-checkout-cta"
-                  onClick={() => setStep("checkout")}
-                >
-                  <span>Continue to checkout</span>
-                  <span aria-hidden="true">→</span>
-                </button>
-                <p className="co-checkout-note">
-                  Add-ons above are optional. You can skip straight to checkout.
-                </p>
-              </div>
-            )}
-
-            {step === "checkout" && selectedPlan && (
-              <div className="modal-step modal-step-narrow" key="step-checkout">
-                <div className={`checkout-summary tier-${PLANS[selectedPlan].crownColor}`}>
-                  <div className="checkout-summary-info">
-                    <div className="checkout-summary-name">{PLANS[selectedPlan].name}</div>
-                    <div className="checkout-summary-tagline">{PLANS[selectedPlan].tagline}</div>
-                  </div>
-                  <div className="checkout-summary-price">
-                    <div className="checkout-summary-amount">{PLANS[selectedPlan].price}</div>
-                    <div className="checkout-summary-cadence">{PLANS[selectedPlan].cadence}</div>
-                  </div>
-                  <button
-                    type="button"
-                    className="checkout-summary-back"
-                    onClick={() => setStep("addons")}
-                  >
-                    <span aria-hidden="true">{"←"}</span>
-                    <span>Back</span>
-                  </button>
-                </div>
                 <div className="modal-checkout-wrap">
                   <WhopCheckoutEmbed
-                    planId={PLANS[selectedPlan].planId}
+                    planId={activePlan.planId}
                     theme="dark"
                     themeOptions={{
                       backgroundColor: "#0f0f12",

@@ -16,11 +16,13 @@ export type WhopMemberSummary = {
 //   plan_J8vFpCWME75W3  hosted Pro, $49.99/mo
 //   plan_SIYHeHyFp1dbR  legacy membership (WHOP_PLAN_ID), $75.24 renewal -> Pro
 //   plan_SGscR3JhdTtKh  $1 one-time entry plan -> Base
+//   plan_9nyRNbuhQF0pk  hosted Pro 3-month, $130
 const PLAN_TIERS: Record<string, "Base" | "Pro"> = {
   plan_2NqC2WJzV87QY: "Base",
   plan_J8vFpCWME75W3: "Pro",
   plan_SIYHeHyFp1dbR: "Pro",
   plan_SGscR3JhdTtKh: "Base",
+  plan_9nyRNbuhQF0pk: "Pro",
 };
 
 const EMPTY: WhopMemberSummary = {
