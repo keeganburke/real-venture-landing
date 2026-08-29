@@ -17,6 +17,19 @@ export type ContentBlock = {
   [key: string]: unknown;
 };
 
+// The UI flattens the four DB courses into difficulty tiers. Keyed by course
+// slug because the DB category values predate this grouping. Shared by the
+// catalog page and the lesson page's server-side Pro gate.
+export const DIFFICULTY_BY_COURSE_SLUG: Record<
+  string,
+  "beginner" | "intermediate" | "advanced"
+> = {
+  foundations: "beginner",
+  "finding-deals-and-buyers": "intermediate",
+  "closing-the-deal": "intermediate",
+  scaling: "advanced",
+};
+
 // Flattened catalog row for the learn index: lessons grouped by difficulty
 // tier instead of course; courseSlug is kept purely for the lesson href.
 export type CatalogLesson = {
@@ -31,6 +44,9 @@ export type CatalogLesson = {
   completed: boolean;
   locked: boolean;
   requiresPro: boolean;
+  // Advanced lesson viewed by a non-Pro member: visible, badged, opens the
+  // upgrade modal instead of navigating.
+  proGated: boolean;
 };
 
 export type Lesson = {

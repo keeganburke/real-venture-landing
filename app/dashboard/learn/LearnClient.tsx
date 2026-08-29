@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { CatalogLesson } from "./learn-types";
+import UpgradeModal from "./UpgradeModal";
 
 // Lesson emojis keyed by DB slug. Three slugs corrected from the spec list
 // to the real DB values (same lessons, same order, same emojis).
@@ -19,6 +21,7 @@ const LESSON_EMOJI: Record<string, string> = {
   "title-work-and-getting-paid": "💵",
   "reinvesting-and-scaling": "🚀",
   "case-studies": "🏆",
+  "seller-financing": "🏦",
 };
 
 const TIERS = [
@@ -37,6 +40,20 @@ function lessonTime(seconds: number | null) {
 }
 
 export default function LearnClient({ lessons }: Props) {
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  // /dashboard/learn?upgrade=1 (server-side Pro gate redirect) opens the
+  // modal on load, then cleans the URL so refresh does not re-trigger it.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("upgrade") === "1") {
+      setUpgradeOpen(true);
+      params.delete("upgrade");
+      const rest = params.toString();
+      window.history.replaceState({}, "", window.location.pathname + (rest ? "?" + rest : ""));
+    }
+  }, []);
+
   const totalLessons = lessons.length;
   const totalCompleted = lessons.filter((l) => l.completed).length;
   const overallPct = totalLessons > 0 ? Math.round((totalCompleted / totalLessons) * 100) : 0;
@@ -86,17 +103,31 @@ export default function LearnClient({ lessons }: Props) {
                       <span className="learn-lesson-body">
                         <span className="learn-lesson-title">
                           {lesson.title}
-                          {lesson.requiresPro && <span className="learn-pro-badge">PRO</span>}
+                          {lesson.proGated ? (
+                            <span className="learn-pro-badge">🔒 PRO</span>
+                          ) : (
+                            lesson.requiresPro && <span className="learn-pro-badge">PRO</span>
+                          )}
                         </span>
                         {lesson.description && (
                           <span className="learn-lesson-desc">{lesson.description}</span>
                         )}
                         {time && <span className="learn-lesson-meta">{time}</span>}
                       </span>
-                      <span className="learn-lesson-arw">{lesson.locked ? "🔒" : "→"}</span>
+                      <span className="learn-lesson-arw">{lesson.locked || lesson.proGated ? "🔒" : "→"}</span>
                     </>
                   );
-                  return lesson.locked ? (
+                  return lesson.proGated ? (
+                    <button
+                      type="button"
+                      className={`${rowClass} pro-gated`}
+                      key={lesson.id}
+                      onClick={() => setUpgradeOpen(true)}
+                      style={{ "--i": String(index) } as React.CSSProperties}
+                    >
+                      {inner}
+                    </button>
+                  ) : lesson.locked ? (
                     <button
                       type="button"
                       className={rowClass}
@@ -120,6 +151,8 @@ export default function LearnClient({ lessons }: Props) {
             </section>
           );
         })}
+
+        <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
       </div>
     </div>
   );

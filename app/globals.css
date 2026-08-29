@@ -6059,3 +6059,90 @@ a.trust-badge-trustpilot:hover {
     transition: none;
   }
 }
+
+/* ============================================================================
+   PRO UPGRADE MODAL + ADVANCED LESSON GATING
+   ============================================================================ */
+
+.um-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.um-modal {
+  width: 100%;
+  max-width: 420px;
+  background: #141418;
+  border: 1px solid rgba(245, 197, 96, 0.35);
+  border-radius: 18px;
+  padding: 32px 28px;
+  text-align: center;
+  animation: um-in 0.2s ease-out;
+}
+.um-icon {
+  font-size: 34px;
+  margin-bottom: 12px;
+}
+.um-title {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+.um-body {
+  font-family: "Inter", sans-serif;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 22px;
+}
+.um-upgrade-btn {
+  display: block;
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  color: #0a0a0a;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(197, 125, 46, 0.3);
+  margin-bottom: 10px;
+}
+.um-later-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 8px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.um-later-btn:hover {
+  color: rgba(255, 255, 255, 0.75);
+}
+@keyframes um-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.learn-lesson-row.pro-gated {
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .um-modal {
+    animation: none;
+  }
+}

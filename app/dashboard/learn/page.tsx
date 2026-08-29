@@ -3,7 +3,8 @@ import { cookies } from "next/headers";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../../../lib/session";
 import { createAdminClient } from "../../../lib/supabase/server";
 import LearnClient from "./LearnClient";
-import type { CatalogLesson, Course } from "./learn-types";
+import { DIFFICULTY_BY_COURSE_SLUG, type CatalogLesson, type Course } from "./learn-types";
+import { getWhopMemberSummary } from "../../../lib/whop-member";
 
 export const metadata: Metadata = {
   title: "Real Venture | Learn",
@@ -12,17 +13,6 @@ export const metadata: Metadata = {
 // Auth is enforced by app/dashboard/layout.tsx; this page only needs the user
 // id for progress. The service-role client never leaves the server.
 export const dynamic = "force-dynamic";
-
-// The UI flattens the four DB courses into difficulty tiers. Keyed by course
-// slug because the DB category values predate this grouping. Course slugs
-// stay in every lesson href, so the [courseSlug]/[lessonSlug] route and the
-// server-side sequential gate are untouched.
-const DIFFICULTY_BY_COURSE_SLUG: Record<string, CatalogLesson["difficulty"]> = {
-  foundations: "beginner",
-  "finding-deals-and-buyers": "intermediate",
-  "closing-the-deal": "intermediate",
-  scaling: "advanced",
-};
 
 type LessonRow = {
   id: string;
@@ -42,7 +32,7 @@ export default async function LearnPage() {
   const userId = session?.whopUserId ?? "";
 
   const supabase = createAdminClient();
-  const [coursesRes, lessonsRes, progressRes] = await Promise.all([
+  const [coursesRes, lessonsRes, progressRes, whopMember] = await Promise.all([
     supabase
       .from("courses")
       .select("id,slug,title,description,category,tier,thumbnail_url,sort_order")
@@ -58,6 +48,7 @@ export default async function LearnPage() {
       .select("lesson_id,completed_at")
       .eq("user_id", userId)
       .not("completed_at", "is", null),
+    getWhopMemberSummary(userId),
   ]);
 
   const courses = (coursesRes.data ?? []) as Course[];
@@ -81,8 +72,8 @@ export default async function LearnPage() {
   });
   const maxUnlockedIndex = maxCompletedIndex + 1;
 
-  // Matches the course page's hardcoded tier until real Whop tier detection.
-  const userTier = "base";
+  // Unknown tier gates like Base: safer to over-lock than leak Pro content.
+  const isPro = whopMember.tier === "Pro";
 
   const lessons: CatalogLesson[] = ordered.map((lesson, index) => {
     const course = courseById.get(lesson.course_id);
@@ -92,8 +83,10 @@ export default async function LearnPage() {
         : course?.category === "beginner"
           ? "beginner"
           : "intermediate";
+    const difficulty = (course && DIFFICULTY_BY_COURSE_SLUG[course.slug]) ?? fallback;
     const completed = completedLessonIds.has(lesson.id);
-    const proLocked = lesson.requires_pro && userTier === "base";
+    const proGated = difficulty === "advanced" && !isPro;
+    const proLocked = lesson.requires_pro && !isPro;
     const sequenceLocked = !completed && index > maxUnlockedIndex;
     return {
       id: lesson.id,
@@ -101,12 +94,13 @@ export default async function LearnPage() {
       title: lesson.title,
       description: lesson.description,
       courseSlug: course?.slug ?? "",
-      difficulty: (course && DIFFICULTY_BY_COURSE_SLUG[course.slug]) ?? fallback,
+      difficulty,
       durationSeconds: lesson.duration_seconds,
       number: index + 1,
       completed,
       locked: proLocked || sequenceLocked,
       requiresPro: lesson.requires_pro,
+      proGated,
     };
   });
 

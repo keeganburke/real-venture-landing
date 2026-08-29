@@ -4,7 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../../../../../lib/session";
 import { createAdminClient } from "../../../../../lib/supabase/server";
 import LessonClient from "./LessonClient";
-import type { Course, Lesson } from "../../learn-types";
+import { DIFFICULTY_BY_COURSE_SLUG, type Course, type Lesson } from "../../learn-types";
+import { getWhopMemberSummary } from "../../../../../lib/whop-member";
 
 export const metadata: Metadata = {
   title: "Real Venture | Lesson",
@@ -34,6 +35,13 @@ export default async function LessonPage({
     .maybeSingle();
 
   if (!course) notFound();
+
+  // Advanced lessons are Pro-only. Unknown tier gates like Base; the catalog
+  // opens the upgrade modal via the query param.
+  if (DIFFICULTY_BY_COURSE_SLUG[course.slug] === "advanced") {
+    const whopMember = await getWhopMemberSummary(userId);
+    if (whopMember.tier !== "Pro") redirect("/dashboard/learn?upgrade=1");
+  }
 
   const [lessonsRes, progressRes] = await Promise.all([
     supabase
