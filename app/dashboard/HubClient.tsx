@@ -153,7 +153,6 @@ export default function HubClient({
     : upcomingCalls[0];
   const featured = featuredEntry;
   const rest = liveCall ? upcomingCalls.slice(0, 3) : upcomingCalls.slice(1);
-  const progressPct = totalLessons > 0 ? Math.round((doneCount / totalLessons) * 100) : 0;
   const isComplete = nextLesson === null && totalLessons > 0;
 
   return (
@@ -190,26 +189,10 @@ export default function HubClient({
         {/* Hero: next lesson */}
         {nextLesson && (
           <section className="hub2-hero">
-            <div className="hub2-hero-eyebrow">Pick up where you left off</div>
             <div className="hub2-hero-course">
               {nextLesson.courseTitle} · Lesson {nextLesson.sequenceIndex} of {totalLessons}
             </div>
             <div className="hub2-hero-title">{nextLesson.title}</div>
-            <div className="hub2-hero-meta">
-              {nextLesson.durationMin && (
-                <>
-                  <span className="hub2-hero-meta-item">▶ {nextLesson.durationMin} min</span>
-                  <span className="hub2-hero-meta-dot" aria-hidden="true"></span>
-                </>
-              )}
-              <span className="hub2-hero-meta-item">5 quiz questions</span>
-            </div>
-            <div className="hub2-hero-progress">
-              <div className="hub2-hero-progress-bar">
-                <div className="hub2-hero-progress-fill" style={{ width: `${progressPct}%` }} />
-              </div>
-              <div className="hub2-hero-progress-num">{doneCount}/{totalLessons}</div>
-            </div>
             <Link href={nextLesson.href} className="hub2-hero-cta">
               <span>Continue lesson</span>
               <span className="hub2-hero-cta-arrow" aria-hidden="true">→</span>
