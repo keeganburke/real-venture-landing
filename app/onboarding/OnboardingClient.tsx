@@ -3,17 +3,17 @@
 import { useState } from "react";
 import type { IntakeAnswers } from "../../lib/intake-cookie";
 import { INTAKE_QUESTIONS, type IntakeField } from "./intake-config";
-import Welcome from "./steps/Welcome";
+import Tour from "./steps/Tour";
 import Question from "./steps/Question";
 
 type Props = {
   initialAnswers: Partial<IntakeAnswers>;
 };
 
-// Step 0 is the welcome screen; steps 1..5 are the questions.
+// Step 0 is the founder tour (welcome hero + 9 cards); steps 1..5 are the
+// questions. The tour is skipped on revisit once tourCompletedAt is set.
 function firstUnansweredStep(answers: Partial<IntakeAnswers>): number {
-  const anyAnswered = INTAKE_QUESTIONS.some((q) => q.id in answers);
-  if (!anyAnswered) return 0;
+  if (!answers.tourCompletedAt) return 0;
   const index = INTAKE_QUESTIONS.findIndex((q) => !(q.id in answers));
   return index === -1 ? INTAKE_QUESTIONS.length : index + 1;
 }
@@ -33,6 +33,18 @@ async function saveAnswers(
     return typeof data?.redirect === "string" ? data.redirect : null;
   } catch {
     return null;
+  }
+}
+
+async function saveTourDone(): Promise<void> {
+  try {
+    await fetch("/api/intake/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tourDone: true }),
+    });
+  } catch {
+    // Non-fatal: the tour just shows again next visit.
   }
 }
 
@@ -62,16 +74,17 @@ export default function OnboardingClient({ initialAnswers }: Props) {
     setStep(step + 1);
   };
 
+  const completeTour = async () => {
+    setBusy(true);
+    await saveTourDone();
+    setBusy(false);
+    setStep(1);
+  };
+
   if (step === 0) {
     return (
-      <main className="onb">
-        <div className="onb-shell">
-          <Welcome
-            onStart={() => setStep(1)}
-            onSkip={() => finishAndRedirect({})}
-            busy={busy}
-          />
-        </div>
+      <main className="onb ob-main">
+        <Tour onDone={completeTour} busy={busy} />
       </main>
     );
   }

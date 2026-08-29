@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
 
   const complete = body.complete === true;
   if (complete) merged.completedAt = new Date().toISOString();
+  if (body.tourDone === true) merged.tourCompletedAt = new Date().toISOString();
 
   const response = complete
     ? NextResponse.json({ ok: true, redirect: "/dashboard" })

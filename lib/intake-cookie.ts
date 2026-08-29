@@ -11,6 +11,7 @@ export type IntakeAnswers = {
   goal?: "10k" | "10-30k" | "30k+" | null;
   need?: "community" | "tools" | "access" | null;
   completedAt?: string | null;
+  tourCompletedAt?: string | null;
 };
 
 // Same HMAC-SHA256 signed token pattern as lib/session.ts, keyed by the same
