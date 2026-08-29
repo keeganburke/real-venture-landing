@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSessionToken, SESSION_COOKIE_NAME, sessionCookieOptions } from "../../../../../lib/session";
+import { setIntakeCookie } from "../../../../../lib/intake-cookie";
 
 function clearOAuthCookies(response: NextResponse): NextResponse {
   const clear = { maxAge: 0, path: "/" };
@@ -18,10 +19,31 @@ function clearOAuthCookies(response: NextResponse): NextResponse {
 // "completed" is included because one-time and lifetime purchases finish as
 // completed and stay that way; scoping to the single membership product
 // keeps unrelated one-time purchases from granting access.
-async function getWhopMembershipActive(whopUserId: string): Promise<boolean> {
+// Existing members skip onboarding: memberships created before this instant
+// (9:30 PM Pacific, Aug 28 2026) bypass the tour + intake entirely.
+const ONBOARDING_CUTOFF = new Date("2026-08-29T04:30:00Z");
+
+// Strict created_at parse. Anything dubious returns null so the routing
+// defaults to onboarding (a numeric unix-seconds value would otherwise
+// parse as 1970 and wrongly bypass a brand-new member).
+function parseCreatedAtMs(value: unknown): number | null {
+  let ms: number | null = null;
+  if (typeof value === "string") {
+    const parsed = new Date(value).getTime();
+    ms = Number.isNaN(parsed) ? null : parsed;
+  } else if (typeof value === "number" && Number.isFinite(value)) {
+    ms = value < 1e12 ? value * 1000 : value;
+  }
+  if (ms === null || ms < Date.UTC(2020, 0, 1)) return null;
+  return ms;
+}
+
+async function getWhopMembership(
+  whopUserId: string
+): Promise<{ active: boolean; oldestCreatedAtMs: number | null }> {
   const productId = process.env.WHOP_PRODUCT_ID;
   const companyId = process.env.WHOP_COMPANY_ID;
-  if (!productId || !companyId) return false;
+  if (!productId || !companyId) return { active: false, oldestCreatedAtMs: null };
 
   try {
     const params = new URLSearchParams({ company_id: companyId });
@@ -38,11 +60,19 @@ async function getWhopMembershipActive(whopUserId: string): Promise<boolean> {
       },
       cache: "no-store",
     });
-    if (!res.ok) return false;
+    if (!res.ok) return { active: false, oldestCreatedAtMs: null };
     const page = await res.json();
-    return Array.isArray(page?.data) && page.data.length > 0;
+    const rows: Record<string, unknown>[] = (Array.isArray(page?.data) ? page.data : []).filter(
+      (m: unknown): m is Record<string, unknown> => !!m && typeof m === "object"
+    );
+    let oldest: number | null = null;
+    for (const row of rows) {
+      const ms = parseCreatedAtMs(row.created_at);
+      if (ms !== null && (oldest === null || ms < oldest)) oldest = ms;
+    }
+    return { active: rows.length > 0, oldestCreatedAtMs: oldest };
   } catch {
-    return false;
+    return { active: false, oldestCreatedAtMs: null };
   }
 }
 
@@ -111,19 +141,44 @@ export async function GET(request: NextRequest) {
 
   // Whop's memberships list is eventually consistent right after checkout.
   // Retry once with a 1.5s delay before denying (spec 6.7).
-  let isActive = await getWhopMembershipActive(whopUserId);
-  if (!isActive) {
+  let membership = await getWhopMembership(whopUserId);
+  if (!membership.active) {
     await new Promise((r) => setTimeout(r, 1500));
-    isActive = await getWhopMembershipActive(whopUserId);
+    membership = await getWhopMembership(whopUserId);
   }
 
-  if (!isActive) {
+  if (!membership.active) {
     return clearOAuthCookies(NextResponse.redirect(`${origin}/?auth=denied`));
   }
 
   const sessionToken = await createSessionToken(whopUserId);
   if (!sessionToken) {
     return clearOAuthCookies(NextResponse.redirect(`${origin}/?auth=whop_error`));
+  }
+
+  // Existing members (oldest membership before the cutoff) skip onboarding.
+  // Missing or unparseable created_at defaults to onboarding.
+  const { oldestCreatedAtMs } = membership;
+  let decision: "bypass" | "onboard" | "onboard_default" = "onboard_default";
+  if (oldestCreatedAtMs !== null) {
+    decision = oldestCreatedAtMs < ONBOARDING_CUTOFF.getTime() ? "bypass" : "onboard";
+  }
+  console.log("[whop/callback] Onboarding routing", {
+    whopUserId,
+    membershipCreatedAt: oldestCreatedAtMs === null ? null : new Date(oldestCreatedAtMs).toISOString(),
+    cutoff: ONBOARDING_CUTOFF.toISOString(),
+    decision,
+  });
+
+  if (decision === "bypass") {
+    const now = new Date().toISOString();
+    const response = NextResponse.redirect(`${origin}/dashboard`);
+    response.cookies.set(SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions());
+    // Mark intake complete so no later code path pulls them into onboarding.
+    const signed = await setIntakeCookie(response, { completedAt: now, tourCompletedAt: now });
+    if (signed) return clearOAuthCookies(response);
+    // Could not sign the intake cookie; send through onboarding instead of
+    // letting the dashboard gate bounce them in a loop.
   }
 
   const response = NextResponse.redirect(`${origin}/onboarding`);
