@@ -80,11 +80,11 @@ export const WEEKLY_SCHEDULE: WeeklyCall[] = [
   { id: "tue-1", day: "Tue", startTime: "11:00 AM", endTime: "1:00 PM", host: "Marco", type: "Live Buyer Outreach" },
   { id: "tue-2", day: "Tue", startTime: "4:00 PM", endTime: "6:00 PM", host: "Brandon, Mello, Ady", type: "Live Deal Underwriting" },
   { id: "wed-1", day: "Wed", startTime: "4:00 PM", endTime: "5:00 PM", host: "William", type: "Live Coaching" },
-  { id: "wed-2", day: "Wed", startTime: "7:00 PM", endTime: "8:00 PM", host: "Dylan", type: "Live Cold Call Session" },
+  { id: "wed-2", day: "Wed", startTime: "6:00 PM", endTime: "7:00 PM", host: "Dylan", type: "Live Cold Call Session" },
   { id: "thu-1", day: "Thu", startTime: "11:00 AM", endTime: "1:00 PM", host: "Marco", type: "Live Buyer Outreach" },
   { id: "thu-2", day: "Thu", startTime: "4:00 PM", endTime: "6:00 PM", host: "Brandon, Mello, Ady", type: "Live Deal Underwriting" },
   { id: "fri-1", day: "Fri", startTime: "4:00 PM", endTime: "5:00 PM", host: "William", type: "Live Coaching" },
   { id: "sat-1", day: "Sat", startTime: "11:00 AM", endTime: "1:00 PM", host: "Marco, Ady", type: "Live Deal Breakdown" },
   { id: "sun-1", day: "Sun", startTime: "4:00 PM", endTime: "6:00 PM", host: "Brandon, Mello, Ady", type: "Live Q&A + Deal Review" },
-  { id: "sun-2", day: "Sun", startTime: "7:00 PM", endTime: "8:00 PM", host: "Dylan", type: "Live Cold Call Session" },
+  { id: "sun-2", day: "Sun", startTime: "6:00 PM", endTime: "7:00 PM", host: "Dylan", type: "Live Cold Call Session" },
 ];

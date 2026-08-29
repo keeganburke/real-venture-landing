@@ -147,8 +147,12 @@ export default function HubClient({
 
   const upcomingCalls = getNextCalls(WEEKLY_SCHEDULE, new Date(), 4);
   const liveCall = getLiveCall(WEEKLY_SCHEDULE);
-  const featured = upcomingCalls[0];
-  const rest = upcomingCalls.slice(1);
+  // A call in progress takes over the featured slot; otherwise next upcoming.
+  const featuredEntry = liveCall
+    ? { call: liveCall, occursAt: new Date() }
+    : upcomingCalls[0];
+  const featured = featuredEntry;
+  const rest = liveCall ? upcomingCalls.slice(0, 3) : upcomingCalls.slice(1);
   const progressPct = totalLessons > 0 ? Math.round((doneCount / totalLessons) * 100) : 0;
   const isComplete = nextLesson === null && totalLessons > 0;
 
@@ -315,7 +319,7 @@ export default function HubClient({
             <div className="hub2-livestream-body">
               <div className="hub2-livestream-label">
                 <span className="hub2-livestream-pulse" aria-hidden="true"></span>
-                {dayLabel(featured.occursAt)}
+                {liveCall ? <span className="hub2-live-now">LIVE NOW</span> : dayLabel(featured.occursAt)}
                 {liveCall && <span className="hub2-live-dot" aria-hidden="true"></span>}
               </div>
               <div className="hub2-livestream-title">{featured.call.type}</div>

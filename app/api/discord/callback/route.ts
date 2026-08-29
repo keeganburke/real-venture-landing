@@ -22,6 +22,8 @@ const ROLE_IDS = {
 const PLAN_TIERS: Record<string, "Base" | "Pro"> = {
   plan_2NqC2WJzV87QY: "Base",
   plan_J8vFpCWME75W3: "Pro",
+  plan_SIYHeHyFp1dbR: "Pro",   // legacy $75/mo plan
+  plan_SGscR3JhdTtKh: "Base",  // legacy $1 entry plan
 };
 
 // Best-effort tier from the caller's Whop memberships. Any failure returns
@@ -198,7 +200,8 @@ export async function GET(request: NextRequest) {
     // 201 = added successfully. 204 = already in server (Discord ignores body when member exists).
     // If already in server, we need a separate call to assign the role.
     if (addRes.status === 201) {
-      return redirectWithStatus("connected");
+      // Fresh join: drop them straight into the server they just entered.
+      return NextResponse.redirect(`https://discord.com/channels/${guildId}`);
     }
 
     if (addRes.status === 204) {

@@ -5676,3 +5676,44 @@ body:has(.hub-page) {
   margin-top: 28px;
   gap: 12px;
 }
+
+/* LIVE NOW label on the featured livestream card */
+.hub2-live-now {
+  color: #FF4D5E;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  animation: hub2-live-pulse 1.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hub2-live-now {
+    animation: none;
+  }
+}
+
+/* ============================================================================
+   LEGAL FOOTER + LEGAL PAGE SUPPORT
+   Footer links on /members and /login; .text-gold backs the Studio-copied
+   legal pages' mailto links (Studio-custom Tailwind color).
+   ============================================================================ */
+
+.lp-login-legal {
+  margin-top: 28px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+}
+.lp-login-legal a {
+  color: rgba(255, 255, 255, 0.45);
+  text-decoration: none;
+}
+.lp-login-legal a:hover {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: underline;
+}
+
+.text-gold {
+  color: #E5B547;
+}

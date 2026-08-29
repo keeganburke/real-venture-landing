@@ -26,6 +26,14 @@ export default function MembersPage() {
             Login with Whop {"→"}
           </button>
         </div>
+
+        <footer className="lp-login-legal">
+          <a href="/privacy">Privacy Policy</a>
+          <span aria-hidden="true">·</span>
+          <a href="/terms">Terms of Service</a>
+          <span aria-hidden="true">·</span>
+          <a href="/disclaimer">Disclaimer</a>
+        </footer>
       </main>
     </div>
   );

@@ -65,9 +65,9 @@ export default function LivestreamsPage() {
           <div className="hub2-schedule-note">
             <div className="hub2-schedule-note-icon" aria-hidden="true">🎙</div>
             <div>
-              <div className="hub2-schedule-note-title">Live Q&A calls</div>
+              <div className="hub2-schedule-note-title">Live Q&A + Deal Review</div>
               <div className="hub2-schedule-note-body">
-                {"Bring every question you've got, no matter how beginner it feels. Clear answers on deals, contracts, sellers, numbers. Straight from experience. The call doesn't end until every question is answered."}
+                Bring any question and get your deals reviewed live. Nothing is too beginner.
               </div>
             </div>
           </div>
@@ -75,9 +75,9 @@ export default function LivestreamsPage() {
           <div className="hub2-schedule-note">
             <div className="hub2-schedule-note-icon" aria-hidden="true">💻</div>
             <div>
-              <div className="hub2-schedule-note-title">Live Grind sessions</div>
+              <div className="hub2-schedule-note-title">Live working sessions</div>
               <div className="hub2-schedule-note-body">
-                Co-work with the coaches. Comp deals, build your buyers list, send offers. Working live on screen while you work on your own deals at the same time.
+                Coaching, buyer outreach, deal underwriting, and cold calls, live on screen with the coaches.
               </div>
             </div>
           </div>
@@ -87,7 +87,7 @@ export default function LivestreamsPage() {
             <div>
               <div className="hub2-schedule-note-title">Every call is recorded</div>
               <div className="hub2-schedule-note-body">
-                Miss a call? Recordings are posted in the Discord under #call-recordings.
+                Miss one? Recordings drop in Discord under #call-recordings.
               </div>
             </div>
           </div>

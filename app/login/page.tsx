@@ -34,6 +34,14 @@ export default function LoginPage() {
             <a href="/?pricing=1">Join</a>
           </p>
         </div>
+
+        <footer className="lp-login-legal">
+          <a href="/privacy">Privacy Policy</a>
+          <span aria-hidden="true">·</span>
+          <a href="/terms">Terms of Service</a>
+          <span aria-hidden="true">·</span>
+          <a href="/disclaimer">Disclaimer</a>
+        </footer>
       </main>
     </div>
   );
