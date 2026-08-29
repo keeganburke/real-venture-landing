@@ -1,12 +1,29 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { WEEKLY_SCHEDULE } from "../hub-copy";
+import { WEEKLY_SCHEDULE, type WeeklyCall } from "../hub-copy";
 
 export const metadata: Metadata = {
-  title: "Real Venture | Group Calls Schedule",
+  title: "Real Venture | Livestreams",
+};
+
+const DAY_ORDER: WeeklyCall["day"][] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAY_FULL: Record<WeeklyCall["day"], string> = {
+  Mon: "Monday",
+  Tue: "Tuesday",
+  Wed: "Wednesday",
+  Thu: "Thursday",
+  Fri: "Friday",
+  Sat: "Saturday",
+  Sun: "Sunday",
 };
 
 export default function LivestreamsPage() {
+  // One section per day, Mon-Sun; days without calls are skipped.
+  const dayGroups = DAY_ORDER.map((day) => ({
+    day,
+    calls: WEEKLY_SCHEDULE.filter((call) => call.day === day),
+  })).filter((group) => group.calls.length > 0);
+
   return (
     <div className="hub2-page">
       <div className="hub2-shell">
@@ -16,10 +33,9 @@ export default function LivestreamsPage() {
         </nav>
 
         <header className="hub2-greeting">
-          <div className="hub2-greeting-eyebrow">Group calls</div>
-          <h1 className="hub2-greeting-name">Weekly schedule</h1>
+          <h1 className="hub2-greeting-name">Livestreams</h1>
           <p className="hub2-greeting-sub">
-            Live calls 7 days a week. All times PST.
+            Full weekly schedule. All times PST.
           </p>
         </header>
 
@@ -32,19 +48,18 @@ export default function LivestreamsPage() {
           </p>
         </section>
 
-        <section className="hub2-schedule-card">
-          <div className="hub2-schedule-list">
-            {WEEKLY_SCHEDULE.map((call) => (
-              <div key={call.id} className="hub2-schedule-row">
-                <div className="hub2-schedule-day">{call.day}</div>
-                <div className="hub2-schedule-body">
-                  <div className="hub2-schedule-title">{call.type}</div>
-                  <div className="hub2-schedule-hosts">with {call.host} · {call.startTime} - {call.endTime} PST</div>
-                </div>
+        {dayGroups.map(({ day, calls }) => (
+          <section className="ls-day" key={day}>
+            <div className="ls-day-head">{DAY_FULL[day]}</div>
+            {calls.map((call) => (
+              <div className="ls-card" key={call.id}>
+                <div className="ls-card-title">{call.type}</div>
+                <div className="ls-card-host">with {call.host}</div>
+                <div className="ls-card-time">{call.startTime} - {call.endTime} PST</div>
               </div>
             ))}
-          </div>
-        </section>
+          </section>
+        ))}
 
         <section className="hub2-schedule-notes">
           <div className="hub2-schedule-note">

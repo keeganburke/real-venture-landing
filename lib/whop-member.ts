@@ -44,11 +44,12 @@ function emailLocal(email: string | null): string | null {
 
 // Display-name priority: Whop's real name field from checkout, unless it just
 // mirrors the auto-handle (Whop sometimes copies username into name); then the
-// email local part (cleaner than random handles); then username as the last
-// resort. Null when nothing usable exists so callers show no-name variants.
+// email local part. Usernames are NEVER shown: auto-handles like
+// "alienfloor03" read worse than the no-name greeting variants, so anything
+// past email resolves to null.
 export function resolveDisplayName(summary: WhopMemberSummary): string | null {
   if (summary.name && summary.name !== summary.username) return summary.name;
-  return emailLocal(summary.email) ?? summary.username;
+  return emailLocal(summary.email);
 }
 
 // ui-avatars renders 64px by default, which blurs at display sizes; request a

@@ -19,7 +19,7 @@ export default function DashboardNav({ avatarUrl, initial }: Props) {
 
   return (
     <>
-      <nav className="lp-nav">
+      <nav className="lp-nav dash-nav">
         <div className="lp-nav-inner">
           <div className="lp-nav-pill">
             <button

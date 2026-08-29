@@ -5531,3 +5531,98 @@ body:has(.hub2-page),
 body:has(.hub-page) {
   background: #0a0a0a;
 }
+
+/* ============================================================================
+   POLISH BATCH · nav alignment, avatar weight, hero trim 2, livestreams days
+   ============================================================================ */
+
+/* Dashboard nav pill matches the content column instead of the landing's
+   1200px band; landing .lp-nav untouched. */
+.dash-nav .lp-nav-inner {
+  max-width: 720px;
+}
+
+/* Avatar segment up to MENU visual weight */
+.lp-nav-avatar-seg .hub2-avatar-btn {
+  width: 40px;
+  height: 40px;
+  font-size: 15px;
+}
+
+/* Continue lesson hero: further ~15% trim */
+.hub2-hero {
+  padding: 16px 17px;
+}
+.hub2-hero-title {
+  font-size: 18px;
+}
+.hub2-hero-cta {
+  padding: 11px 17px;
+  font-size: 13px;
+}
+@media (min-width: 900px) {
+  .hub2-hero {
+    padding: 32px 37px;
+  }
+  .hub2-hero-title {
+    font-size: 27px;
+  }
+  .hub2-hero-cta {
+    width: 170px;
+  }
+}
+
+/* Day-grouped livestreams */
+.ls-day {
+  margin-bottom: 30px;
+}
+.ls-day-head {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #F5C560;
+  margin-bottom: 12px;
+}
+.ls-card {
+  background: linear-gradient(135deg, rgba(245, 197, 96, 0.1) 0%, rgba(20, 20, 24, 1) 65%);
+  border: 1px solid rgba(245, 197, 96, 0.28);
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin-bottom: 12px;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.ls-card:hover {
+  border-color: rgba(245, 197, 96, 0.5);
+  transform: translateY(-1px);
+}
+.ls-card-title {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+.ls-card-host {
+  font-family: "Inter", sans-serif;
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.65);
+  margin-bottom: 10px;
+}
+.ls-card-time {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: #F5C560;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ls-card {
+    transition: none;
+  }
+  .ls-card:hover {
+    transform: none;
+  }
+}
