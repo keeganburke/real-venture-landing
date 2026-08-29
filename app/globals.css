@@ -4914,3 +4914,266 @@ a.tier-cta {
     transition: none;
   }
 }
+
+/* ============================================================================
+   PROFILE PAGES
+   View card, tier pill, billing card, and the edit form.
+   ============================================================================ */
+
+.pf-stack {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.pf-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: #141418;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 18px;
+  padding: 40px 28px;
+  margin-bottom: 28px;
+}
+
+.pf-photo {
+  width: 112px;
+  height: 112px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 2px solid rgba(245, 197, 96, 0.35);
+}
+.pf-photo-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(245, 197, 96, 0.2), rgba(229, 165, 68, 0.08));
+  color: #F5C560;
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 800;
+  font-size: 40px;
+}
+.pf-photo-small {
+  width: 80px;
+  height: 80px;
+}
+.pf-photo-small.pf-photo-fallback {
+  font-size: 30px;
+}
+
+.pf-name {
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 800;
+  font-size: 28px;
+  color: #ffffff;
+  margin-top: 18px;
+}
+
+.pf-tier {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.75);
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.pf-tier.is-pro {
+  background: rgba(245, 197, 96, 0.12);
+  border-color: rgba(245, 197, 96, 0.35);
+  color: #F5C560;
+}
+
+.pf-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 22px;
+  padding: 12px 24px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  color: #0a0a0a;
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(197, 125, 46, 0.25);
+}
+
+.pf-billing-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 22px;
+  background: #141418;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.pf-billing-card:hover {
+  background: rgba(245, 197, 96, 0.04);
+  border-color: rgba(245, 197, 96, 0.25);
+}
+.pf-billing-icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(245, 197, 96, 0.1);
+  border: 1px solid rgba(245, 197, 96, 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+.pf-billing-body { flex: 1; min-width: 0; }
+.pf-billing-title {
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: #ffffff;
+  margin-bottom: 4px;
+}
+.pf-billing-sub {
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+}
+.pf-billing-arrow {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 16px;
+}
+
+/* --- Edit form --- */
+.pf-loading {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.pf-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: #141418;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 18px;
+  padding: 28px;
+}
+
+.pf-photo-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+.pf-photo-btn {
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.pf-photo-btn:hover { background: rgba(255, 255, 255, 0.12); }
+
+.pf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pf-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+}
+.pf-count {
+  font-family: "Inter", sans-serif;
+  font-weight: 500;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+}
+.pf-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.pf-input:focus { border-color: rgba(245, 197, 96, 0.5); }
+.pf-input:disabled {
+  color: rgba(255, 255, 255, 0.45);
+  cursor: not-allowed;
+}
+.pf-input::placeholder { color: rgba(255, 255, 255, 0.3); }
+.pf-textarea { resize: vertical; min-height: 120px; }
+select.pf-input { appearance: none; }
+
+.pf-error {
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  color: #FF6B7A;
+}
+
+.pf-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+.pf-save-btn {
+  padding: 12px 28px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  color: #0a0a0a;
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(197, 125, 46, 0.25);
+}
+.pf-save-btn:disabled { opacity: 0.6; cursor: default; }
+.pf-cancel-btn {
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-billing-card,
+  .pf-photo-btn,
+  .pf-input {
+    transition: none;
+  }
+}
