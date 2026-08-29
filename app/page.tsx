@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { WhopCheckoutEmbed } from "@whop/checkout/react";
 import NavDrawer from "./components/NavDrawer";
 import CtaStrip from "./components/CtaStrip";
+import TrustRow from "./components/TrustRow";
 import SectionHead from "./components/SectionHead";
 import PayoutCarousel from "./components/PayoutCarousel";
 import ToolkitCards from "./components/ToolkitCards";
@@ -218,6 +219,7 @@ export default function Home() {
             </h1>
             <p className="lp-hero-sub">{"We teach you live, hand you the tools, and send real buyers to your deals. No license, no capital, no experience needed."}</p>
             <CtaStrip onJoin={openPricing} />
+            <TrustRow />
             <div className="lp-trust">
               <div className="lp-trust-item"><span className="lp-trust-check">{"✓"}</span> Cancel anytime</div>
               <div className="lp-trust-dot" />
@@ -245,6 +247,7 @@ export default function Home() {
             <ToolkitCards />
             <div className="lp-cta-after">
               <CtaStrip onJoin={openPricing} />
+            <TrustRow />
             </div>
           </div>
         </section>
@@ -276,6 +279,7 @@ export default function Home() {
             </div>
             <div className="lp-cta-after">
               <CtaStrip onJoin={openPricing} label={"Join Real Venture \u2192"} />
+              <TrustRow />
             </div>
           </div>
         </section>
@@ -505,6 +509,7 @@ export default function Home() {
             <h2 className="lp-section-h2">Your first payday <span>starts today.</span></h2>
             <p className="lp-section-sub lp-final-sub">Join 350+ students who stopped watching and started closing.</p>
             <CtaStrip onJoin={openPricing} />
+            <TrustRow />
             <div className="lp-trust">
               <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Cancel anytime</div>
               <div className="lp-trust-dot" />

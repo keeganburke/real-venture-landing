@@ -5970,3 +5970,92 @@ body:has(.hub-page) {
   color: #FF6B7A;
   margin-bottom: 12px;
 }
+
+/* ============================================================================
+   TRUST ROW (under primary CTAs) + iOS INSTALL BANNER
+   ============================================================================ */
+
+.trust-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+  font-family: "Inter", sans-serif;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.65);
+}
+.trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+}
+.trust-star-gold {
+  color: #E5C066;
+}
+.trust-star-green {
+  color: #00B67A;
+}
+.trust-count {
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.4);
+}
+.trust-dot {
+  color: rgba(255, 255, 255, 0.25);
+}
+a.trust-badge-trustpilot {
+  transition: color 0.15s ease;
+}
+a.trust-badge-trustpilot:hover {
+  color: #ffffff;
+}
+
+.install-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 720px;
+  margin: 10px auto 0;
+  padding: 10px 14px;
+  background: rgba(245, 197, 96, 0.08);
+  border: 1px solid rgba(245, 197, 96, 0.3);
+  border-radius: 12px;
+  font-family: "Inter", sans-serif;
+  font-size: 12.5px;
+  color: rgba(255, 232, 154, 0.95);
+  animation: install-banner-in 0.3s ease-out;
+}
+.install-banner-text {
+  flex: 1;
+  min-width: 0;
+}
+.install-banner-close {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+@keyframes install-banner-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .install-banner {
+    animation: none;
+  }
+  a.trust-badge-trustpilot {
+    transition: none;
+  }
+}

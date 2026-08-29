@@ -6,6 +6,7 @@ import { getIntakeCookie } from "../../lib/intake-cookie";
 import { createAdminClient } from "../../lib/supabase/server";
 import { getWhopMemberSummary, resolveDisplayName } from "../../lib/whop-member";
 import DashboardNav from "./DashboardNav";
+import InstallBanner from "./InstallBanner";
 
 export const metadata: Metadata = {
   title: "Real Venture | Hub",
@@ -47,6 +48,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
         avatarUrl={avatarUrl}
         initial={(displayName?.trim().charAt(0) || "M").toUpperCase()}
       />
+      <InstallBanner />
       {children}
     </>
   );
