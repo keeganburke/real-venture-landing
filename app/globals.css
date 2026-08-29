@@ -5477,14 +5477,14 @@ html:has(.hub-page) {
   gap: 10px;
 }
 .rv-wordmark img {
-  height: 48px;
+  height: 96px;
   width: auto;
   display: block;
 }
 .rv-wordmark span {
   font-family: "Cabinet Grotesk", sans-serif;
   font-weight: 800;
-  font-size: 23px;
+  font-size: 12px;
   letter-spacing: 0.02em;
   line-height: 1;
   background: linear-gradient(135deg, var(--gold-bright) 0%, var(--gold) 100%);
