@@ -5361,3 +5361,39 @@ select.pf-input { appearance: none; }
     animation: none;
   }
 }
+
+/* ============================================================================
+   HUB BUG FIXES + UPCOMING CARD LIFE
+   Full-height dark ground (kills the light band where the page used to end
+   short of the dynamic viewport), plus subtle hover life on upcoming rows.
+   ============================================================================ */
+
+.hub2-page,
+.hub-page {
+  min-height: 100dvh;
+}
+
+/* The landing body is light; keep the document ground dark behind dark
+   pages so overscroll never flashes a light band. */
+html:has(.hub2-page),
+html:has(.hub-page) {
+  background: #0a0a0a;
+}
+
+.hub2-upcoming-row {
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+.hub2-upcoming-row:hover {
+  background: rgba(245, 197, 96, 0.05);
+  border-color: rgba(245, 197, 96, 0.25);
+  transform: translateX(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub2-upcoming-row {
+    transition: none;
+  }
+  .hub2-upcoming-row:hover {
+    transform: none;
+  }
+}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../../lib/session";
 import { createAdminClient } from "../../lib/supabase/server";
+import { getWhopMemberSummary } from "../../lib/whop-member";
 import HubClient from "./HubClient";
 import { DESTINATIONS, FEEDBACK } from "./hub-copy";
 
@@ -33,7 +34,7 @@ export default async function DashboardPage() {
 
   const supabase = createAdminClient();
 
-  const [coursesRes, lessonsRes, progressRes, profileRes] = await Promise.all([
+  const [coursesRes, lessonsRes, progressRes, profileRes, whopMember] = await Promise.all([
     supabase
       .from("courses")
       .select("id,slug,title,sort_order")
@@ -53,14 +54,20 @@ export default async function DashboardPage() {
       .select("display_name, photo_url")
       .eq("whop_user_id", userId)
       .maybeSingle(),
+    getWhopMemberSummary(userId),
   ]);
 
+  // Saved profile wins; Whop's embedded user record fills the gaps so the
+  // greeting and avatar work before anyone edits their profile.
   const profileName = profileRes.data?.display_name;
   if (typeof profileName === "string" && profileName.trim().length > 0) {
     displayName = profileName.trim();
+  } else {
+    displayName = whopMember.name ?? whopMember.username;
   }
   const rawPhoto = profileRes.data?.photo_url;
-  const avatarUrl = typeof rawPhoto === "string" && rawPhoto.length > 0 ? rawPhoto : null;
+  const avatarUrl =
+    typeof rawPhoto === "string" && rawPhoto.length > 0 ? rawPhoto : whopMember.photoUrl;
 
   const courses = coursesRes.data ?? [];
   const lessons = (lessonsRes.data ?? []) as LessonRow[];
