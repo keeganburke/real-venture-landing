@@ -143,7 +143,7 @@ export default function HubClient({
 
         {/* Top nav */}
         <nav className="hub2-nav">
-          <div className="hub2-logo" aria-hidden="true">RV</div>
+          <img src="/rv-logo.png" alt="" aria-hidden="true" width={40} height={40} style={{ display: "block", objectFit: "contain" }} />
           <MenuDropdown />
         </nav>
 

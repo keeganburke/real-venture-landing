@@ -13,7 +13,7 @@ export default function LivestreamsPage() {
 
         <nav className="hub2-nav">
           <Link href="/dashboard" className="hub2-logo-link" aria-label="Back to hub">
-            <span className="hub2-logo" aria-hidden="true">RV</span>
+            <img src="/rv-logo.png" alt="" aria-hidden="true" width={40} height={40} style={{ display: "block", objectFit: "contain" }} />
           </Link>
           <Link href="/dashboard" className="hub2-menu">← Back</Link>
         </nav>
