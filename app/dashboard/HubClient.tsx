@@ -209,8 +209,6 @@ export default function HubClient({
           </p>
         </header>
 
-        <SprintCard />
-
         {/* Hero: next lesson */}
         {nextLesson && (
           <section className="hub2-hero">
@@ -234,6 +232,8 @@ export default function HubClient({
             </p>
           </section>
         )}
+
+        <SprintCard />
 
         {/* Promoted cards: Discord + Studio. Dismissible via localStorage. */}
         {!discordDismissed && (
