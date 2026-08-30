@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { PostHogProvider } from "../lib/posthog-provider";
 
 export const metadata: Metadata = {
   title: "Real Venture | Learn Secured Wholesaling",
@@ -49,7 +50,9 @@ whop.track("page");`,
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <PostHogProvider>{children}</PostHogProvider>
+      </body>
     </html>
   );
 }
