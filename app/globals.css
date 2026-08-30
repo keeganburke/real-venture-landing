@@ -5862,3 +5862,459 @@ a.trust-badge-trustpilot:hover {
      collides with "Blueprint". This restores the optical gap. */
   padding-right: 0.1em;
 }
+
+/* ========================================================================
+   /dashboard/sprint — 14-Day First Deal Sprint
+   ========================================================================
+   The page wrapper reuses .hub2-page / .hub2-shell / .hub2-nav / .hub2-menu,
+   so the gridded backdrop, radial glow, 720px shell, and back link are not
+   duplicated here. Only sprint-specific rules live in this block.
+
+   Gold values match the hub2 block (#F5C560 / rgba(245,197,96,*)), NOT the
+   :root --gold token (#E5B547). The dashboard was built against the lighter
+   gold; using --gold here would make this page visibly off from Hub, Learn,
+   and Livestreams.
+   ======================================================================== */
+
+/* --- Header card --- */
+.sprint-header {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background: linear-gradient(180deg, rgba(245, 197, 96, 0.14) 0%, rgba(245, 197, 96, 0.04) 100%);
+  border: 1px solid rgba(245, 197, 96, 0.35);
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.sprint-header::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -30%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(245, 197, 96, 0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+.sprint-header-icon {
+  font-size: 32px;
+  line-height: 1;
+  position: relative;
+}
+.sprint-header-content {
+  min-width: 0;
+  position: relative;
+}
+.sprint-header-content h1 {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 24px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+.sprint-header-content p {
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 6px;
+}
+
+/* --- Stat pills (hardcoded zeros in Phase A) --- */
+.sprint-header-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+.sprint-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: nowrap;
+}
+
+/* --- Progress bar (shared by the page header and the hub hero card) --- */
+.sprint-progress-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+}
+.sprint-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.sprint-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #F5C560, #E5A544);
+  border-radius: 999px;
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.sprint-progress-text {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  color: #F5C560;
+  white-space: nowrap;
+}
+
+/* --- Milestone rows --- */
+.sprint-milestones {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+.sprint-milestone {
+  display: grid;
+  grid-template-columns: 24px 56px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.sprint-milestone:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(245, 197, 96, 0.3);
+}
+
+/* Completion check: hollow ring by default, gold disc when done. */
+.sprint-check {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  display: grid;
+  place-items: center;
+}
+.sprint-check-mark {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  color: transparent;
+}
+
+/* Day badge */
+.sprint-day-badge {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  line-height: 1;
+}
+.sprint-day-label {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+}
+.sprint-day-num {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin-top: 2px;
+}
+
+/* Milestone copy */
+.sprint-m-body {
+  min-width: 0;
+}
+.sprint-m-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.25;
+  color: #ffffff;
+}
+.sprint-m-desc {
+  font-family: "Inter", sans-serif;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 4px;
+}
+
+/* NOW pill with a pulsing dot */
+.sprint-now-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(245, 197, 96, 0.12);
+  border: 1px solid rgba(245, 197, 96, 0.3);
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #F5C560;
+}
+.sprint-now-dot::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #F5C560;
+  animation: sprint-pulse 1.6s ease-in-out infinite;
+}
+@keyframes sprint-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.7); }
+}
+
+/* Milestone CTA: ghost by default */
+.sprint-cta {
+  justify-self: end;
+  white-space: nowrap;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 12.5px;
+  text-decoration: none;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+.sprint-cta:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* --- Done state --- */
+.sprint-milestone.done {
+  opacity: 0.65;
+}
+.sprint-milestone.done .sprint-check {
+  border-color: transparent;
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+}
+.sprint-milestone.done .sprint-check-mark {
+  color: #0a0a0a;
+}
+.sprint-milestone.done .sprint-day-badge {
+  border-color: transparent;
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+}
+.sprint-milestone.done .sprint-day-label {
+  color: rgba(10, 10, 10, 0.6);
+}
+.sprint-milestone.done .sprint-day-num {
+  color: #0a0a0a;
+}
+.sprint-milestone.done .sprint-m-title {
+  color: rgba(255, 255, 255, 0.65);
+}
+.sprint-milestone.done .sprint-cta {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* --- Now state --- */
+.sprint-milestone.now {
+  background: linear-gradient(180deg, rgba(245, 197, 96, 0.12) 0%, rgba(245, 197, 96, 0.03) 100%);
+  border-color: rgba(245, 197, 96, 0.45);
+}
+.sprint-milestone.now .sprint-day-badge {
+  background: rgba(245, 197, 96, 0.1);
+  border-color: rgba(245, 197, 96, 0.5);
+  box-shadow: 0 0 0 3px rgba(245, 197, 96, 0.12);
+}
+.sprint-milestone.now .sprint-day-label {
+  color: rgba(245, 197, 96, 0.75);
+}
+.sprint-milestone.now .sprint-day-num {
+  color: #F5C560;
+}
+.sprint-milestone.now .sprint-cta {
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  border-color: transparent;
+  color: #0a0a0a;
+  font-weight: 800;
+  box-shadow: 0 0 0 1px rgba(255, 232, 154, 0.4), 0 8px 22px rgba(197, 125, 46, 0.28);
+}
+.sprint-milestone.now .sprint-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 1px rgba(255, 232, 154, 0.6), 0 12px 28px rgba(197, 125, 46, 0.38);
+}
+
+/* --- Hide row (visual only in Phase A) --- */
+.sprint-hide-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+.sprint-hide-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+.sprint-hide-btn:hover {
+  color: rgba(255, 255, 255, 0.7);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* --- Hub hero card (rendered on /dashboard above "Continue lesson") ---
+   Composed as `hub2-hero sprint-hero`, so the gradient, border, radius,
+   padding, and ::before glow are inherited. These rules only re-base it as an
+   anchor and style the sprint-specific children. */
+.sprint-hero {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s ease, transform 0.15s ease;
+}
+.sprint-hero:hover {
+  border-color: rgba(245, 197, 96, 0.55);
+}
+.sprint-hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #F5C560;
+  background: rgba(245, 197, 96, 0.12);
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(245, 197, 96, 0.25);
+  margin-bottom: 16px;
+  position: relative;
+}
+.sprint-hero-title {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  position: relative;
+}
+.sprint-hero-subtitle {
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 6px;
+  position: relative;
+}
+.sprint-hero-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0;
+  position: relative;
+}
+.sprint-hero-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  color: #0a0a0a;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  box-shadow: 0 0 0 1px rgba(255, 232, 154, 0.4), 0 12px 32px rgba(197, 125, 46, 0.3);
+  position: relative;
+  transition: box-shadow 0.15s ease;
+}
+.sprint-hero:hover .sprint-hero-btn {
+  box-shadow: 0 0 0 1px rgba(255, 232, 154, 0.6), 0 16px 40px rgba(197, 125, 46, 0.4);
+}
+
+/* --- Mobile --- */
+@media (max-width: 640px) {
+  .sprint-header {
+    grid-template-columns: auto 1fr;
+    padding: 20px 18px;
+    gap: 14px;
+  }
+  .sprint-header-content h1 { font-size: 20px; }
+  .sprint-header-content p { font-size: 12.5px; }
+  .sprint-header-stats { grid-column: 1 / -1; }
+  .sprint-stat { font-size: 11.5px; padding: 5px 10px; }
+
+  .sprint-milestone {
+    grid-template-columns: 20px 46px 1fr;
+    gap: 12px;
+    padding: 14px;
+  }
+  .sprint-check { width: 20px; height: 20px; }
+  .sprint-check-mark { font-size: 11px; }
+  .sprint-day-badge { width: 46px; height: 46px; border-radius: 12px; }
+  .sprint-day-num { font-size: 17px; }
+  .sprint-m-title { font-size: 14px; }
+  .sprint-m-desc { font-size: 12px; }
+  .sprint-cta {
+    grid-column: 2 / -1;
+    justify-self: start;
+    margin-top: 4px;
+    padding: 9px 14px;
+    font-size: 12px;
+  }
+
+  .sprint-hero-title { font-size: 19px; }
+  .sprint-hero-btn { padding: 14px; font-size: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sprint-now-dot::before,
+  .sprint-progress-fill,
+  .sprint-milestone,
+  .sprint-cta,
+  .sprint-hero,
+  .sprint-hero-btn {
+    animation: none !important;
+    transition: none !important;
+  }
+}

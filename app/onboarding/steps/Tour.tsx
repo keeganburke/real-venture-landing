@@ -23,7 +23,8 @@ const steps: {
     title: "Your 14-day sprint",
     body: "Follow the seven milestones in order. Every button routes you to the exact tool you need for that step.",
     narrator: "william",
-    href: STUDIO_URL,
+    href: "/dashboard/sprint",
+    linkLabel: "Open your sprint",
   },
   {
     target: "Livestreams",

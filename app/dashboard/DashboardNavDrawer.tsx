@@ -47,21 +47,25 @@ export default function DashboardNavDrawer({ open, onClose }: Props) {
             <span className="lp-drawer-num">01</span>
             Home
           </Link>
-          <Link className="lp-drawer-item" href="/dashboard/learn" onClick={onClose}>
+          <Link className="lp-drawer-item" href="/dashboard/sprint" onClick={onClose}>
             <span className="lp-drawer-num">02</span>
+            Sprint
+          </Link>
+          <Link className="lp-drawer-item" href="/dashboard/learn" onClick={onClose}>
+            <span className="lp-drawer-num">03</span>
             Learn
           </Link>
           <Link className="lp-drawer-item" href="/dashboard/livestreams" onClick={onClose}>
-            <span className="lp-drawer-num">03</span>
+            <span className="lp-drawer-num">04</span>
             Livestreams
           </Link>
           <Link className="lp-drawer-item" href="/dashboard/tools" onClick={onClose}>
-            <span className="lp-drawer-num">04</span>
+            <span className="lp-drawer-num">05</span>
             Tools
           </Link>
           <div className="dash-drawer-sep" aria-hidden="true"></div>
           <button className="lp-drawer-item dash-drawer-signout" onClick={signOut}>
-            <span className="lp-drawer-num">05</span>
+            <span className="lp-drawer-num">06</span>
             Sign Out
           </button>
         </nav>
