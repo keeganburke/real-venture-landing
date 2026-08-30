@@ -55,7 +55,7 @@ body.modal-open{overflow:hidden}
 .modal-tag{color:var(--mut-dark-hi);font-size:14.5px;max-width:480px;margin:0 auto;line-height:1.5}
 .modal-tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:stretch;perspective:1400px}
 @media(max-width:900px){.modal-tiers{grid-template-columns:1fr;max-width:360px;margin:0 auto;gap:12px}.tier.pro{transform:none}.modal-body{padding:28px 20px 24px}.modal-title{font-size:24px}}
-.tier{position:relative;background:linear-gradient(180deg,var(--card-dark),var(--bg-elevated));border:1.5px solid var(--line-dark);border-radius:14px;padding:22px 18px 20px;display:flex;flex-direction:column;text-align:center;transition:all .3s ease}
+.tier{position:relative;background:linear-gradient(180deg,var(--card-dark),var(--bg-elevated));border:1.5px solid var(--line-dark);border-radius:14px;padding:22px 18px 20px;display:flex;flex-direction:column;text-align:center;transition:border-color .3s ease,box-shadow .3s ease}
 .tier.base{border-color:rgba(95,179,224,.28)}
 .tier.base:hover{border-color:var(--ice);box-shadow:0 16px 40px -16px rgba(95,179,224,.3)}
 .tier.ultra{border-color:rgba(196,187,255,.22)}
@@ -63,7 +63,7 @@ body.modal-open{overflow:hidden}
 .tier.pro{background:radial-gradient(400px 200px at 50% -15%,rgba(229,181,71,.18),transparent 65%),linear-gradient(180deg,#241c14,#1a140f);border:2px solid var(--gold);box-shadow:0 0 0 3px rgba(229,181,71,.05),0 18px 44px -15px rgba(229,181,71,.32);transform:translateY(-5px)}
 .ribbon{position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:var(--cta);color:var(--cta-text);font-family:"Cabinet Grotesk";font-size:10px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;padding:5px 12px;border-radius:99px;white-space:nowrap;box-shadow:0 6px 18px -4px rgba(229,181,71,.5)}
 .ribbon.coming{position:absolute;top:12px;right:12px;left:auto;transform:none;background:rgba(196,187,255,.14);color:var(--purple-bright);border:1px solid rgba(196,187,255,.35);box-shadow:none;font-size:9px;letter-spacing:.14em;padding:3px 8px}
-.tier-icon{width:78px;height:68px;margin:0 auto 10px;display:block}
+.tier-icon{width:78px;height:68px;margin:0 auto 10px;display:block;will-change:filter}
 .tier-icon img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 4px 8px rgba(0,0,0,.4))}
 .tier.base .tier-icon{filter:drop-shadow(0 0 18px rgba(95,179,224,.5))}
 .tier.pro .tier-icon{filter:drop-shadow(0 0 22px rgba(229,181,71,.55))}
