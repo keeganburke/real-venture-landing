@@ -80,14 +80,41 @@ type Props = {
   variant: "default" | "free";
 };
 
+// Whop OAuth failure codes land the user back on "/" with ?auth=<code>.
+// Without this banner the page looks like a silent redirect loop.
+const AUTH_MESSAGES: Record<string, string> = {
+  state_mismatch:
+    "Sign-in got interrupted. Please try again. If you opened this from Instagram, TikTok, or another app, tap the ••• menu and choose \"Open in Safari\" first.",
+  whop_error: "Whop couldn't complete sign-in. Please try again in a minute.",
+  denied:
+    "That Whop account doesn't have an active membership. Make sure you're signing in with the same email you paid with.",
+  missing_code: "Sign-in got interrupted. Please try again.",
+};
+
 export default function LandingClient({ variant }: Props) {
   const router = useRouter();
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [pricingOpen, setPricingOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   // 2-step wizard inside the pricing modal: tiers -> embedded checkout.
   const [step, setStep] = useState<"pricing" | "checkout">("pricing");
   const [selectedPlan, setSelectedPlan] = useState<"base" | "pro" | null>(null);
   const [proTerm, setProTerm] = useState<"monthly" | "quarterly">("monthly");
+
+  // Surface OAuth failures redirected here by /api/auth/whop/callback.
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("auth");
+    if (!code) return;
+    setAuthNotice(AUTH_MESSAGES[code] ?? "Sign-in didn't complete. Please try again.");
+  }, []);
+
+  const dismissAuthNotice = () => {
+    setAuthNotice(null);
+    const params = new URLSearchParams(window.location.search);
+    params.delete("auth");
+    const rest = params.toString();
+    window.history.replaceState({}, "", window.location.pathname + (rest ? "?" + rest : ""));
+  };
 
   // Deep link: /?pricing=1 opens the modal; &plan=base|pro (the old /checkout
   // routes redirect here) jumps straight to checkout.
@@ -166,6 +193,51 @@ export default function LandingClient({ variant }: Props) {
   return (
     <>
       <div className="wrap">
+        {authNotice && (
+          <div
+            role="alert"
+            style={{
+              position: "relative",
+              zIndex: 120,
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 12,
+              margin: "0 auto",
+              maxWidth: 1200,
+              padding: "14px 18px",
+              background: "rgba(245,197,96,0.08)",
+              borderTop: "2px solid #E5B547",
+              borderBottom: "1px solid rgba(245,197,96,0.25)",
+              fontFamily: '"Inter", sans-serif',
+              fontSize: 13.5,
+              lineHeight: 1.55,
+              color: "rgba(255,232,154,0.95)",
+            }}
+          >
+            <span style={{ flex: 1, minWidth: 0 }}>{authNotice}</span>
+            <button
+              type="button"
+              onClick={dismissAuthNotice}
+              aria-label="Dismiss"
+              style={{
+                flexShrink: 0,
+                width: 24,
+                height: 24,
+                borderRadius: 999,
+                background: "rgba(255,255,255,0.08)",
+                border: "none",
+                color: "rgba(255,255,255,0.75)",
+                fontSize: 12,
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {"\u2715"}
+            </button>
+          </div>
+        )}
         <nav className="lp-nav">
           <div className="lp-nav-inner">
             <div className="lp-nav-pill">

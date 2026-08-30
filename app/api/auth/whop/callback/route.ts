@@ -77,7 +77,10 @@ async function getWhopMembership(
 }
 
 export async function GET(request: NextRequest) {
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+  // Every redirect and the token-exchange redirect_uri derive from the host the
+  // browser is actually on (see start/route.ts). Redirecting to a different
+  // host than the one the session cookie was set on forces a second sign-in.
+  const origin = request.nextUrl.origin || process.env.NEXT_PUBLIC_SITE_URL || "";
   const redirectUri = `${origin}/api/auth/whop/callback`;
   const { searchParams } = new URL(request.url);
 

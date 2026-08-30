@@ -2,7 +2,11 @@ import { createHash, randomBytes } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+  // redirect_uri must be built from the host the browser is actually on, not
+  // from NEXT_PUBLIC_SITE_URL: the OAuth state cookie is set on this host, and
+  // the callback has to land on the same host or the cookie is missing
+  // (www vs apex, preview URLs, in-app browser handoff).
+  const origin = request.nextUrl.origin || process.env.NEXT_PUBLIC_SITE_URL || "";
   const redirectUri = `${origin}/api/auth/whop/callback`;
 
   const state = crypto.randomUUID();
