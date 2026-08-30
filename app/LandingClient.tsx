@@ -6,7 +6,6 @@ import { WhopCheckoutEmbed } from "@whop/checkout/react";
 import NavDrawer from "./components/NavDrawer";
 import CtaStrip from "./components/CtaStrip";
 import TrustRow from "./components/TrustRow";
-import FreeHeroPill from "./components/FreeHeroPill";
 import SectionHead from "./components/SectionHead";
 import PayoutCarousel from "./components/PayoutCarousel";
 import ToolkitCards from "./components/ToolkitCards";
@@ -219,9 +218,8 @@ export default function LandingClient({ variant }: Props) {
         {variant === "free" ? (
           <section className="lp-hero lp-hero-free">
             <div className="shell">
-              <FreeHeroPill />
               <h1 className="lp-hero-h">
-                The Full <span className="lp-hero-h-em">Secured Wholesaling</span> Blueprint
+                Your <span className="lp-hero-h-em">Secured Wholesaling</span> Blueprint
               </h1>
               <p className="lp-hero-sub">
                 {"We'll "}
@@ -245,7 +243,6 @@ export default function LandingClient({ variant }: Props) {
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </div>
-              <CtaStrip onJoin={openPricing} />
               <TrustRow />
               <div className="lp-trust">
                 <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Cancel anytime</div>
