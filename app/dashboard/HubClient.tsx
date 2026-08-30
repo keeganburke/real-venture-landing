@@ -5,6 +5,7 @@ import Link from "next/link";
 import { WEEKLY_SCHEDULE } from "./hub-copy";
 import type { Destination, FeedbackAction } from "./hub-copy";
 import { getCallDurationMs, getLiveCall, getNextCalls } from "./lib/next-calls";
+import SprintCard from "./SprintCard";
 
 const GREETINGS = [
   "Welcome back, {name}",
@@ -208,23 +209,7 @@ export default function HubClient({
           </p>
         </header>
 
-        {/* Sprint hero. Phase A: title, subtitle, and progress are hardcoded
-            to milestone 2 of 7. Phase B drives all three from the real
-            DONE_THROUGH read out of Supabase. */}
-        <Link href="/dashboard/sprint" className="hub2-hero sprint-hero">
-          <div className="sprint-hero-eyebrow">
-            <span aria-hidden="true">🚀</span> Your path to first deal
-          </div>
-          <div className="sprint-hero-title">Day 2 — Introduce yourself in Discord</div>
-          <div className="sprint-hero-subtitle">The people who post close faster.</div>
-          <div className="sprint-hero-progress">
-            <div className="sprint-progress-bar">
-              <div className="sprint-progress-fill" style={{ width: "14%" }} />
-            </div>
-            <span className="sprint-progress-text">1 of 7 milestones</span>
-          </div>
-          <span className="sprint-hero-btn">Continue sprint →</span>
-        </Link>
+        <SprintCard />
 
         {/* Hero: next lesson */}
         {nextLesson && (
