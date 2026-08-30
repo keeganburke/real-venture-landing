@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { WEEKLY_SCHEDULE } from "./hub-copy";
 import type { Destination, FeedbackAction } from "./hub-copy";
-import { getLiveCall, getNextCalls } from "./lib/next-calls";
+import { getCallDurationMs, getLiveCall, getNextCalls } from "./lib/next-calls";
 
 const GREETINGS = [
   "Welcome back, {name}",
@@ -144,6 +144,21 @@ export default function HubClient({
   const greeting = displayName
     ? GREETINGS[greetingIndex].replace("{name}", displayName)
     : GREETINGS_NO_NAME[greetingIndex];
+
+  // Times render in the viewer's timezone once known; SSR and first paint use
+  // PST so hydration stays consistent.
+  const [viewerTz, setViewerTz] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      setViewerTz(Intl.DateTimeFormat().resolvedOptions().timeZone);
+    } catch {
+      // Keep PST fallback.
+    }
+  }, []);
+  const zone = viewerTz ?? LA_TZ;
+  const zoneSuffix = zone === LA_TZ ? " PST" : "";
+  const fmtClock = (ms: number) =>
+    new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: zone }).format(ms);
 
   const upcomingCalls = getNextCalls(WEEKLY_SCHEDULE, new Date(), 4);
   const liveCall = getLiveCall(WEEKLY_SCHEDULE);
@@ -303,7 +318,7 @@ export default function HubClient({
                 {liveCall && <span className="hub2-live-dot" aria-hidden="true"></span>}
               </div>
               <div className="hub2-livestream-title">{featured.call.type}</div>
-              <div className="hub2-livestream-time">with {featured.call.host} · {featured.call.startTime} - {featured.call.endTime} PST</div>
+              <div className="hub2-livestream-time">with {featured.call.host} · {fmtClock(featured.occursAt.getTime())} - {fmtClock(featured.occursAt.getTime() + getCallDurationMs(featured.call))}{zoneSuffix}</div>
             </div>
           </div>
         )}
@@ -320,7 +335,7 @@ export default function HubClient({
                   </div>
                   <div className="hub2-upcoming-body">
                     <div className="hub2-upcoming-title">{call.type}</div>
-                    <div className="hub2-upcoming-time">with {call.host} · {call.startTime} - {call.endTime} PST</div>
+                    <div className="hub2-upcoming-time">with {call.host} · {fmtClock(occursAt.getTime())} - {fmtClock(occursAt.getTime() + getCallDurationMs(call))}{zoneSuffix}</div>
                   </div>
                 </div>
               );

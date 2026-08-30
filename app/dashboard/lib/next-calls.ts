@@ -63,6 +63,22 @@ function laWallTimeToDate(year: number, month: number, day: number, minutes: num
   return new Date(ts);
 }
 
+// Additive display helpers: the next occurrence's absolute start instant and
+// the call's duration. Client components format these in the viewer's zone.
+export function getCallStartMs(call: WeeklyCall, now: Date = new Date()): number {
+  const nowLA = laParts(now);
+  const nowDay = DAY_INDEX[nowLA.weekday as WeeklyCall["day"]] ?? 0;
+  const nowMinutes = nowLA.hour * 60 + nowLA.minute;
+  const startMinutes = parseTimeToMinutes(call.startTime);
+  let deltaDays = (DAY_INDEX[call.day] - nowDay + 7) % 7;
+  if (deltaDays === 0 && startMinutes <= nowMinutes) deltaDays = 7;
+  return laWallTimeToDate(nowLA.year, nowLA.month, nowLA.day + deltaDays, startMinutes).getTime();
+}
+
+export function getCallDurationMs(call: WeeklyCall): number {
+  return Math.max(0, parseTimeToMinutes(call.endTime) - parseTimeToMinutes(call.startTime)) * 60000;
+}
+
 // The call happening right now in LA terms, if any. Additive helper for the
 // hub's live indicator; getNextCalls excludes in-progress calls by design.
 export function getLiveCall(schedule: WeeklyCall[], now: Date = new Date()): WeeklyCall | null {

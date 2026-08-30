@@ -1,28 +1,71 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { WEEKLY_SCHEDULE, type WeeklyCall } from "../hub-copy";
+import { getCallDurationMs, getCallStartMs } from "../lib/next-calls";
 
-export const metadata: Metadata = {
-  title: "Real Venture | Livestreams",
+const LA_TZ = "America/Los_Angeles";
+const DAY_SEQ = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+type Entry = {
+  call: WeeklyCall;
+  startMs: number;
+  endMs: number;
 };
 
-const DAY_ORDER: WeeklyCall["day"][] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const DAY_FULL: Record<WeeklyCall["day"], string> = {
-  Mon: "Monday",
-  Tue: "Tuesday",
-  Wed: "Wednesday",
-  Thu: "Thursday",
-  Fri: "Friday",
-  Sat: "Saturday",
-  Sun: "Sunday",
-};
-
+// Schedule times are stored as PST wall-clock in WEEKLY_SCHEDULE; each call's
+// next occurrence is converted into the viewer's timezone for display, and
+// day grouping follows the viewer's local day (a 6 PM PST call is 2 AM the
+// NEXT day in Europe, so headers regroup accordingly).
 export default function LivestreamsPage() {
-  // One section per day, Mon-Sun; days without calls are skipped.
-  const dayGroups = DAY_ORDER.map((day) => ({
-    day,
-    calls: WEEKLY_SCHEDULE.filter((call) => call.day === day),
-  })).filter((group) => group.calls.length > 0);
+  const [viewerTz, setViewerTz] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      setViewerTz(Intl.DateTimeFormat().resolvedOptions().timeZone);
+    } catch {
+      // Keep the PST fallback.
+    }
+  }, []);
+  const zone = viewerTz ?? LA_TZ;
+
+  const entries: Entry[] = useMemo(
+    () =>
+      WEEKLY_SCHEDULE.map((call) => {
+        const startMs = getCallStartMs(call);
+        return { call, startMs, endMs: startMs + getCallDurationMs(call) };
+      }),
+    []
+  );
+
+  const fmtClock = (ms: number) =>
+    new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: zone }).format(ms);
+  const weekdayOf = (ms: number) =>
+    new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: zone }).format(ms);
+  const minutesOf = (ms: number) => {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      minute: "numeric",
+      hour12: false,
+      timeZone: zone,
+    }).formatToParts(ms);
+    const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? 0);
+    return (get("hour") % 24) * 60 + get("minute");
+  };
+
+  const dayGroups = DAY_SEQ.map((dayName) => ({
+    dayName,
+    items: entries
+      .filter((entry) => weekdayOf(entry.startMs) === dayName)
+      .sort((a, b) => minutesOf(a.startMs) - minutesOf(b.startMs)),
+  })).filter((group) => group.items.length > 0);
+
+  const suffix = zone === LA_TZ ? " PST" : "";
+  const tzNote = viewerTz
+    ? zone === LA_TZ
+      ? "Shown in your local time (PST)"
+      : "Shown in your local time"
+    : "All times PST";
 
   return (
     <div className="hub2-page">
@@ -35,27 +78,29 @@ export default function LivestreamsPage() {
         <header className="hub2-greeting">
           <h1 className="hub2-greeting-name">Livestreams</h1>
           <p className="hub2-greeting-sub">
-            Full weekly schedule. All times PST.
+            Full weekly schedule.
           </p>
         </header>
 
         <section className="livestreams-note">
           <p>
-            All times PST. Live streams are held in the Discord{" "}
+            Live streams are held in the Discord{" "}
             <a href="/api/discord/connect" className="livestreams-note-link">
               voice channel
             </a>.
           </p>
         </section>
 
-        {dayGroups.map(({ day, calls }) => (
-          <section className="ls-day" key={day}>
-            <div className="ls-day-head">{DAY_FULL[day]}</div>
-            {calls.map((call) => (
+        <p className="ls-tz-note">{tzNote}</p>
+
+        {dayGroups.map(({ dayName, items }) => (
+          <section className="ls-day" key={dayName}>
+            <div className="ls-day-head">{dayName}</div>
+            {items.map(({ call, startMs, endMs }) => (
               <div className="ls-card" key={call.id}>
                 <div className="ls-card-title">{call.type}</div>
                 <div className="ls-card-host">with {call.host}</div>
-                <div className="ls-card-time">{call.startTime} - {call.endTime} PST</div>
+                <div className="ls-card-time">{fmtClock(startMs)} - {fmtClock(endMs)}{suffix}</div>
               </div>
             ))}
           </section>
