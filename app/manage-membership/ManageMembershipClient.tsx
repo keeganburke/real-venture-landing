@@ -53,9 +53,13 @@ export default function ManageMembershipClient({ membership }: Props) {
             </div>
           </div>
 
+          {/* Billing section removed: every row was a dead placeholder. The
+              whole container is commented out so no empty header renders.
+              TODO: wire embedded card swap when Whop API path confirmed
+              Removed - no need for invoices tab
+              Removed - no need for billing history tab
           <div className="settings-section">
             <div className="settings-section-h">Billing</div>
-            {/* TODO: wire to Whop billing portal */}
             <a className="settings-row" href="#">
               <div className="settings-row-l">
                 <span className="settings-row-icn">{"\u{1F4B3}"}</span>
@@ -63,7 +67,6 @@ export default function ManageMembershipClient({ membership }: Props) {
               </div>
               <span className="settings-row-arw">{"→"}</span>
             </a>
-            {/* TODO: wire to Whop invoices */}
             <a className="settings-row" href="#">
               <div className="settings-row-l">
                 <span className="settings-row-icn">{"\u{1F4C4}"}</span>
@@ -71,7 +74,6 @@ export default function ManageMembershipClient({ membership }: Props) {
               </div>
               <span className="settings-row-arw">{"→"}</span>
             </a>
-            {/* TODO: wire to Whop billing history */}
             <a className="settings-row" href="#">
               <div className="settings-row-l">
                 <span className="settings-row-icn">{"\u{1F4C5}"}</span>
@@ -80,10 +82,11 @@ export default function ManageMembershipClient({ membership }: Props) {
               <span className="settings-row-arw">{"→"}</span>
             </a>
           </div>
+          */}
 
+          {/* TODO: Restore when Ultra launches
           <div className="settings-section">
             <div className="settings-section-h">Plan</div>
-            {/* TODO: wait for Ultra launch */}
             <a className="settings-row" href="#">
               <div className="settings-row-l">
                 <span className="settings-row-icn">{"⬆️"}</span>
@@ -92,10 +95,11 @@ export default function ManageMembershipClient({ membership }: Props) {
               <span className="settings-row-arw">{"→"}</span>
             </a>
           </div>
+          */}
 
-          <a className="cancel-link" onClick={openCancelModal}>
+          <button type="button" className="cancel-link" onClick={openCancelModal}>
             Cancel membership
-          </a>
+          </button>
         </div>
       </div>
 

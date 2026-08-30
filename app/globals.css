@@ -196,7 +196,32 @@ body.modal-open{overflow:hidden}
   min-height:100vh;background:var(--bg);color:var(--txt);
   font-family:"Inter",ui-sans-serif,-apple-system,sans-serif;
 }
-.mm-shell{max-width:480px;margin:0 auto;width:100%}
+/* Gridded backdrop, copied from .hub2-page so billing matches the dashboard
+   shell. Fixed layers sit at z-index 0; .mm-shell lifts content above them. */
+.manage-mem-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(245, 197, 96, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 197, 96, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+.manage-mem-page::after {
+  content: "";
+  position: fixed;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(245, 197, 96, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+.mm-shell{max-width:480px;margin:0 auto;width:100%;position:relative;z-index:1}
 .manage-mem-page .settings{padding:16px}
 .manage-mem-page .settings-h{margin:12px 0 20px}
 .manage-mem-page .settings-title{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:28px;letter-spacing:-.02em;color:var(--txt);margin-bottom:6px}
@@ -217,7 +242,7 @@ body.modal-open{overflow:hidden}
 .manage-mem-page .settings-row-icn{color:var(--txt-mut);font-size:16px}
 .manage-mem-page .settings-row-label{font-weight:600;font-size:14px}
 .manage-mem-page .settings-row-arw{color:var(--txt-dim);font-size:14px}
-.manage-mem-page .cancel-link{display:block;text-align:center;margin-top:24px;padding:14px;color:var(--txt-dim);font-size:13px;text-decoration:underline;text-decoration-color:var(--line-hi);text-underline-offset:3px;cursor:pointer}
+.manage-mem-page .cancel-link{display:block;width:100%;background:none;border:none;font-family:inherit;text-align:center;margin-top:24px;padding:14px;color:var(--txt-dim);font-size:13px;text-decoration:underline;text-decoration-color:var(--line-hi);text-underline-offset:3px;cursor:pointer}
 .manage-mem-page .cancel-link:hover{color:var(--red)}
 
 /* CANCEL FLOW (cancel-flow mockup Gates 1-4, cf- prefixed; :root, .hub-*, .onb, .manage-mem* untouched) */
