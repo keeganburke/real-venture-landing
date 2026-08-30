@@ -28,6 +28,19 @@ const GREETINGS_NO_NAME = [
   "Locked in?",
 ];
 
+// Deterministic greeting pick: same value across SSR and client hydration, and
+// it varies per user per day so the greeting still rotates. No post-mount swap
+// means no iOS Safari stale-tile ghost when the PWA banner shifts layout.
+function deriveGreetingIndex(seed: string, length: number): number {
+  const day = Math.floor(Date.now() / 86_400_000); // days since epoch, rolls at UTC midnight
+  const combined = `${seed}:${day}`;
+  let hash = 0;
+  for (let i = 0; i < combined.length; i++) {
+    hash = ((hash << 5) - hash + combined.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash) % length;
+}
+
 type NextLessonInfo = {
   title: string;
   courseTitle: string;
@@ -135,15 +148,9 @@ export default function HubClient({
     }
   }, []);
 
-  // Random pick happens after mount so SSR and hydration render the same
-  // default; the flip to a random phrase on load is expected.
-  const [greetingIndex, setGreetingIndex] = useState(0);
-  useEffect(() => {
-    setGreetingIndex(Math.floor(Math.random() * GREETINGS.length));
-  }, []);
-  const greeting = displayName
-    ? GREETINGS[greetingIndex].replace("{name}", displayName)
-    : GREETINGS_NO_NAME[greetingIndex];
+  const greetingIndex = deriveGreetingIndex(displayName ?? "", GREETINGS.length);
+  const greeting = (displayName ? GREETINGS[greetingIndex] : GREETINGS_NO_NAME[greetingIndex])
+    .replace("{name}", displayName ?? "");
 
   // Times render in the viewer's timezone once known; SSR and first paint use
   // PST so hydration stays consistent.
