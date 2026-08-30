@@ -5676,3 +5676,164 @@ a.trust-badge-trustpilot:hover {
   color: rgba(255, 255, 255, 0.45);
   margin-bottom: 16px;
 }
+
+/* ================= RESTORED: FREE TRAINING HERO (/free only) =============
+   LIVE CSS — do NOT treat as orphaned. Referenced at runtime via the
+   variant="free" branch in app/LandingClient.tsx (className "lp-hero-free"
+   is applied conditionally, so a static orphan grep can miss it). Deleted in
+   error by 311a430's css orphan cleanup; restored byte-identical from
+   75570be. */
+/* ================= FREE TRAINING HERO (/free only) =================
+   Every rule below is scoped under .lp-hero-free, a class applied only by
+   LandingClient's variant="free" branch. Nothing here can reach the default
+   homepage hero. Follows the .lp-vid-embed aspect-ratio convention rather
+   than the padding-top:56.25% trick the /start funnel uses. */
+.lp-hero-free .lp-hero-h {
+  /* The default hero is three <span> lines and flips to a flex column under
+     900px (see HERO H1 3-LINE MOBILE SPLIT); the free hero is a single line,
+     so it opts back out of that. */
+  display: block;
+  max-width: 820px;
+  font-size: clamp(32px, 6.4vw, 62px);
+  line-height: 1.04;
+}
+.lp-hero-free .lp-hero-sub {
+  margin-bottom: 28px;
+}
+.lp-hero-free .lp-hero-video {
+  position: relative;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto 32px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #000;
+  border: 1px solid var(--line-dark);
+}
+.lp-hero-free .lp-hero-video iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  z-index: 2;
+  touch-action: manipulation;
+}
+@media (max-width: 640px) {
+  .lp-hero-free .lp-hero-h {
+    font-size: clamp(30px, 8.4vw, 40px);
+  }
+  .lp-hero-free .lp-hero-video {
+    border-radius: 14px;
+    margin-bottom: 24px;
+  }
+}
+
+/* ============ FREE TRAINING HERO v2 (/free only) ============
+   Brings /free closer to the dashboard /start funnel it replaces: urgency
+   pill, white / gold-italic / white headline, phone-call subhead, caption
+   and scroll cue. APPEND-ONLY — every rule is scoped under .lp-hero-free
+   and several deliberately re-declare properties set in the v1 block above,
+   winning on source order rather than by editing those rules in place. */
+
+/* -- 2. headline: white / gold italic / white --
+   .lp-hero-h paints itself with a gold gradient via background-clip, and the
+   <=899px block re-applies it with -webkit-text-fill-color. Both are undone
+   here so the two white words render white and the gold span can own its own
+   color. Specificity 0,2,0 beats the 0,1,0 media rules regardless of order. */
+.lp-hero-free .lp-hero-h {
+  background: none;
+  color: #fff;
+  -webkit-text-fill-color: currentColor;
+  text-wrap: balance;
+  text-shadow: 0 2px 20px rgba(255, 255, 255, 0.08), 0 0 40px rgba(255, 255, 255, 0.04);
+}
+.lp-hero-free .lp-hero-h-em {
+  color: var(--gold);
+  -webkit-text-fill-color: currentColor;
+  font-style: italic;
+  /* keeps the gold phrase from ever splitting across a line break, so the
+     mobile wrap lands between phrases instead of mid-phrase */
+  white-space: nowrap;
+  text-shadow: 0 0 20px rgba(229, 181, 71, 0.4), 0 0 40px rgba(229, 181, 71, 0.2);
+}
+
+/* -- 3. subhead emphasis -- */
+.lp-hero-free .lp-hero-sub-em {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* -- 4/5/6. tighter video gap, caption, scroll cue -- */
+.lp-hero-free .lp-hero-video {
+  margin-bottom: 16px;
+}
+.lp-hero-free .lp-hero-cap {
+  max-width: 560px;
+  margin: 0 auto 14px;
+  color: #888;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.lp-hero-free .lp-hero-scrollcue {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 0 auto 26px;
+  color: #5f5f66;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.lp-hero-free .lp-hero-scrollcue svg {
+  width: 16px;
+  height: 16px;
+  opacity: 0.75;
+  animation: lp-hero-scrollcue-bob 2s ease-in-out infinite;
+}
+@keyframes lp-hero-scrollcue-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-hero-free .lp-hero-scrollcue svg {
+    animation: none;
+  }
+}
+
+/* ============ FREE TRAINING HERO v3 (/free only) ============
+   Above-the-fold slimming: the urgency pill and the hero CtaStrip are gone
+   (the pill's rules were deleted from the v2 block above with it), the
+   headline is now the /start wording, and both the headline and the caption
+   are pinned to a single line on mobile.
+
+   Sizing is measured, not guessed. With the fonts loaded, one line of
+   "Your Secured Wholesaling Blueprint" is 1518px wide at font-size:100px, and
+   the caption is 2962px. .shell contributes padding:0 24px, so the usable
+   width is (viewport - 48). Solving for the largest font that still fits at
+   the narrowest widths gives a ceiling of 5.60vw for the headline (binding at
+   320px, not 390px) and 2.87vw for the caption. The values below sit just
+   under those ceilings so a late-loading font cannot tip either into a wrap
+   or a horizontal overflow. */
+.lp-hero-free .lp-hero-h {
+  /* max-width:820px from the v1 block would clip a nowrap line on desktop */
+  max-width: none;
+  white-space: nowrap;
+  /* 21.3px at 390px; caps at the original hero maximum on desktop */
+  font-size: clamp(12px, 5.45vw, 62px);
+}
+.lp-hero-free .lp-hero-cap {
+  white-space: nowrap;
+  /* 11.0px at 390px; back to the original 14px from 497px up */
+  font-size: clamp(8px, 2.82vw, 14px);
+  max-width: none;
+}
+.lp-hero-free .lp-hero-h-em {
+  /* Cabinet Grotesk ships no italic, so the browser synthesises the oblique.
+     The slant pushes the final "g" right over the following space, which the
+     headline's -0.04em letter-spacing has already shortened, and "Wholesaling"
+     collides with "Blueprint". This restores the optical gap. */
+  padding-right: 0.1em;
+}
