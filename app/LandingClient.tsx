@@ -6,6 +6,7 @@ import { WhopCheckoutEmbed } from "@whop/checkout/react";
 import NavDrawer from "./components/NavDrawer";
 import CtaStrip from "./components/CtaStrip";
 import TrustRow from "./components/TrustRow";
+import FreeHeroPill from "./components/FreeHeroPill";
 import SectionHead from "./components/SectionHead";
 import PayoutCarousel from "./components/PayoutCarousel";
 import ToolkitCards from "./components/ToolkitCards";
@@ -218,8 +219,15 @@ export default function LandingClient({ variant }: Props) {
         {variant === "free" ? (
           <section className="lp-hero lp-hero-free">
             <div className="shell">
-              <h1 className="lp-hero-h">The Full Secured Wholesaling Blueprint</h1>
-              <p className="lp-hero-sub">{"Everything I use to find buyers first and get paid on the assignment. Watch it start to finish."}</p>
+              <FreeHeroPill />
+              <h1 className="lp-hero-h">
+                The Full <span className="lp-hero-h-em">Secured Wholesaling</span> Blueprint
+              </h1>
+              <p className="lp-hero-sub">
+                {"We'll "}
+                <b className="lp-hero-sub-em">give you a call in the next few minutes</b>
+                {" to point you in the right direction."}
+              </p>
               <div className="lp-hero-video">
                 <iframe
                   src="https://player.vimeo.com/video/1193039444?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&muted=1&playsinline=1"
@@ -229,6 +237,13 @@ export default function LandingClient({ variant }: Props) {
                   webkit-playsinline="true"
                   title="Secured Wholesaling Blueprint"
                 />
+              </div>
+              <p className="lp-hero-cap">{"Watch this first. It's the same method behind every deal below."}</p>
+              <div className="lp-hero-scrollcue">
+                <span>Want the whole system? Keep scrolling.</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
               </div>
               <CtaStrip onJoin={openPricing} />
               <TrustRow />

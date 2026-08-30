@@ -6193,3 +6193,123 @@ a.trust-badge-trustpilot:hover {
     margin-bottom: 24px;
   }
 }
+
+/* ============ FREE TRAINING HERO v2 (/free only) ============
+   Brings /free closer to the dashboard /start funnel it replaces: urgency
+   pill, white / gold-italic / white headline, phone-call subhead, caption
+   and scroll cue. APPEND-ONLY — every rule is scoped under .lp-hero-free
+   and several deliberately re-declare properties set in the v1 block above,
+   winning on source order rather than by editing those rules in place. */
+
+/* -- 1. urgency pill -- */
+.lp-hero-free .lp-hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  margin: 0 auto 16px;
+  border-radius: 100px;
+  background: rgba(229, 181, 71, 0.1);
+  border: 1px solid rgba(229, 181, 71, 0.3);
+  color: var(--gold);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  white-space: nowrap;
+  /* the sentence is client-rendered (see FreeHeroPill); this holds its height
+     so the hero below does not shift when it arrives */
+  min-height: 26px;
+  box-sizing: border-box;
+}
+.lp-hero-free .lp-hero-pill-pending {
+  visibility: hidden;
+}
+.lp-hero-free .lp-hero-pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  flex-shrink: 0;
+  animation: lp-hero-pill-pulse 1.4s ease-in-out infinite;
+}
+@keyframes lp-hero-pill-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.3; transform: scale(1.4); }
+}
+
+/* -- 2. headline: white / gold italic / white --
+   .lp-hero-h paints itself with a gold gradient via background-clip, and the
+   <=899px block re-applies it with -webkit-text-fill-color. Both are undone
+   here so the two white words render white and the gold span can own its own
+   color. Specificity 0,2,0 beats the 0,1,0 media rules regardless of order. */
+.lp-hero-free .lp-hero-h {
+  background: none;
+  color: #fff;
+  -webkit-text-fill-color: currentColor;
+  text-wrap: balance;
+  text-shadow: 0 2px 20px rgba(255, 255, 255, 0.08), 0 0 40px rgba(255, 255, 255, 0.04);
+}
+.lp-hero-free .lp-hero-h-em {
+  color: var(--gold);
+  -webkit-text-fill-color: currentColor;
+  font-style: italic;
+  /* keeps the gold phrase from ever splitting across a line break, so the
+     mobile wrap lands between phrases instead of mid-phrase */
+  white-space: nowrap;
+  text-shadow: 0 0 20px rgba(229, 181, 71, 0.4), 0 0 40px rgba(229, 181, 71, 0.2);
+}
+
+/* -- 3. subhead emphasis -- */
+.lp-hero-free .lp-hero-sub-em {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* -- 4/5/6. tighter video gap, caption, scroll cue -- */
+.lp-hero-free .lp-hero-video {
+  margin-bottom: 16px;
+}
+.lp-hero-free .lp-hero-cap {
+  max-width: 560px;
+  margin: 0 auto 14px;
+  color: #888;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.lp-hero-free .lp-hero-scrollcue {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 0 auto 26px;
+  color: #5f5f66;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.lp-hero-free .lp-hero-scrollcue svg {
+  width: 16px;
+  height: 16px;
+  opacity: 0.75;
+  animation: lp-hero-scrollcue-bob 2s ease-in-out infinite;
+}
+@keyframes lp-hero-scrollcue-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(3px); }
+}
+
+@media (max-width: 420px) {
+  /* the pill sentence is ~58 characters; let it wrap rather than push the
+     page into a horizontal scroll on narrow phones */
+  .lp-hero-free .lp-hero-pill {
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-hero-free .lp-hero-pill-dot,
+  .lp-hero-free .lp-hero-scrollcue svg {
+    animation: none;
+  }
+}
