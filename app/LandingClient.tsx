@@ -573,6 +573,9 @@ export default function LandingClient({ variant }: Props) {
               <a onClick={() => scrollToSection("included")}>{"What's inside"}</a>
               <a onClick={() => scrollToSection("reviews")}>Reviews</a>
               <a href="/login">Log in</a>
+              <a href="/privacy">Privacy</a>
+              <a href="/terms">Terms</a>
+              <a href="/disclaimer">Disclaimer</a>
             </div>
             <div className="lp-footer-site">realventure.io</div>
           </div>
