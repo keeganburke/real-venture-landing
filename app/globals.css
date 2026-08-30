@@ -6059,3 +6059,50 @@ a.trust-badge-trustpilot:hover {
     transition: none;
   }
 }
+
+/* ================= FREE TRAINING HERO (/free only) =================
+   Every rule below is scoped under .lp-hero-free, a class applied only by
+   LandingClient's variant="free" branch. Nothing here can reach the default
+   homepage hero. Follows the .lp-vid-embed aspect-ratio convention rather
+   than the padding-top:56.25% trick the /start funnel uses. */
+.lp-hero-free .lp-hero-h {
+  /* The default hero is three <span> lines and flips to a flex column under
+     900px (see HERO H1 3-LINE MOBILE SPLIT); the free hero is a single line,
+     so it opts back out of that. */
+  display: block;
+  max-width: 820px;
+  font-size: clamp(32px, 6.4vw, 62px);
+  line-height: 1.04;
+}
+.lp-hero-free .lp-hero-sub {
+  margin-bottom: 28px;
+}
+.lp-hero-free .lp-hero-video {
+  position: relative;
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto 32px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #000;
+  border: 1px solid var(--line-dark);
+}
+.lp-hero-free .lp-hero-video iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  z-index: 2;
+  touch-action: manipulation;
+}
+@media (max-width: 640px) {
+  .lp-hero-free .lp-hero-h {
+    font-size: clamp(30px, 8.4vw, 40px);
+  }
+  .lp-hero-free .lp-hero-video {
+    border-radius: 14px;
+    margin-bottom: 24px;
+  }
+}
