@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CancelFlow from "./CancelFlow";
 
 export type MembershipSummary = {
@@ -17,6 +17,31 @@ type Props = {
 
 export default function ManageMembershipClient({ membership }: Props) {
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelledNotice, setCancelledNotice] = useState<string | null>(null);
+
+  // Gate 4 lands here as /manage-membership?cancelled=1&ends=<iso> after a
+  // successful Whop cancellation. Show it once, then clean the URL.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("cancelled") !== "1") return;
+    const ends = params.get("ends");
+    let when: string | null = null;
+    if (ends) {
+      const d = new Date(ends);
+      if (!Number.isNaN(d.getTime())) {
+        when = d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+      }
+    }
+    setCancelledNotice(
+      when
+        ? `Your membership has been cancelled. You'll keep access until ${when} at which point it will not renew.`
+        : "Your membership has been cancelled. You'll keep access until the end of your current billing period."
+    );
+    params.delete("cancelled");
+    params.delete("ends");
+    const rest = params.toString();
+    window.history.replaceState({}, "", window.location.pathname + (rest ? "?" + rest : ""));
+  }, []);
 
   const openCancelModal = () => setCancelOpen(true);
 
@@ -27,6 +52,23 @@ export default function ManageMembershipClient({ membership }: Props) {
     <main className="manage-mem-page">
       <div className="mm-shell">
         <div className="settings">
+          {cancelledNotice && (
+            <div
+              role="status"
+              style={{
+                marginTop: 12,
+                padding: "14px 16px",
+                background: "rgba(229,181,71,.06)",
+                border: "1px solid rgba(229,181,71,.25)",
+                borderRadius: 12,
+                fontSize: 13,
+                lineHeight: 1.55,
+                color: "var(--txt-mut)",
+              }}
+            >
+              {cancelledNotice}
+            </div>
+          )}
           <div className="settings-h">
             <div className="settings-title">Manage Membership</div>
             <div className="settings-sub">View your plan or manage billing.</div>

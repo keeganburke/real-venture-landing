@@ -45,6 +45,8 @@ type Props = {
 
 export default function Gate4Loss({ onKeep, onTestimonialShown, onProceedToCancel }: Props) {
   const [index, setIndex] = useState(0);
+  const [cancelling, setCancelling] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -60,9 +62,41 @@ export default function Gate4Loss({ onKeep, onTestimonialShown, onProceedToCance
 
   const testimonial = TESTIMONIALS[index];
 
-  const quit = () => {
+  // Real cancellation: Whop cancels at period end, then we land the member back
+  // on /manage-membership with a confirmation banner. No off-site redirect.
+  const quit = async () => {
+    if (cancelling) return;
+    setCancelling(true);
+    setError(null);
     onProceedToCancel();
-    window.location.href = "https://whop.com";
+
+    try {
+      const res = await fetch("/api/whop/cancel", { method: "POST" });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) throw new Error("cancel failed");
+
+      const endsAt = typeof data.ends_at === "string" ? data.ends_at : null;
+      // Fire and forget, keepalive so it survives the navigation below.
+      fetch("/api/cancel-events/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        keepalive: true,
+        body: JSON.stringify({
+          event_type: "whop_cancel_completed",
+          session_id: crypto.randomUUID(),
+          event_data: { ends_at: endsAt },
+        }),
+      }).catch(() => {});
+
+      window.location.href = `/manage-membership?cancelled=1${
+        endsAt ? `&ends=${encodeURIComponent(endsAt)}` : ""
+      }`;
+    } catch {
+      setError(
+        "Something went wrong. Please try again or contact support at realventureestate@gmail.com."
+      );
+      setCancelling(false);
+    }
   };
 
   return (
@@ -99,9 +133,23 @@ export default function Gate4Loss({ onKeep, onTestimonialShown, onProceedToCance
       <button className="cf-btn-primary" onClick={onKeep}>
         Keep my plan
       </button>
-      <button className="cf-btn-quit" onClick={quit}>
-        {"I'd rather quit, cancel my membership"}
+      <button className="cf-btn-quit" onClick={quit} disabled={cancelling}>
+        {cancelling ? "Cancelling\u2026" : "I'd rather quit, cancel my membership"}
       </button>
+      {error && (
+        <p
+          role="alert"
+          style={{
+            marginTop: 12,
+            textAlign: "center",
+            fontSize: 12.5,
+            lineHeight: 1.5,
+            color: "var(--red)",
+          }}
+        >
+          {error}
+        </p>
+      )}
     </>
   );
 }
