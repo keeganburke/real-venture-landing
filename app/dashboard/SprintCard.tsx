@@ -28,7 +28,7 @@ const MILESTONES: Milestone[] = [
 ];
 
 export default function SprintCard() {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const doneCount = MILESTONES.filter((_, i) => i < DONE_THROUGH).length;
   const pct = Math.round((doneCount / MILESTONES.length) * 100);

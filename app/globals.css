@@ -6274,3 +6274,25 @@ a.trust-badge-trustpilot:hover {
     transition: none !important;
   }
 }
+
+/* ============================================================================
+   HUB DESKTOP ORDER + SPRINT CARD SIZING
+   1. Discord promo stacks between the Livestreams block and the Studio promo.
+      Livestreams rows are order 0 (default), Discord is order 1, so Studio
+      moves to 2 to sit below it instead of tying with it.
+   2. Sprint card matches the Continue lesson card (.hub2-hero) outer box:
+      full-width row on desktop, same margin-top and border-radius. Internal
+      padding and the emerald milestone styling are untouched.
+   ============================================================================ */
+.sprint-card {
+  margin-top: 28px;
+  border-radius: 20px;
+}
+@media (min-width: 900px) {
+  .hub2-studio {
+    order: 2;
+  }
+  .sprint-card {
+    grid-column: 1 / -1;
+  }
+}
