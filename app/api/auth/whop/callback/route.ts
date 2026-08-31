@@ -90,10 +90,10 @@ export async function GET(request: NextRequest) {
   const codeVerifier = request.cookies.get("whop_code_verifier")?.value;
 
   if (!state || !storedState || state !== storedState) {
-    return clearOAuthCookies(NextResponse.redirect(`${origin}/?auth=state_mismatch`));
+    return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=state_mismatch`));
   }
   if (!code || !codeVerifier) {
-    return clearOAuthCookies(NextResponse.redirect(`${origin}/?auth=whop_error`));
+    return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=whop_error`));
   }
 
   let accessToken: string;
@@ -114,15 +114,15 @@ export async function GET(request: NextRequest) {
       }),
     });
     if (!tokenRes.ok) {
-      return clearOAuthCookies(NextResponse.redirect(`${origin}/?auth=whop_error`));
+      return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=whop_error`));
     }
     const tokenData = await tokenRes.json();
     if (typeof tokenData?.access_token !== "string" || tokenData.access_token.length === 0) {
-      return clearOAuthCookies(NextResponse.redirect(`${origin}/?auth=whop_error`));
+      return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=whop_error`));
     }
     accessToken = tokenData.access_token;
   } catch {
-    return clearOAuthCookies(NextResponse.redirect(`${origin}/?auth=whop_error`));
+    return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=whop_error`));
   }
 
   let whopUserId: string;
@@ -131,15 +131,15 @@ export async function GET(request: NextRequest) {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!userinfoRes.ok) {
-      return clearOAuthCookies(NextResponse.redirect(`${origin}/?auth=whop_error`));
+      return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=whop_error`));
     }
     const userinfo = await userinfoRes.json();
     if (typeof userinfo?.sub !== "string" || userinfo.sub.length === 0) {
-      return clearOAuthCookies(NextResponse.redirect(`${origin}/?auth=whop_error`));
+      return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=whop_error`));
     }
     whopUserId = userinfo.sub;
   } catch {
-    return clearOAuthCookies(NextResponse.redirect(`${origin}/?auth=whop_error`));
+    return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=whop_error`));
   }
 
   // Whop's memberships list is eventually consistent right after checkout.
@@ -151,12 +151,12 @@ export async function GET(request: NextRequest) {
   }
 
   if (!membership.active) {
-    return clearOAuthCookies(NextResponse.redirect(`${origin}/?auth=denied`));
+    return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=denied`));
   }
 
   const sessionToken = await createSessionToken(whopUserId);
   if (!sessionToken) {
-    return clearOAuthCookies(NextResponse.redirect(`${origin}/?auth=whop_error`));
+    return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=whop_error`));
   }
 
   // Existing members (oldest membership before the cutoff) skip onboarding.

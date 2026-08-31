@@ -94,6 +94,9 @@ const AUTH_MESSAGES: Record<string, string> = {
 export default function LandingClient({ variant }: Props) {
   const router = useRouter();
   const [authNotice, setAuthNotice] = useState<string | null>(null);
+  // Tracked separately from the message so "denied" (wrong email after
+  // checkout) can render the loud red variant instead of the subtle banner.
+  const [authCode, setAuthCode] = useState<string | null>(null);
   const [pricingOpen, setPricingOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   // 2-step wizard inside the pricing modal: tiers -> embedded checkout.
@@ -106,10 +109,12 @@ export default function LandingClient({ variant }: Props) {
     const code = new URLSearchParams(window.location.search).get("auth");
     if (!code) return;
     setAuthNotice(AUTH_MESSAGES[code] ?? "Sign-in didn't complete. Please try again.");
+    setAuthCode(code);
   }, []);
 
   const dismissAuthNotice = () => {
     setAuthNotice(null);
+    setAuthCode(null);
     const params = new URLSearchParams(window.location.search);
     params.delete("auth");
     const rest = params.toString();
@@ -193,7 +198,31 @@ export default function LandingClient({ variant }: Props) {
   return (
     <>
       <div className="wrap">
-        {authNotice && (
+        {authNotice && authCode === "denied" && (
+          <div className="lp-auth-warning" role="alert">
+            <div className="lp-auth-warning-icon" aria-hidden="true">{"\u{1F6D1}"}</div>
+            <div className="lp-auth-warning-body">
+              <div className="lp-auth-warning-title">WRONG EMAIL</div>
+              <p className="lp-auth-warning-copy">
+                It looks like you tried to log in, but that email doesn&apos;t have an active
+                membership.
+              </p>
+              <p className="lp-auth-warning-copy lp-auth-warning-cta">
+                Sign out of Whop and sign back in with the <strong>EXACT</strong> email you used to
+                buy.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={dismissAuthNotice}
+              aria-label="Dismiss"
+              className="lp-auth-warning-dismiss"
+            >
+              {"\u00d7"}
+            </button>
+          </div>
+        )}
+        {authNotice && authCode !== "denied" && (
           <div
             role="alert"
             style={{

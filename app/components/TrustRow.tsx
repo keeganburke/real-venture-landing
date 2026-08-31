@@ -6,7 +6,7 @@ export default function TrustRow() {
       <span className="trust-badge trust-badge-whop">
         <span className="trust-star trust-star-gold">★</span>
         5.0 on Whop
-        <span className="trust-count">(51 reviews)</span>
+        <span className="trust-count">(53 reviews)</span>
       </span>
       <span className="trust-dot" aria-hidden="true">•</span>
       <a
@@ -17,7 +17,7 @@ export default function TrustRow() {
       >
         <span className="trust-star trust-star-green">★</span>
         4.6 on Trustpilot
-        <span className="trust-count">(17 reviews)</span>
+        <span className="trust-count">(20 reviews)</span>
       </a>
     </div>
   );

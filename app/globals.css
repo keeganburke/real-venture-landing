@@ -5498,6 +5498,7 @@ body:has(.hub-page) {
   display: grid;
   grid-template-columns: 32px 1fr;
   gap: 14px;
+  align-items: start;
   background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.04));
   border: 2px solid rgba(239, 68, 68, 0.5);
   border-radius: 12px;
@@ -6295,4 +6296,156 @@ a.trust-badge-trustpilot:hover {
   .sprint-card {
     grid-column: 1 / -1;
   }
+}
+
+/* ============================================================================
+   LANDING AUTH WARNING · loud red variant of the ?auth= banner
+   Visual copy of .dh-warning (discord-help) so the red box means the same
+   thing everywhere. Only the "denied" code uses it; the other auth codes
+   keep the subtle inline-styled banner.
+   ============================================================================ */
+.lp-auth-warning {
+  position: relative;
+  z-index: 120;
+  display: grid;
+  grid-template-columns: 32px 1fr 24px;
+  gap: 14px;
+  align-items: start;
+  max-width: 1200px;
+  margin: 12px auto;
+  padding: 18px 20px;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.12), rgba(239, 68, 68, 0.04));
+  border: 2px solid rgba(239, 68, 68, 0.5);
+  border-radius: 12px;
+  font-family: "Inter", sans-serif;
+}
+.lp-auth-warning-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+.lp-auth-warning-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.lp-auth-warning-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #ef4444;
+  letter-spacing: 0.02em;
+}
+.lp-auth-warning-copy {
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+}
+.lp-auth-warning-cta {
+  font-weight: 700;
+}
+.lp-auth-warning-copy strong {
+  color: #ef4444;
+  font-weight: 800;
+}
+.lp-auth-warning-dismiss {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+@media (max-width: 640px) {
+  .lp-auth-warning {
+    margin: 12px;
+    padding: 14px 16px;
+    grid-template-columns: 26px 1fr 24px;
+    gap: 10px;
+  }
+}
+
+/* Warning callout icons align with the first LINE of the body copy, not the
+   vertical center of the whole block. .dh-warning and .lp-auth-warning both
+   set align-items: start; this nudges the glyph down to the cap height. */
+.dh-warning-icon,
+.lp-auth-warning-icon {
+  margin-top: 2px;
+}
+
+/* Login page: stretch the warning to full card width + left-align text */
+.lp-login-card .dh-warning {
+  align-self: stretch;
+  text-align: left;
+}
+
+/* ============================================================================
+   LOGIN PAGE · soft email note + contextual ?auth= banner
+   Overrides the terse .lp-login-note one-liner further up; the banner is new.
+   ============================================================================ */
+.lp-login-note {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.55;
+  max-width: 400px;
+  margin: 20px auto 0;
+  text-align: center;
+}
+.lp-login-note strong {
+  color: #ef4444;
+  font-weight: 700;
+}
+
+.lp-login-banner {
+  max-width: 500px;
+  /* .lp-login-card is a centered flex column, so without this the banner
+     shrink-wraps to its text instead of spanning the card. */
+  align-self: stretch;
+  margin: 0 auto 24px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 3px solid rgba(229, 165, 68, 0.7);
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: start;
+  text-align: left;
+}
+.lp-login-banner-body { min-width: 0; }
+.lp-login-banner-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.lp-login-banner-copy {
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0;
+}
+.lp-login-banner-copy strong { color: rgb(245, 197, 96); font-weight: 600; }
+.lp-login-banner-dismiss {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 4px;
+  line-height: 1;
+}
+.lp-login-banner-dismiss:hover { color: rgba(255, 255, 255, 0.8); }
+
+/* Denied-specific: red border-top instead of gold to signal user error not system error */
+.lp-login-banner.is-denied {
+  border-top-color: rgba(239, 68, 68, 0.7);
+}
+.lp-login-banner.is-denied .lp-login-banner-copy strong {
+  color: #ef4444;
 }
