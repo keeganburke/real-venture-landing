@@ -6456,6 +6456,34 @@ a.trust-badge-trustpilot:hover {
    modal (lp-callmodal*), rendered conditionally so a static orphan grep can
    miss them. See the restored FREE TRAINING HERO block above for precedent
    (311a430 deleted live scoped rules once already). */
+/* "You're in" load-flash: in flow (no layout shift), fades in, holds ~1.7s,
+   fades out and stays invisible. Skipped entirely under reduced motion. */
+.lp-hero-free .lp-hero-yourein {
+  display: inline-block;
+  margin: 0 auto 14px;
+  padding: 6px 14px;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffe89a;
+  background: rgba(229, 181, 71, 0.08);
+  border: 1px solid rgba(229, 181, 71, 0.4);
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+  animation: lp-yourein 2.6s ease forwards;
+}
+@keyframes lp-yourein {
+  0%   { opacity: 0; transform: translateY(-4px); }
+  15%  { opacity: 1; transform: translateY(0); }
+  80%  { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-hero-free .lp-hero-yourein { display: none; }
+}
 .lp-hero-free .lp-hero-callout {
   max-width: 640px;
   margin: 0 auto 18px;
@@ -6482,7 +6510,7 @@ a.trust-badge-trustpilot:hover {
 }
 .lp-hero-free .lp-hero-commit {
   display: inline-block;
-  margin: 16px auto 4px;
+  margin: 16px auto 26px;
   padding: 13px 26px;
   font-family: "Cabinet Grotesk", sans-serif;
   font-weight: 800;

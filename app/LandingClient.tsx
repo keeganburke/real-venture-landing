@@ -329,6 +329,10 @@ export default function LandingClient({ variant }: Props) {
         {variant === "free" ? (
           <section className="lp-hero lp-hero-free">
             <div className="shell">
+              {/* "You're in" confirmation flash — fades in, holds, fades out.
+                  Pure CSS lifecycle; stays in flow at opacity 0 afterwards so
+                  nothing shifts. Hidden entirely under reduced motion. */}
+              <div className="lp-hero-yourein" aria-hidden="true">{"✓ You're in"}</div>
               <h1 className="lp-hero-h">
                 Your <span className="lp-hero-h-em">Secured Wholesaling</span> Blueprint
               </h1>
@@ -336,10 +340,10 @@ export default function LandingClient({ variant }: Props) {
                   opt-in is getting this call ANSWERED. */}
               <div className="lp-hero-callout">
                 <p className="lp-hero-callout-main">
-                  {"📞 We're calling you in a few minutes. Might be a number you don't know, that's us."}
+                  {"📞 We're calling you in a few minutes, likely from an unknown number. That's us."}
                 </p>
                 <p className="lp-hero-callout-sub">
-                  {"Pick up. It's how you get your first deal moving."}
+                  {"Pick up, we're here to help you get your first deal."}
                 </p>
               </div>
               <div className="lp-hero-video">
@@ -388,12 +392,12 @@ export default function LandingClient({ variant }: Props) {
                     <p className="lp-callmodal-h">Awesome, talk soon 🤝</p>
                     <p className="lp-callmodal-sub">{"Here's your path:"}</p>
                     <ol className="lp-callmodal-steps">
-                      <li><span className="lp-callmodal-node">📍</span><span className="lp-callmodal-step-txt">{"Where you're at today"}</span></li>
-                      <li><span className="lp-callmodal-node">🔍</span><span className="lp-callmodal-step-txt">Find and lock your first deal</span></li>
-                      <li><span className="lp-callmodal-node">🤝</span><span className="lp-callmodal-step-txt">Bring the buyer, close it</span></li>
-                      <li className="is-payoff"><span className="lp-callmodal-node">💰</span><span className="lp-callmodal-step-txt">Get your first check</span></li>
+                      <li><span className="lp-callmodal-node">🔍</span><span className="lp-callmodal-step-txt">Where to find deals</span></li>
+                      <li><span className="lp-callmodal-node">🤝</span><span className="lp-callmodal-step-txt">How to line up buyers</span></li>
+                      <li><span className="lp-callmodal-node">📝</span><span className="lp-callmodal-step-txt">Locking your first deal</span></li>
+                      <li className="is-payoff"><span className="lp-callmodal-node">💰</span><span className="lp-callmodal-step-txt">Getting your first check</span></li>
                     </ol>
-                    <p className="lp-callmodal-foot">Quick call, big picture. Keep your phone close 📞</p>
+                    <p className="lp-callmodal-foot">{"Phone's about to ring. Pick up 📞"}</p>
                   </div>
                 </div>
               )}
