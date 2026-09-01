@@ -332,7 +332,7 @@ export default function LandingClient({ variant }: Props) {
               {/* "You're in" confirmation flash — fades in, holds, fades out.
                   Pure CSS lifecycle; stays in flow at opacity 0 afterwards so
                   nothing shifts. Hidden entirely under reduced motion. */}
-              <div className="lp-hero-yourein" aria-hidden="true">{"✓ You're in"}</div>
+              <div className="lp-hero-yourein" aria-hidden="true">{"🎉 You're in!"}</div>
               <h1 className="lp-hero-h">
                 Your <span className="lp-hero-h-em">Secured Wholesaling</span> Blueprint
               </h1>
