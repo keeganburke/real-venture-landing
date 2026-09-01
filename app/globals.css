@@ -6482,7 +6482,7 @@ a.trust-badge-trustpilot:hover {
 }
 .lp-hero-free .lp-hero-commit {
   display: inline-block;
-  margin: 0 auto 22px;
+  margin: 16px auto 4px;
   padding: 13px 26px;
   font-family: "Cabinet Grotesk", sans-serif;
   font-weight: 800;
@@ -6564,9 +6564,20 @@ a.trust-badge-trustpilot:hover {
   align-items: center;
   gap: 14px;
   padding: 0 0 26px 0;
+  /* Staggered reveal: the path draws itself node by node on open. The modal
+     is conditionally rendered, so every open remounts and replays this. */
+  animation: lp-callmodal-step-in 0.35s ease-out both;
+}
+.lp-callmodal-steps li:nth-child(2) { animation-delay: 0.15s; }
+.lp-callmodal-steps li:nth-child(3) { animation-delay: 0.3s; }
+.lp-callmodal-steps li:nth-child(4) { animation-delay: 0.45s; }
+@keyframes lp-callmodal-step-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 .lp-callmodal-steps li:last-child { padding-bottom: 0; }
-/* Vertical gold connector between node centres */
+/* Vertical connector, brightening segment by segment toward the payoff so
+   the eye travels down to the money node. */
 .lp-callmodal-steps li:not(:last-child)::before {
   content: "";
   position: absolute;
@@ -6574,7 +6585,15 @@ a.trust-badge-trustpilot:hover {
   top: 32px;
   bottom: -2px;
   width: 2px;
-  background: rgba(229, 181, 71, 0.4);
+}
+.lp-callmodal-steps li:nth-child(1)::before {
+  background: linear-gradient(180deg, rgba(229, 181, 71, 0.2), rgba(229, 181, 71, 0.4));
+}
+.lp-callmodal-steps li:nth-child(2)::before {
+  background: linear-gradient(180deg, rgba(229, 181, 71, 0.4), rgba(229, 181, 71, 0.65));
+}
+.lp-callmodal-steps li:nth-child(3)::before {
+  background: linear-gradient(180deg, rgba(229, 181, 71, 0.65), rgba(229, 181, 71, 0.95));
 }
 .lp-callmodal-node {
   flex-shrink: 0;
@@ -6586,10 +6605,10 @@ a.trust-badge-trustpilot:hover {
   border-radius: 50%;
   border: 2px solid rgba(229, 181, 71, 0.7);
   background: #131313;
-  font-family: "Cabinet Grotesk", sans-serif;
-  font-weight: 800;
-  font-size: 14px;
-  color: #E5B547;
+  font-size: 15px;
+  line-height: 1;
+  /* Lift off the flat card */
+  box-shadow: 0 0 10px rgba(229, 181, 71, 0.25), 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 .lp-callmodal-step-txt {
   font-family: "Inter", sans-serif;
@@ -6600,8 +6619,21 @@ a.trust-badge-trustpilot:hover {
 .lp-callmodal-steps li.is-payoff .lp-callmodal-node {
   background: linear-gradient(135deg, #FFE89A 0%, #E5B547 100%);
   border-color: #FFE89A;
-  color: #1a1208;
   box-shadow: 0 0 16px rgba(229, 181, 71, 0.55);
+  /* Gentle pulse: the payoff keeps drawing the eye */
+  animation: lp-callmodal-payoff-pulse 2.2s ease-in-out infinite;
+}
+@keyframes lp-callmodal-payoff-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.06); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-callmodal-steps li,
+  .lp-callmodal-steps li.is-payoff .lp-callmodal-node {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }
 .lp-callmodal-steps li.is-payoff .lp-callmodal-step-txt {
   color: #ffe89a;

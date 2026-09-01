@@ -336,19 +336,12 @@ export default function LandingClient({ variant }: Props) {
                   opt-in is getting this call ANSWERED. */}
               <div className="lp-hero-callout">
                 <p className="lp-hero-callout-main">
-                  {"⏱️ IMPORTANT: My team is calling you in the next few minutes. It might come from a number you don't recognize, that's us. Keep an eye on your phone."}
+                  {"📞 We're calling you in a few minutes. Might be a number you don't know, that's us."}
                 </p>
                 <p className="lp-hero-callout-sub">
-                  {"This isn't a sales call. It's a quick convo to figure out where you're at and point you toward your first deal. 5 minutes, no pressure. Pick up when we call, that call is where most people get unstuck."}
+                  {"Pick up. It's how you get your first deal moving."}
                 </p>
               </div>
-              <button
-                type="button"
-                className="lp-hero-commit"
-                onClick={() => setCallModalOpen(true)}
-              >
-                {"👍 I'll pick up when you call"}
-              </button>
               <div className="lp-hero-video">
                 <iframe
                   src="https://player.vimeo.com/video/1193039444?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&muted=1&playsinline=1"
@@ -359,6 +352,13 @@ export default function LandingClient({ variant }: Props) {
                   title="Secured Wholesaling Blueprint"
                 />
               </div>
+              <button
+                type="button"
+                className="lp-hero-commit"
+                onClick={() => setCallModalOpen(true)}
+              >
+                {"🙋 I'll pick up when you call"}
+              </button>
               <p className="lp-hero-cap">{"Watch this first. It's the same method behind every deal below."}</p>
               <div className="lp-hero-scrollcue">
                 <span>Want the whole system? Keep scrolling.</span>
@@ -386,12 +386,12 @@ export default function LandingClient({ variant }: Props) {
                       {"×"}
                     </button>
                     <p className="lp-callmodal-h">Awesome, talk soon 🤝</p>
-                    <p className="lp-callmodal-sub">{"Here's the path we'll map out on the call:"}</p>
+                    <p className="lp-callmodal-sub">{"Here's your path:"}</p>
                     <ol className="lp-callmodal-steps">
-                      <li><span className="lp-callmodal-node">1</span><span className="lp-callmodal-step-txt">{"Where you're at today"}</span></li>
-                      <li><span className="lp-callmodal-node">2</span><span className="lp-callmodal-step-txt">Find and lock your first deal</span></li>
-                      <li><span className="lp-callmodal-node">3</span><span className="lp-callmodal-step-txt">Bring the buyer, close it</span></li>
-                      <li className="is-payoff"><span className="lp-callmodal-node">4</span><span className="lp-callmodal-step-txt">Get your first check 💰</span></li>
+                      <li><span className="lp-callmodal-node">📍</span><span className="lp-callmodal-step-txt">{"Where you're at today"}</span></li>
+                      <li><span className="lp-callmodal-node">🔍</span><span className="lp-callmodal-step-txt">Find and lock your first deal</span></li>
+                      <li><span className="lp-callmodal-node">🤝</span><span className="lp-callmodal-step-txt">Bring the buyer, close it</span></li>
+                      <li className="is-payoff"><span className="lp-callmodal-node">💰</span><span className="lp-callmodal-step-txt">Get your first check</span></li>
                     </ol>
                     <p className="lp-callmodal-foot">Quick call, big picture. Keep your phone close 📞</p>
                   </div>
