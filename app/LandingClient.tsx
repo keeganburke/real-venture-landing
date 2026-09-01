@@ -98,6 +98,16 @@ export default function LandingClient({ variant }: Props) {
   // checkout) can render the loud red variant instead of the subtle banner.
   const [authCode, setAuthCode] = useState<string | null>(null);
   const [pricingOpen, setPricingOpen] = useState(false);
+  // /free hero: "I'll pick up" commitment modal (call-path timeline).
+  const [callModalOpen, setCallModalOpen] = useState(false);
+  useEffect(() => {
+    if (!callModalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setCallModalOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [callModalOpen]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   // 2-step wizard inside the pricing modal: tiers -> embedded checkout.
   const [step, setStep] = useState<"pricing" | "checkout">("pricing");
@@ -322,11 +332,23 @@ export default function LandingClient({ variant }: Props) {
               <h1 className="lp-hero-h">
                 Your <span className="lp-hero-h-em">Secured Wholesaling</span> Blueprint
               </h1>
-              <p className="lp-hero-sub">
-                {"We'll "}
-                <b className="lp-hero-sub-em">give you a call in the next few minutes</b>
-                {" to point you in the right direction."}
-              </p>
+              {/* Call-expectation callout — the page's #1 job right after
+                  opt-in is getting this call ANSWERED. */}
+              <div className="lp-hero-callout">
+                <p className="lp-hero-callout-main">
+                  {"⏱️ IMPORTANT: My team is calling you in the next few minutes. It might come from a number you don't recognize, that's us. Keep an eye on your phone."}
+                </p>
+                <p className="lp-hero-callout-sub">
+                  {"This isn't a sales call. It's a quick convo to figure out where you're at and point you toward your first deal. 5 minutes, no pressure. Pick up when we call, that call is where most people get unstuck."}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="lp-hero-commit"
+                onClick={() => setCallModalOpen(true)}
+              >
+                {"👍 I'll pick up when you call"}
+              </button>
               <div className="lp-hero-video">
                 <iframe
                   src="https://player.vimeo.com/video/1193039444?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&muted=1&playsinline=1"
@@ -344,6 +366,37 @@ export default function LandingClient({ variant }: Props) {
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </div>
+
+              {/* Commitment modal — vertical call-path timeline. */}
+              {callModalOpen && (
+                <div className="lp-callmodal-overlay" onClick={() => setCallModalOpen(false)}>
+                  <div
+                    className="lp-callmodal"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Call path"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      type="button"
+                      className="lp-callmodal-close"
+                      aria-label="Close"
+                      onClick={() => setCallModalOpen(false)}
+                    >
+                      {"×"}
+                    </button>
+                    <p className="lp-callmodal-h">Awesome, talk soon 🤝</p>
+                    <p className="lp-callmodal-sub">{"Here's the path we'll map out on the call:"}</p>
+                    <ol className="lp-callmodal-steps">
+                      <li><span className="lp-callmodal-node">1</span><span className="lp-callmodal-step-txt">{"Where you're at today"}</span></li>
+                      <li><span className="lp-callmodal-node">2</span><span className="lp-callmodal-step-txt">Find and lock your first deal</span></li>
+                      <li><span className="lp-callmodal-node">3</span><span className="lp-callmodal-step-txt">Bring the buyer, close it</span></li>
+                      <li className="is-payoff"><span className="lp-callmodal-node">4</span><span className="lp-callmodal-step-txt">Get your first check 💰</span></li>
+                    </ol>
+                    <p className="lp-callmodal-foot">Quick call, big picture. Keep your phone close 📞</p>
+                  </div>
+                </div>
+              )}
               <TrustRow />
               <div className="lp-trust">
                 <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Cancel anytime</div>

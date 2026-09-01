@@ -6449,3 +6449,175 @@ a.trust-badge-trustpilot:hover {
 .lp-login-banner.is-denied .lp-login-banner-copy strong {
   color: #ef4444;
 }
+
+/* ================= /free HERO: CALL CALLOUT + COMMITMENT MODAL ============
+   LIVE CSS — do NOT treat as orphaned. Referenced by app/LandingClient.tsx's
+   variant="free" hero (lp-hero-callout*, lp-hero-commit) and its commitment
+   modal (lp-callmodal*), rendered conditionally so a static orphan grep can
+   miss them. See the restored FREE TRAINING HERO block above for precedent
+   (311a430 deleted live scoped rules once already). */
+.lp-hero-free .lp-hero-callout {
+  max-width: 640px;
+  margin: 0 auto 18px;
+  padding: 16px 20px;
+  text-align: left;
+  background: rgba(229, 181, 71, 0.07);
+  border: 1px solid rgba(229, 181, 71, 0.45);
+  border-radius: 14px;
+}
+.lp-hero-free .lp-hero-callout-main {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 16.5px;
+  line-height: 1.45;
+  color: #ffe89a;
+  margin: 0 0 10px;
+}
+.lp-hero-free .lp-hero-callout-sub {
+  font-family: "Inter", sans-serif;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.72);
+  margin: 0;
+}
+.lp-hero-free .lp-hero-commit {
+  display: inline-block;
+  margin: 0 auto 22px;
+  padding: 13px 26px;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  color: #1a1208;
+  background: linear-gradient(135deg, #FFE89A 0%, #E5B547 55%, #B8881F 100%);
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(229, 181, 71, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.lp-hero-free .lp-hero-commit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 26px rgba(229, 181, 71, 0.5);
+}
+.lp-callmodal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.lp-callmodal {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: #131313;
+  border: 1px solid rgba(229, 181, 71, 0.35);
+  border-radius: 20px;
+  padding: 32px 28px 26px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(229, 181, 71, 0.12);
+  text-align: left;
+}
+.lp-callmodal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lp-callmodal-close:hover { color: #fff; }
+.lp-callmodal-h {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 900;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  color: #fff;
+  margin: 0 0 6px;
+}
+.lp-callmodal-sub {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 22px;
+}
+.lp-callmodal-steps {
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+}
+.lp-callmodal-steps li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 0 26px 0;
+}
+.lp-callmodal-steps li:last-child { padding-bottom: 0; }
+/* Vertical gold connector between node centres */
+.lp-callmodal-steps li:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 32px;
+  bottom: -2px;
+  width: 2px;
+  background: rgba(229, 181, 71, 0.4);
+}
+.lp-callmodal-node {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid rgba(229, 181, 71, 0.7);
+  background: #131313;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  color: #E5B547;
+}
+.lp-callmodal-step-txt {
+  font-family: "Inter", sans-serif;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.82);
+}
+/* The payoff node glows brighter than the path to it */
+.lp-callmodal-steps li.is-payoff .lp-callmodal-node {
+  background: linear-gradient(135deg, #FFE89A 0%, #E5B547 100%);
+  border-color: #FFE89A;
+  color: #1a1208;
+  box-shadow: 0 0 16px rgba(229, 181, 71, 0.55);
+}
+.lp-callmodal-steps li.is-payoff .lp-callmodal-step-txt {
+  color: #ffe89a;
+  font-weight: 600;
+}
+.lp-callmodal-foot {
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 16px;
+  text-align: center;
+}
+@media (max-width: 640px) {
+  .lp-hero-free .lp-hero-callout { padding: 14px 16px; }
+  .lp-hero-free .lp-hero-callout-main { font-size: 15px; }
+  .lp-callmodal { padding: 28px 20px 22px; }
+}
