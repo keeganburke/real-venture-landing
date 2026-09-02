@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { WhopCheckoutEmbed } from "@whop/checkout/react";
 import NavDrawer from "./components/NavDrawer";
 import CtaStrip from "./components/CtaStrip";
+import ProductDemo from "./components/ProductDemo";
 import TrustRow from "./components/TrustRow";
 import SectionHead from "./components/SectionHead";
 import PayoutCarousel from "./components/PayoutCarousel";
-import ToolkitCards from "./components/ToolkitCards";
 import Reviews from "./components/Reviews";
 import Timeline from "./components/Timeline";
 import { REVIEW_STATS } from "./lib/whop-reviews";
@@ -108,6 +108,7 @@ export default function LandingClient({ variant }: Props) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [callModalOpen]);
+  const [demoOpen, setDemoOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   // 2-step wizard inside the pricing modal: tiers -> embedded checkout.
   const [step, setStep] = useState<"pricing" | "checkout">("pricing");
@@ -207,6 +208,12 @@ export default function LandingClient({ variant }: Props) {
 
   return (
     <>
+      <ProductDemo
+        open={demoOpen}
+        onClose={() => setDemoOpen(false)}
+        onSkipToPricing={openPricing}
+      />
+
       <div className="wrap">
         {authNotice && authCode === "denied" && (
           <div className="lp-auth-warning" role="alert">
@@ -419,7 +426,7 @@ export default function LandingClient({ variant }: Props) {
                 <span className="lp-hero-line-3">{"We'll walk you there."}</span>
               </h1>
               <p className="lp-hero-sub">{"We teach you live, hand you the tools, and send real buyers to your deals. No license, no capital, no experience needed."}</p>
-              <CtaStrip onJoin={openPricing} />
+              <CtaStrip onJoin={() => setDemoOpen(true)} label={"Take the 60-second demo \u2192"} />
               <TrustRow />
               <div className="lp-trust">
                 <div className="lp-trust-item"><span className="lp-trust-check">{"✓"}</span> Cancel anytime</div>
@@ -438,20 +445,6 @@ export default function LandingClient({ variant }: Props) {
             />
           </div>
           <PayoutCarousel />
-        </section>
-
-        <section className="lp-section" id="included">
-          <div className="shell">
-            <SectionHead
-              heading={<>The full <span>toolkit.</span></>}
-              sub="Every tool, every script, every step. Nothing gate-kept."
-            />
-            <ToolkitCards />
-            <div className="lp-cta-after">
-              <CtaStrip onJoin={openPricing} />
-            <TrustRow />
-            </div>
-          </div>
         </section>
 
         <section className="lp-compare">
