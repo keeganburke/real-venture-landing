@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { WhopCheckoutEmbed } from "@whop/checkout/react";
 
 // Base plan. Every trap point in the demo uses this one plan id, matching the
@@ -115,13 +115,6 @@ function ArrowRightLeftIcon({ className }: IconProps) {
 export default function ProductDemo({ open, onClose, onSkipToPricing }: Props) {
   const [sceneIdx, setSceneIdx] = useState(0);
   const [view, setView] = useState<ViewMode>("scene");
-  const viewportRef = useRef<HTMLDivElement | null>(null);
-
-  // Every scene starts at its own top. The overlay is fullscreen, so this is
-  // the internal scroll container, not the window.
-  useEffect(() => {
-    if (viewportRef.current) viewportRef.current.scrollTop = 0;
-  }, [sceneIdx, view]);
 
   // Scroll lock + Esc, same pattern as the pricing modal in LandingClient.
   useEffect(() => {
@@ -175,17 +168,17 @@ export default function ProductDemo({ open, onClose, onSkipToPricing }: Props) {
         <button className="demo-close" onClick={closeAll} aria-label="Close demo">×</button>
       </div>
 
-      <div className="demo-viewport" ref={viewportRef}>
+      <div className="demo-viewport">
         {view === "checkout" ? (
           <CheckoutScene onBack={() => setView("scene")} />
         ) : (
           <>
-            {currentScene === "hub" && <HubScene />}
-            {currentScene === "analyzer" && <AnalyzerScene />}
-            {currentScene === "buyers" && <BuyersScene />}
-            {currentScene === "contracts" && <ContractsScene />}
-            {currentScene === "learn" && <LearnScene />}
-            {currentScene === "discord" && <DiscordScene />}
+            {currentScene === "hub" && <HubScene onTrap={trapToCheckout} />}
+            {currentScene === "analyzer" && <AnalyzerScene onTrap={trapToCheckout} />}
+            {currentScene === "buyers" && <BuyersScene onTrap={trapToCheckout} />}
+            {currentScene === "contracts" && <ContractsScene onTrap={trapToCheckout} />}
+            {currentScene === "learn" && <LearnScene onTrap={trapToCheckout} />}
+            {currentScene === "discord" && <DiscordScene onTrap={trapToCheckout} />}
           </>
         )}
       </div>
@@ -226,9 +219,9 @@ function SceneHead({ eyebrow, title }: { eyebrow: string; title: string }) {
 }
 
 /* ── SCENE 1 · HUB ────────────────────────────────────────────────────────
-   Real .hub2-* markup lifted from app/dashboard/HubClient.tsx. The schedule is
-   frozen: HubClient derives it from new Date() in America/Los_Angeles, which
-   would hydrate-mismatch here. */
+   Real .hub2-* / .sprint-* markup lifted from app/dashboard/HubClient.tsx and
+   app/dashboard/SprintCard.tsx. The schedule is frozen: HubClient derives it
+   from new Date() in America/Los_Angeles, which would hydrate-mismatch here. */
 
 const DEMO_UPCOMING = [
   { weekday: "Wed", day: "2", type: "Live Cold Call Session", host: "Dylan", time: "6:00 PM - 7:00 PM PST" },
@@ -236,7 +229,72 @@ const DEMO_UPCOMING = [
   { weekday: "Thu", day: "3", type: "Live Deal Underwriting", host: "Brandon, Mello, Ady", time: "4:00 PM - 6:00 PM PST" },
 ];
 
-function HubScene() {
+// Verbatim from app/dashboard/SprintCard.tsx. DONE_THROUGH = 1 (day 1 done).
+const DEMO_DONE_THROUGH = 1;
+const DEMO_MILESTONES = [
+  { day: 1, title: "Watch: Wholesaling overview", desc: "The fast overview so the rest clicks. One lesson, that's it.", cta: "Start lesson" },
+  { day: 2, title: "Introduce yourself in Discord", desc: "Post your market + goal. The people who post close faster.", cta: "Say hi" },
+  { day: 3, title: "Run a deal", desc: "Plug any address into the Deal Analyzer and see if it's a deal.", cta: "Open Deal Analyzer" },
+  { day: 5, title: "Pull your first leads", desc: "Use the lead tools to find 10 motivated sellers in your market.", cta: "Find leads" },
+  { day: 7, title: "Send your first offers", desc: "Use the contract generator + proof of funds and make 10 offers.", cta: "Make offers" },
+  { day: 10, title: "Join a live call", desc: "Bring a deal or a question. This is where it all comes together.", cta: "See live schedule" },
+  { day: 14, title: "Log your first win", desc: "Got a contract or a buyer? Log it, and watch what happens next.", cta: "Log my win" },
+];
+
+function DemoSprintCard() {
+  const doneCount = DEMO_DONE_THROUGH;
+  const pct = Math.round((doneCount / DEMO_MILESTONES.length) * 100);
+  const nextIndex = doneCount;
+
+  return (
+    <section className="sprint-card">
+      <div className="sprint-card-head">
+        <div className="sprint-card-icon">🚀</div>
+        <div className="sprint-card-head-body">
+          <div className="sprint-card-title">
+            Your 14-Day First Deal Sprint
+            <span className="sprint-card-count">{doneCount}/{DEMO_MILESTONES.length}</span>
+          </div>
+          <div className="sprint-card-subtitle">
+            Follow these steps in order. Most members get to their first offer in under 2 weeks.
+          </div>
+          <div className="sprint-card-progress">
+            <div className="sprint-progress-bar">
+              <div className="sprint-progress-fill" style={{ width: `${pct}%` }} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="sprint-milestones">
+        {DEMO_MILESTONES.map((m, i) => {
+          const done = i < DEMO_DONE_THROUGH;
+          const isNext = i === nextIndex;
+          const cls = `sprint-milestone ${done ? "done" : ""} ${isNext ? "now" : ""}`.trim();
+          return (
+            <div key={m.day} className={cls}>
+              <div className="sprint-check"><span className="sprint-check-mark">✓</span></div>
+              <div className="sprint-day-badge">
+                <span className="sprint-day-label">DAY</span>
+                <span className="sprint-day-num">{m.day}</span>
+              </div>
+              <div className="sprint-m-body">
+                <div className="sprint-m-title">
+                  {m.title}
+                  {isNext && <span className="sprint-now-dot">NOW</span>}
+                </div>
+                <div className="sprint-m-desc">{m.desc}</div>
+              </div>
+              <span className="sprint-cta">{m.cta}</span>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function HubScene({ onTrap }: { onTrap: () => void }) {
   return (
     <section className="demo-scene demo-scene-hub">
       <SceneHead eyebrow="01 · YOUR HUB" title="This is what you log into." />
@@ -293,6 +351,19 @@ function HubScene() {
           ))}
         </div>
 
+        <DemoSprintCard />
+
+        <section className="hub2-discord">
+          <div className="hub2-discord-icon" aria-hidden="true">
+            <svg className="hub2-discord-svg" viewBox="0 0 127.14 96.36" fill="currentColor">
+              <path d="M107.7 8.07A105.15 105.15 0 0 0 81.47 0a72.06 72.06 0 0 0-3.36 6.83 97.68 97.68 0 0 0-29.11 0A72.37 72.37 0 0 0 45.64 0a105.89 105.89 0 0 0-26.25 8.09C2.79 32.65-1.71 56.6.54 80.21a105.73 105.73 0 0 0 32.17 16.15 77.7 77.7 0 0 0 6.89-11.11 68.42 68.42 0 0 1-10.85-5.18c.91-.66 1.8-1.34 2.66-2a75.57 75.57 0 0 0 64.32 0c.87.71 1.76 1.39 2.66 2a68.68 68.68 0 0 1-10.87 5.19 77 77 0 0 0 6.89 11.1 105.25 105.25 0 0 0 32.19-16.14c2.64-27.38-4.51-51.11-18.9-72.15ZM42.45 65.69C36.18 65.69 31 60 31 53s5-12.74 11.43-12.74S54 46 53.89 53s-5.05 12.69-11.44 12.69Zm42.24 0C78.41 65.69 73.25 60 73.25 53s5-12.74 11.44-12.74S96.23 46 96.12 53s-5.04 12.69-11.43 12.69Z" />
+            </svg>
+          </div>
+          <div className="hub2-discord-title">Join the community</div>
+          <p className="hub2-discord-sub">350+ members, wins channel 24/7, live coaching room.</p>
+          <span className="hub2-discord-cta">See the Discord →</span>
+        </section>
+
         <div className="hub2-destinations">
           <div className="hub2-destination">
             <div className="hub2-destination-icon" aria-hidden="true">📚</div>
@@ -313,6 +384,11 @@ function HubScene() {
         </div>
       </div>
 
+      <div className="demo-scene-cta">
+        <button className="demo-btn demo-btn-gold" onClick={onTrap}>
+          See what&apos;s inside →
+        </button>
+      </div>
     </section>
   );
 }
@@ -322,7 +398,7 @@ function HubScene() {
    became .demo-an-* rules; .rv-glass-panel became .demo-glass. Glow values
    are preserved verbatim. */
 
-function AnalyzerScene() {
+function AnalyzerScene({ onTrap }: { onTrap: () => void }) {
   return (
     <section className="demo-scene demo-scene-analyzer">
       <SceneHead eyebrow="02 · DEAL ANALYZER" title="Any address → max offer in 30 seconds." />
@@ -406,6 +482,11 @@ function AnalyzerScene() {
         </div>
       </div>
 
+      <div className="demo-scene-cta">
+        <button className="demo-btn demo-btn-primary" onClick={onTrap}>
+          Send this offer to buyers →
+        </button>
+      </div>
     </section>
   );
 }
@@ -425,7 +506,7 @@ const DEMO_MARKETS = [
   { label: "Akron, OH", hot: false, note: "Small-city pricing next to a major metro. Consistent buyer appetite.", deals: 7 },
 ];
 
-function BuyersScene() {
+function BuyersScene({ onTrap }: { onTrap: () => void }) {
   return (
     <section className="demo-scene demo-scene-buyers">
       <SceneHead
@@ -449,6 +530,11 @@ function BuyersScene() {
         ))}
       </div>
 
+      <div className="demo-scene-cta">
+        <button className="demo-btn demo-btn-primary" onClick={onTrap}>
+          Send this deal to buyers →
+        </button>
+      </div>
     </section>
   );
 }
@@ -466,7 +552,7 @@ const DEMO_CONTRACTS = [
   { key: "jv", label: "JV Agreement", blurb: "Split a wholesale fee with a partner", Icon: UsersIcon },
 ];
 
-function ContractsScene() {
+function ContractsScene({ onTrap }: { onTrap: () => void }) {
   return (
     <section className="demo-scene demo-scene-contracts">
       <SceneHead eyebrow="04 · CONTRACT GENERATOR" title="4 contract types. Pre-filled or DIY." />
@@ -499,6 +585,11 @@ function ContractsScene() {
         </span>
       </div>
 
+      <div className="demo-scene-cta">
+        <button className="demo-btn demo-btn-gold" onClick={onTrap}>
+          Get in for $19.99/mo →
+        </button>
+      </div>
     </section>
   );
 }
@@ -546,7 +637,7 @@ const DEMO_TIERS: { key: string; emoji: string; label: string; lessons: DemoLess
   },
 ];
 
-function LearnScene() {
+function LearnScene({ onTrap }: { onTrap: () => void }) {
   return (
     <section className="demo-scene demo-scene-learn">
       <SceneHead eyebrow="05 · COURSE LIBRARY" title="13 lessons. From zero to your first close." />
@@ -607,6 +698,11 @@ function LearnScene() {
         ))}
       </div>
 
+      <div className="demo-scene-cta">
+        <button className="demo-btn demo-btn-primary" onClick={onTrap}>
+          Start the first lesson →
+        </button>
+      </div>
     </section>
   );
 }
@@ -622,13 +718,27 @@ const DEMO_SHOTS = [
   { src: "/demo/discord/mello-close.png", alt: "Mello: $2,350 first close story with deal analyzer screenshot" },
 ];
 
-function DiscordScene() {
+function DiscordScene({ onTrap }: { onTrap: () => void }) {
   return (
     <section className="demo-scene demo-scene-discord">
-      <div className="demo-discord-shots">
-        {DEMO_SHOTS.map((shot) => (
-          <img key={shot.src} src={shot.src} alt={shot.alt} className="demo-discord-screenshot" />
-        ))}
+      <SceneHead eyebrow="06 · DISCORD COMMUNITY" title="350+ members. Real wins every day." />
+
+      <div className="demo-discord-window">
+        <div className="demo-discord-channel-header">
+          <div className="demo-discord-channel-name"># wins</div>
+          <div className="demo-discord-channel-meta">350+ members · 24 online</div>
+        </div>
+        <div className="demo-discord-shots">
+          {DEMO_SHOTS.map((s) => (
+            <img key={s.src} src={s.src} alt={s.alt} className="demo-discord-screenshot" />
+          ))}
+        </div>
+      </div>
+
+      <div className="demo-scene-cta">
+        <button className="demo-btn demo-btn-gold" onClick={onTrap}>
+          Get in for $19.99/mo →
+        </button>
       </div>
     </section>
   );
