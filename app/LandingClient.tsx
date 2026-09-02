@@ -8,7 +8,7 @@ import CtaStrip from "./components/CtaStrip";
 import TrustRow from "./components/TrustRow";
 import SectionHead from "./components/SectionHead";
 import PayoutCarousel from "./components/PayoutCarousel";
-import ToolkitCards from "./components/ToolkitCards";
+import VideoWalkthrough from "./components/VideoWalkthrough";
 import Reviews from "./components/Reviews";
 import Timeline from "./components/Timeline";
 import { REVIEW_STATS } from "./lib/whop-reviews";
@@ -33,9 +33,30 @@ const LP_COMPARE_GOOD = [
 ];
 
 const LP_STORIES = [
-  { id: "dylan", name: "Dylan", videoId: "1221681436", amount: "$24,000 Profit" },
-  { id: "yves", name: "Yves", videoId: "1197200708", amount: "$11,000 Profit" },
-  { id: "zach", name: "Zach", videoId: "1197200691", amount: "$6,000 Profit" },
+  {
+    id: "dylan",
+    name: "Dylan",
+    age: 20,
+    videoId: "1221681436",
+    amount: "$42,000",
+    blurb: "Full-time college student with a part-time job.",
+  },
+  {
+    id: "yves",
+    name: "Yves",
+    age: 21,
+    videoId: "1197200708",
+    amount: "$11,000",
+    blurb: "Was working 70 hours a week in fast food.",
+  },
+  {
+    id: "zach",
+    name: "Zach",
+    age: 23,
+    videoId: "1197200691",
+    amount: "$6,000",
+    blurb: "Doorman. Made his first $6K in 45 days.",
+  },
 ];
 
 
@@ -440,16 +461,36 @@ export default function LandingClient({ variant }: Props) {
           <PayoutCarousel />
         </section>
 
-        <section className="lp-section" id="included">
+        <VideoWalkthrough onJoin={openPricing} />
+
+        <section className="lp-success-stories">
           <div className="shell">
             <SectionHead
-              heading={<>The full <span>toolkit.</span></>}
-              sub="Every tool, every script, every step. Nothing gate-kept."
+              heading={<>Success <span>stories.</span></>}
+              sub="Long-form testimonials from the Real Gs."
             />
-            <ToolkitCards />
-            <div className="lp-cta-after">
-              <CtaStrip onJoin={openPricing} />
-            <TrustRow />
+            <div className="lp-vid-stack">
+              {LP_STORIES.map((story) => (
+                <div className="lp-vid-card" key={story.id}>
+                  <div className="lp-vid-embed">
+                    <iframe
+                      src={`https://player.vimeo.com/video/${story.videoId}?title=0&byline=0&portrait=0&badge=0&autopause=0&dnt=1&responsive=1&playsinline=1`}
+                      frameBorder="0"
+                      allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media"
+                      allowFullScreen
+                      webkit-playsinline="true"
+                      title={`${story.name} testimonial`}
+                    />
+                  </div>
+                  <div className="lp-vid-caption">
+                    <div className="lp-vid-caption-row">
+                      <div className="lp-vid-name">{`${story.name}, ${story.age}`}</div>
+                      <div className="lp-vid-amount">{story.amount}</div>
+                    </div>
+                    <div className="lp-vid-blurb">{story.blurb}</div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -482,35 +523,6 @@ export default function LandingClient({ variant }: Props) {
             <div className="lp-cta-after">
               <CtaStrip onJoin={openPricing} label={"Join Real Venture \u2192"} />
               <TrustRow />
-            </div>
-          </div>
-        </section>
-
-        <section className="lp-success-stories">
-          <div className="shell">
-            <SectionHead
-              heading={<>Success <span>stories.</span></>}
-              sub="Long-form testimonials from the Real Gs."
-            />
-            <div className="lp-vid-stack">
-              {LP_STORIES.map((story) => (
-                <div className="lp-vid-card" key={story.id}>
-                  <div className="lp-vid-embed">
-                    <iframe
-                      src={`https://player.vimeo.com/video/${story.videoId}?title=0&byline=0&portrait=0&badge=0&autopause=0&dnt=1&responsive=1&playsinline=1`}
-                      frameBorder="0"
-                      allow="autoplay; fullscreen; picture-in-picture; clipboard-write; encrypted-media"
-                      allowFullScreen
-                      webkit-playsinline="true"
-                      title={`${story.name} testimonial`}
-                    />
-                  </div>
-                  <div className="lp-vid-caption">
-                    <div className="lp-vid-name">{story.name}</div>
-                    <div className="lp-vid-amount">{story.amount}</div>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </section>

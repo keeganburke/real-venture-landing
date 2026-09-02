@@ -480,15 +480,21 @@ body.modal-open{overflow:hidden}
 }
 
 .lp-vid-caption {
-  padding: 18px 20px;
+  padding: 16px 20px 18px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 8px;
   background: #141414;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-top: none;
   border-radius: 0 0 16px 16px;
+}
+
+.lp-vid-caption-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
 }
 
 .lp-vid-name {
@@ -504,6 +510,12 @@ body.modal-open{overflow:hidden}
   letter-spacing: -0.02em;
   text-shadow: 0 0 20px rgba(229, 181, 71, 0.4);
   font-family: "Cabinet Grotesk", -apple-system, sans-serif;
+}
+
+.lp-vid-blurb {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.4;
 }
 
 /* LANDING V2: TOP GLOW (Fix 3 Option A) + LOGIN PAGE */
@@ -6680,4 +6692,172 @@ a.trust-badge-trustpilot:hover {
   .lp-hero-free .lp-hero-callout { padding: 14px 16px; }
   .lp-hero-free .lp-hero-callout-main { font-size: 15px; }
   .lp-callmodal { padding: 28px 20px 22px; }
+}
+
+/* Video Walkthrough section (2026-09-02) */
+/* Typography comes from SectionHead (.lp-section-eyebrow / .lp-section-h2 /
+   .lp-section-sub), so nothing here restates the landing's type scale. The
+   poster follows the freevalue VideoBlock pattern: cover image, vignette,
+   hover glow, centered pulsing play button. */
+
+.lp-walkthrough .lp-section-head { margin-bottom: 40px; }
+
+/* TrustRow is already a wrapping flex row with a dot divider; scoped here it
+   just gets more air and a hair less type so Whop + Trustpilot clear one line
+   on desktop. Other TrustRow instances on the page are untouched. */
+.lp-walkthrough .trust-row {
+  gap: 24px;
+  font-size: 11.5px;
+}
+
+.lp-walkthrough-poster {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 380px;
+  aspect-ratio: 9 / 16;
+  margin: 0 auto 48px;
+  padding: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #0d0d10;
+  border: 1px solid rgba(229, 181, 71, 0.12);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+.lp-walkthrough-poster:hover {
+  transform: translateY(-4px);
+  border-color: rgba(229, 181, 71, 0.35);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.7), 0 0 120px rgba(229, 181, 71, 0.18);
+}
+
+.lp-walkthrough-poster-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(0.72);
+  transform: scale(1.04);
+  pointer-events: none;
+}
+
+.lp-walkthrough-poster-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.4) 100%);
+  pointer-events: none;
+}
+.lp-walkthrough-poster-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(229, 181, 71, 0.12) 0%, transparent 65%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.lp-walkthrough-poster:hover .lp-walkthrough-poster-glow { opacity: 1; }
+
+.lp-walkthrough-play-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: -48px 0 0 -48px;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #0a0a0f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 0 0 8px rgba(229, 181, 71, 0.18),
+    0 12px 50px rgba(229, 181, 71, 0.6),
+    0 0 80px rgba(229, 181, 71, 0.35);
+  animation: lp-walkthrough-pulse 2.6s ease-in-out infinite;
+}
+@keyframes lp-walkthrough-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 8px rgba(229, 181, 71, 0.18),
+      0 12px 50px rgba(229, 181, 71, 0.6),
+      0 0 80px rgba(229, 181, 71, 0.35);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow:
+      0 0 0 12px rgba(229, 181, 71, 0.14),
+      0 14px 62px rgba(229, 181, 71, 0.72),
+      0 0 92px rgba(229, 181, 71, 0.45);
+  }
+}
+.lp-walkthrough-poster:hover .lp-walkthrough-play-btn {
+  animation: none;
+  transform: scale(1.08);
+  filter: brightness(0.92);
+}
+.lp-walkthrough-play-btn svg {
+  width: 30px;
+  height: 30px;
+  transform: translateX(2px);
+}
+
+/* Modal */
+.lp-walkthrough-modal {
+  position: fixed;
+  inset: 0;
+  background: #000000;
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.lp-walkthrough-modal.is-open {
+  display: flex;
+  opacity: 1;
+}
+.lp-walkthrough-modal-frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lp-walkthrough-modal-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.2s;
+}
+.lp-walkthrough-modal-close:hover { background: rgba(255, 255, 255, 0.15); }
+.lp-walkthrough-modal-close svg {
+  width: 20px;
+  height: 20px;
+  color: #ffffff;
+}
+
+@media (max-width: 480px) {
+  .lp-walkthrough-poster { max-width: 340px; }
+  .lp-walkthrough .trust-row { gap: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-walkthrough-play-btn { animation: none; }
+  .lp-walkthrough-poster { transition: none; }
 }
