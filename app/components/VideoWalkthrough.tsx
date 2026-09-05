@@ -13,9 +13,9 @@ type FsDocument = Document & {
   webkitFullscreenElement?: Element | null;
 };
 
-type Props = { onJoin: () => void };
+type Props = { onJoin: () => void; ctaLabel?: string };
 
-export default function VideoWalkthrough({ onJoin }: Props) {
+export default function VideoWalkthrough({ onJoin, ctaLabel }: Props) {
   const [open, setOpen] = useState(false);
   // The thumbnail may not be present in every environment; hide the <img> on
   // error so the poster shows its own dark ground, not a broken-image glyph.
@@ -93,7 +93,7 @@ export default function VideoWalkthrough({ onJoin }: Props) {
         </button>
 
         <div className="lp-cta-after">
-          <CtaStrip onJoin={onJoin} />
+          <CtaStrip onJoin={onJoin} label={ctaLabel} />
           <TrustRow />
         </div>
       </div>

@@ -6861,3 +6861,17 @@ a.trust-badge-trustpilot:hover {
   .lp-walkthrough-play-btn { animation: none; }
   .lp-walkthrough-poster { transition: none; }
 }
+
+/* ================= /pro PRO-ONLY PRICING (app/pro/page.tsx) ==============
+   LIVE CSS — do NOT treat as orphaned. The pro-only class is added
+   conditionally by LandingClient when variant="pro", so a static orphan
+   grep can miss it (see the FREE TRAINING HERO precedent above). */
+.modal-tiers.pro-only {
+  grid-template-columns: minmax(0, 400px);
+  justify-content: center;
+}
+/* Alone, the Pro card sits flat and centered rather than tilted for a
+   3-card row. */
+.modal-tiers.pro-only .tier.pro {
+  transform: none;
+}

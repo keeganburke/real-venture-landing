@@ -96,9 +96,10 @@ function CheckIcon() {
 }
 
 type Props = {
-  // The only thing this switches is which hero renders. Everything
-  // below the fold is shared, so / and /free cannot drift apart.
-  variant: "default" | "free";
+  // "free" switches the hero; "pro" keeps the default hero but hides every
+  // tier except Pro in both pricing sites (phone-setter close-protection
+  // page at /pro). Everything else is shared, so the routes cannot drift.
+  variant: "default" | "free" | "pro";
 };
 
 // Whop OAuth failure codes land the user back on "/" with ?auth=<code>.
@@ -113,6 +114,7 @@ const AUTH_MESSAGES: Record<string, string> = {
 };
 
 export default function LandingClient({ variant }: Props) {
+  const proOnly = variant === "pro";
   const router = useRouter();
   const [authNotice, setAuthNotice] = useState<string | null>(null);
   // Tracked separately from the message so "denied" (wrong email after
@@ -440,7 +442,7 @@ export default function LandingClient({ variant }: Props) {
                 <span className="lp-hero-line-3">{"We'll walk you there."}</span>
               </h1>
               <p className="lp-hero-sub">{"We teach you live, hand you the tools, and send real buyers to your deals. No license, no capital, no experience needed."}</p>
-              <CtaStrip onJoin={openPricing} />
+              <CtaStrip onJoin={openPricing} label={proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
               <TrustRow />
               <div className="lp-trust">
                 <div className="lp-trust-item"><span className="lp-trust-check">{"✓"}</span> Cancel anytime</div>
@@ -461,7 +463,7 @@ export default function LandingClient({ variant }: Props) {
           <PayoutCarousel />
         </section>
 
-        <VideoWalkthrough onJoin={openPricing} />
+        <VideoWalkthrough onJoin={openPricing} ctaLabel={proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
 
         <section className="lp-success-stories">
           <div className="shell">
@@ -543,8 +545,9 @@ export default function LandingClient({ variant }: Props) {
               heading={<>Choose your <span>path.</span></>}
               sub="Cancel anytime. Upgrade anytime."
             />
-            <div className="modal-tiers lp-pricing-tiers">
+            <div className={`modal-tiers lp-pricing-tiers${proOnly ? " pro-only" : ""}`}>
 
+              {!proOnly && (
               <div className="tier base">
                 <div className="tier-icon"><img src="/crowns/base.png" alt="Base" width={62} height={54} /></div>
                 <div className="tier-name">Base</div>
@@ -566,6 +569,7 @@ export default function LandingClient({ variant }: Props) {
                 </ul>
                 <button type="button" className="tier-cta" onClick={() => openPricingAt("base")}>Choose Base {"→"}</button>
               </div>
+              )}
 
               <div className="tier pro">
                 <div className="ribbon">Most Popular</div>
@@ -608,6 +612,7 @@ export default function LandingClient({ variant }: Props) {
                 <button type="button" className="tier-cta" onClick={() => openPricingAt("pro")}>Choose Pro {"→"}</button>
               </div>
 
+              {!proOnly && (
               <div className="tier ultra">
                 <div className="ribbon coming">Coming Soon {"\u00b7"} 25 seats</div>
                 <div className="tier-icon"><img src="/crowns/ultra.png" alt="Ultra" width={62} height={54} /></div>
@@ -626,6 +631,7 @@ export default function LandingClient({ variant }: Props) {
                 </ul>
                 <button className="tier-cta">Coming Soon</button>
               </div>
+              )}
 
             </div>
           </div>
@@ -722,7 +728,7 @@ export default function LandingClient({ variant }: Props) {
           <div className="shell">
             <h2 className="lp-section-h2">Your first payday <span>starts today.</span></h2>
             <p className="lp-section-sub lp-final-sub">Join 350+ students who stopped watching and started closing.</p>
-            <CtaStrip onJoin={openPricing} />
+            <CtaStrip onJoin={openPricing} label={proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
             <TrustRow />
             <div className="lp-trust">
               <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Cancel anytime</div>
@@ -771,8 +777,9 @@ export default function LandingClient({ variant }: Props) {
               <div className="modal-title">Join <em>Real Venture</em></div>
               <p className="modal-tag">One membership. Cancel anytime.</p>
             </div>
-            <div className="modal-tiers">
+            <div className={`modal-tiers${proOnly ? " pro-only" : ""}`}>
 
+              {!proOnly && (
               <div className="tier base">
                 <div className="tier-icon"><img src="/crowns/base.png" alt="Base" width={62} height={54} /></div>
                 <div className="tier-name">Base</div>
@@ -794,6 +801,7 @@ export default function LandingClient({ variant }: Props) {
                 </ul>
                 <button type="button" className="tier-cta" onClick={() => choosePlan("base")}>Choose Base {"→"}</button>
               </div>
+              )}
 
               <div className="tier pro">
                 <div className="ribbon">Most Popular</div>
@@ -836,6 +844,7 @@ export default function LandingClient({ variant }: Props) {
                 <button type="button" className="tier-cta" onClick={() => choosePlan("pro")}>Choose Pro {"→"}</button>
               </div>
 
+              {!proOnly && (
               <div className="tier ultra">
                 <div className="ribbon coming">Coming Soon {"\u00b7"} 25 seats</div>
                 <div className="tier-icon"><img src="/crowns/ultra.png" alt="Ultra" width={62} height={54} /></div>
@@ -854,6 +863,7 @@ export default function LandingClient({ variant }: Props) {
                 </ul>
                 <button className="tier-cta">Coming Soon</button>
               </div>
+              )}
 
             </div>
             <div className="modal-foot">
