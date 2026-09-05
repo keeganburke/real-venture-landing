@@ -87,6 +87,64 @@ const PRO_TERMS = {
   quarterly: { planId: "plan_9nyRNbuhQF0pk", amount: "130", price: "$130", cadence: "per 3 months" },
 } as const;
 
+// Checkout-header copy for the selected plan. Price lives in the name line, so
+// the tile is a single stacked block rather than an info/price split.
+// Same feature copy as the tier cards on the pricing step, so the two views
+// can never drift.
+const BASE_FEATURES = [
+  "Live coaching 7x/week",
+  "JV deals, keep 50%",
+  "Real Venture Studio (all-in-one software)",
+  "Buyer network access",
+  "Full course library",
+  "Contract templates",
+  "Proof of Funds letters",
+  "Deal Manager pipeline",
+  "Call recordings",
+  "LLC and Bank Playbook",
+];
+
+const PRO_FEATURES = [
+  "Everything in Base",
+  "JV deals, keep 60%",
+  "Real Venture Studio Pro (everything unlocked)",
+  "Contract generator (auto fill)",
+  "Advanced course modules",
+  "First look at incoming buyers",
+  "Priority DM + Deal support",
+];
+
+type PlanCopy = {
+  name: string;
+  tagline: string;
+  accent: "blue" | "gold";
+  features: string[];
+};
+
+const PLAN_COPY: Record<"base" | "pro" | "pro3", PlanCopy> = {
+  base: {
+    name: "Base - $19.99/mo",
+    tagline: "Everything you need to close your first $10K deal.",
+    accent: "blue",
+    features: BASE_FEATURES,
+  },
+  pro: {
+    name: "Pro - $49.99/mo",
+    tagline: "Everything you need to close your first $10K deal, with extra support included.",
+    accent: "gold",
+    features: PRO_FEATURES,
+  },
+  pro3: {
+    name: "Pro - $130 for 3 months",
+    tagline: "Everything you need to close your first $10K deal, with extra support included. Save $20 vs monthly.",
+    accent: "gold",
+    features: PRO_FEATURES,
+  },
+};
+
+// How many features show before the expander.
+const FEATURE_PREVIEW = 3;
+
 function CheckIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
@@ -136,6 +194,7 @@ export default function LandingClient({ variant }: Props) {
   const [step, setStep] = useState<"pricing" | "checkout">("pricing");
   const [selectedPlan, setSelectedPlan] = useState<"base" | "pro" | null>(null);
   const [proTerm, setProTerm] = useState<"monthly" | "quarterly">("monthly");
+  const [featuresOpen, setFeaturesOpen] = useState(false);
 
   // Surface OAuth failures redirected here by /api/auth/whop/callback.
   useEffect(() => {
@@ -215,6 +274,16 @@ export default function LandingClient({ variant }: Props) {
   };
 
   // Checkout target: Base is monthly-only; Pro follows the selected term.
+  const modalTitle = selectedPlan === "pro" ? "Join Real Venture Pro" : "Join Real Venture";
+
+  // pro splits into monthly / quarterly copy; base has one line.
+  const planCopy =
+    selectedPlan === "pro"
+      ? proTerm === "quarterly"
+        ? PLAN_COPY.pro3
+        : PLAN_COPY.pro
+      : PLAN_COPY.base;
+
   const activePlan = selectedPlan
     ? selectedPlan === "pro"
       ? { ...PLANS.pro, ...PRO_TERMS[proTerm] }
@@ -766,7 +835,9 @@ export default function LandingClient({ variant }: Props) {
           if (e.target === e.currentTarget) closePricing();
         }}
       >
-        <div className="modal">
+        <div
+          className={`modal${step === "checkout" ? ` pm-theme-${planCopy.accent}` : ""}`}
+        >
           {step !== "checkout" && (
             <button className="modal-close" onClick={closePricing} aria-label="Close">{"×"}</button>
           )}
@@ -876,24 +947,70 @@ export default function LandingClient({ variant }: Props) {
 
             {step === "checkout" && activePlan && (
               <div className="modal-step modal-step-narrow" key="step-checkout">
-                <div className={`checkout-summary tier-${activePlan.crownColor}`}>
-                  <div className="checkout-summary-info">
-                    <div className="checkout-summary-name">{activePlan.name}</div>
-                    <div className="checkout-summary-tagline">{activePlan.tagline}</div>
+                <div className="pm-header">
+                  <h2 className="pm-title">{modalTitle}</h2>
+                  {/* Two rows of two. DOM order fills the grid:
+                      row 1 = Cancel anytime + Whop rating
+                      row 2 = Secured by Whop + Trustpilot rating */}
+                  <div className="pm-trust">
+                    <span className="pm-trust-item">
+                      <span className="pm-trust-icon pm-trust-check" aria-hidden="true">{"✓"}</span>
+                      Cancel anytime
+                    </span>
+                    <span className="pm-trust-item">
+                      <span className="pm-trust-icon pm-trust-star" aria-hidden="true">{"★"}</span>
+                      5.0 on Whop <span className="pm-trust-count">(53 reviews)</span>
+                    </span>
+                    <span className="pm-trust-item">
+                      <span className="pm-trust-icon pm-trust-check" aria-hidden="true">{"✓"}</span>
+                      Secured by Whop
+                    </span>
+                    <span className="pm-trust-item">
+                      <span className="pm-trust-icon pm-trust-tp" aria-hidden="true">{"★"}</span>
+                      4.6 on Trustpilot <span className="pm-trust-count">(20 reviews)</span>
+                    </span>
                   </div>
-                  <div className="checkout-summary-price">
-                    <div className="checkout-summary-amount">{activePlan.price}</div>
-                    <div className="checkout-summary-cadence">{activePlan.cadence}</div>
+                  <span className="pm-accent-bar" aria-hidden="true" />
+                </div>
+
+                <div className="pm-planbar">
+                  <div className="pm-planbar-info">
+                    <div className="pm-plan-name">{planCopy.name}</div>
+                    <div className="pm-plan-tagline">{planCopy.tagline}</div>
                   </div>
                   <button
                     type="button"
-                    className="checkout-summary-back"
+                    className="pm-back"
                     onClick={() => setStep("pricing")}
                   >
-                    <span aria-hidden="true">{"←"}</span>
-                    <span>Back</span>
+                    {"← Back"}
                   </button>
                 </div>
+
+                <ul className="pm-feats">
+                  {(featuresOpen
+                    ? planCopy.features
+                    : planCopy.features.slice(0, FEATURE_PREVIEW)
+                  ).map((feat) => (
+                    <li className="pm-feat" key={feat}>
+                      <span className="pm-feat-check" aria-hidden="true">{"✓"}</span>
+                      {feat}
+                    </li>
+                  ))}
+                </ul>
+                {planCopy.features.length > FEATURE_PREVIEW && (
+                  <button
+                    type="button"
+                    className="pm-feats-toggle"
+                    onClick={() => setFeaturesOpen((open) => !open)}
+                    aria-expanded={featuresOpen}
+                  >
+                    {featuresOpen
+                      ? "Show less"
+                      : `+ ${planCopy.features.length - FEATURE_PREVIEW} more included`}
+                  </button>
+                )}
+
                 <div className="modal-checkout-wrap">
                   <WhopCheckoutEmbed
                     planId={activePlan.planId}
@@ -907,6 +1024,14 @@ export default function LandingClient({ variant }: Props) {
                     onComplete={handleCheckoutComplete}
                   />
                 </div>
+                <div className="pm-friction">
+                  <span className="pm-friction-check" aria-hidden="true">{"✓"}</span>
+                  <span>
+                    Cancel anytime, no lock-in. Not a fit? One click cancels. No emails, no
+                    calls, no hoops.
+                  </span>
+                </div>
+                <div className="pm-footer-note">Cancel anytime. One click, no hoops.</div>
                 <div className="checkout-trust-footer">
                   Secured by Whop <span aria-hidden="true">·</span> Encrypted <span aria-hidden="true">·</span> Cancel anytime
                 </div>

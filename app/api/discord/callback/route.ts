@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../../../../lib/session";
+import { createAdminClient } from "../../../../lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -78,6 +79,79 @@ async function getWhopTier(
     return { tier, planId };
   } catch {
     return { tier: null, planId: null };
+  }
+}
+
+// Records the Whop -> Discord binding once a role has actually been granted.
+// Failure is logged only: the member already has their role, and the Phase 2
+// backfill re-derives missing rows. tier is the Whop-derived tier (null when
+// detection fell back), role_id is the Discord role that was really assigned.
+async function recordConnection(args: {
+  whopUserId: string;
+  discordUserId: string;
+  tier: "Base" | "Pro" | null;
+  roleId: string;
+}) {
+  try {
+    const supabase = createAdminClient();
+    const now = new Date().toISOString();
+    const { error: dbError } = await supabase.from("discord_connections").upsert(
+      {
+        whop_user_id: args.whopUserId,
+        discord_user_id: args.discordUserId,
+        tier: args.tier,
+        role_id: args.roleId,
+        connected_at: now,
+        updated_at: now,
+      },
+      { onConflict: "whop_user_id" }
+    );
+    if (dbError) {
+      console.error("[discord/callback] discord_connections upsert failed", dbError.message);
+    }
+  } catch (err) {
+    console.error("[discord/callback] discord_connections upsert threw", err);
+  }
+}
+
+// 1:1 enforcement, checked BEFORE any Discord mutation. Returns null when
+// the bind is allowed (first bind, or the same pair reconnecting), otherwise
+// the discord_error code to redirect with. A lookup failure allows the bind:
+// the DB unique constraints (migration 011) are the hard backstop, and a
+// paying member must never be locked out because a read hiccuped.
+async function findBindingConflict(
+  whopUserId: string,
+  discordUserId: string
+): Promise<"already_bound_different_discord" | "discord_owned_by_another_whop" | null> {
+  try {
+    const supabase = createAdminClient();
+
+    // Check A: is this Whop user already bound to a DIFFERENT Discord?
+    const { data: existingByWhop, error: errA } = await supabase
+      .from("discord_connections")
+      .select("discord_user_id")
+      .eq("whop_user_id", whopUserId)
+      .maybeSingle();
+    if (errA) console.error("[discord/callback] conflict check A failed", errA.message);
+    if (existingByWhop && existingByWhop.discord_user_id !== discordUserId) {
+      return "already_bound_different_discord";
+    }
+
+    // Check B: is this Discord user already bound to a DIFFERENT Whop?
+    const { data: existingByDiscord, error: errB } = await supabase
+      .from("discord_connections")
+      .select("whop_user_id")
+      .eq("discord_user_id", discordUserId)
+      .maybeSingle();
+    if (errB) console.error("[discord/callback] conflict check B failed", errB.message);
+    if (existingByDiscord && existingByDiscord.whop_user_id !== whopUserId) {
+      return "discord_owned_by_another_whop";
+    }
+
+    return null;
+  } catch (err) {
+    console.error("[discord/callback] conflict check threw", err);
+    return null;
   }
 }
 
@@ -181,6 +255,17 @@ export async function GET(request: NextRequest) {
       return redirectWithStatus("user_failed");
     }
 
+    // Enforce 1:1 before assigning anything. On conflict: no role, no DB row.
+    const conflict = await findBindingConflict(session.whopUserId, discordUserId);
+    if (conflict) {
+      console.error("[discord/callback] binding conflict", {
+        whopUserId: session.whopUserId,
+        discordUserId,
+        conflict,
+      });
+      return NextResponse.redirect(new URL(`/dashboard?discord_error=${conflict}`, request.url));
+    }
+
     // Step 3: Add user to the guild with the Community Member role.
     // PUT /guilds/{guild.id}/members/{user.id} either adds or updates the member.
     const addRes = await fetch(
@@ -201,7 +286,9 @@ export async function GET(request: NextRequest) {
     // 201 = added successfully. 204 = already in server (Discord ignores body when member exists).
     // If already in server, we need a separate call to assign the role.
     if (addRes.status === 201) {
-      // Fresh join: drop them straight into the server they just entered.
+      // Fresh join: the role rode along in the PUT body, so the grant succeeded.
+      await recordConnection({ whopUserId: session.whopUserId, discordUserId, tier, roleId });
+      // Drop them straight into the server they just entered.
       return NextResponse.redirect(`https://discord.com/channels/${guildId}`);
     }
 
@@ -221,6 +308,7 @@ export async function GET(request: NextRequest) {
         return redirectWithStatus("role_failed");
       }
 
+      await recordConnection({ whopUserId: session.whopUserId, discordUserId, tier, roleId });
       return redirectWithStatus("already_in_server");
     }
 

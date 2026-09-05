@@ -2,11 +2,10 @@
 
 type Props = {
   onStart: () => void;
-  onSkip: () => void;
   busy: boolean;
 };
 
-export default function Welcome({ onStart, onSkip, busy }: Props) {
+export default function Welcome({ onStart, busy }: Props) {
   return (
     <div className="welcome">
       <div className="wel-badge">{"✓ Payment confirmed"}</div>
@@ -18,16 +17,14 @@ export default function Welcome({ onStart, onSkip, busy }: Props) {
         Welcome to <span>Real Venture</span>
       </h1>
       <p className="wel-body">
-        {"You're in. Five quick questions so we can point you at the right thing first."}
+        Answer these <span className="wel-body-em">7 quick questions</span> so we can custom
+        build your experience.
       </p>
       <p className="wel-from">
         From <b>William</b> and <b>Keegan</b>
       </p>
       <button className="wel-cta" onClick={onStart} disabled={busy}>
         {"Start →"}
-      </button>
-      <button className="wel-skip" onClick={onSkip} disabled={busy}>
-        {"I know what I'm doing, skip"}
       </button>
     </div>
   );

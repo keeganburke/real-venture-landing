@@ -21,7 +21,12 @@ type LessonRow = {
   course_id: string;
 };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tour?: string }>;
+}) {
+  const { tour } = await searchParams;
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   const session = token ? await verifySessionToken(token) : null;
@@ -51,7 +56,7 @@ export default async function DashboardPage() {
       .not("completed_at", "is", null),
     supabase
       .from("member_profiles")
-      .select("display_name")
+      .select("display_name,spotlight_completed_at")
       .eq("whop_user_id", userId)
       .maybeSingle(),
     getWhopMemberSummary(userId),
@@ -65,6 +70,11 @@ export default async function DashboardPage() {
   } else {
     displayName = resolveDisplayName(whopMember);
   }
+
+  // ?tour=1 forces the tour open -- that is how onboarding hands off after the
+  // last question, and it wins even for someone who already finished once.
+  // Otherwise a null spotlight_completed_at (or no profile row) means unseen.
+  const showTour = tour === "1" || !profileRes.data?.spotlight_completed_at;
 
   const courses = coursesRes.data ?? [];
   const lessons = (lessonsRes.data ?? []) as LessonRow[];
@@ -108,6 +118,7 @@ export default async function DashboardPage() {
       nextLesson={nextLessonInfo}
       destinations={DESTINATIONS}
       feedback={FEEDBACK}
+      showTour={showTour}
     />
   );
 }

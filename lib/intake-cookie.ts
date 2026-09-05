@@ -5,11 +5,16 @@ export const INTAKE_COOKIE_NAME = "rv_intake";
 const INTAKE_TTL_SECONDS = 60 * 60 * 24 * 7;
 
 export type IntakeAnswers = {
-  experience?: "never" | "1-5" | "6+" | null;
-  bottleneck?: "deals" | "buyers" | "funding" | "contracts" | "all" | null;
-  hours?: "<5" | "5-15" | "15+" | null;
-  goal?: "10k" | "10-30k" | "30k+" | null;
-  need?: "community" | "tools" | "access" | null;
+  dream?: string | null;
+  hours?: "under_5" | "five_ten" | "ten_twenty" | "twenty_plus" | null;
+  tried?: Array<
+    "dropshipping" | "trading" | "reselling" | "freelance" | "content" | "nothing_yet" | "other"
+  > | null;
+  tried_failure?: string | null;
+  worry?: "time" | "money" | "fail_again" | "consistency" | null;
+  identity?: "full_time" | "part_time_gig" | "not_working" | "student" | null;
+  invest?: "easy" | "manageable" | "stretch" | "not_sure" | null;
+  seriousness?: "curious" | "interested" | "committed" | "all_in" | null;
   completedAt?: string | null;
   tourCompletedAt?: string | null;
 };

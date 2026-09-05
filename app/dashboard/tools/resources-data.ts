@@ -10,20 +10,30 @@ export type ResourceDownload = {
   size?: string;
 };
 
+export type ResourceSection = "start" | "find" | "close" | "scale" | "coach" | "connect";
+
 export type Resource = {
   id: string;
   emoji: string;
   title: string;
   description: string;
-  content: string; // long-form text, uses \n\n for paragraph breaks
+  section: ResourceSection;
+  // Optional: cards that link out (href) carry no long-form body of their own.
+  content?: string; // long-form text, uses \n\n for paragraph breaks
   links?: ResourceLink[];
   downloads?: ResourceDownload[];
   image?: string;
+  // Link-out cards. When href is set the card points here instead of
+  // /dashboard/tools/[id], and no resource page is generated for it.
+  href?: string;
+  external?: boolean;
+  badge?: string; // small chip on the card, e.g. "PRO", "NEW", "LIVE"
 };
 
 export const RESOURCES: Resource[] = [
   {
     id: "on-market-offer",
+    section: "find",
     emoji: "📝",
     title: "On-market Offer Template",
     description: "Copy-paste script for submitting on-market offers as an unrepresented buyer.",
@@ -31,6 +41,7 @@ export const RESOURCES: Resource[] = [
   },
   {
     id: "contract-templates",
+    section: "close",
     emoji: "📄",
     title: "Contract Templates",
     description: "PSAs, assignment agreements, and other core contract files.",
@@ -47,6 +58,7 @@ export const RESOURCES: Resource[] = [
   },
   {
     id: "wholesaling-terms",
+    section: "start",
     emoji: "📚",
     title: "Wholesaling Terms",
     description: "The core vocabulary. Learn these cold before your first call.",
@@ -54,6 +66,7 @@ export const RESOURCES: Resource[] = [
   },
   {
     id: "pof",
+    section: "close",
     emoji: "💸",
     title: "Proof of Funds",
     description: "The current POF for one of our VIP buyers. Use to secure verbal agreements.",
@@ -62,6 +75,7 @@ export const RESOURCES: Resource[] = [
   },
   {
     id: "llc-and-bank-setup",
+    section: "scale",
     emoji: "🏦",
     title: "LLC & Business Bank Account Setup",
     description: "Get an LLC and business bank account once you're closing deals.",
@@ -74,6 +88,7 @@ export const RESOURCES: Resource[] = [
   },
   {
     id: "virtual-assistant-setup",
+    section: "scale",
     emoji: "📞",
     title: "Virtual Assistant Setup",
     description: "Two docs: hire a VA, get them dialing, start getting warm leads.",
@@ -82,5 +97,84 @@ export const RESOURCES: Resource[] = [
       { label: "VA System SOP", href: "/resources/va-sop.pdf" },
       { label: "VA Cold Call Script", href: "/resources/va-cold-call-script.pdf" }
     ]
+  },
+  {
+    id: "sprint",
+    emoji: "🏁",
+    title: "14-Day First Deal Sprint",
+    description: "The 7-milestone path from Day 1 to your first close.",
+    section: "start",
+    href: "/dashboard/sprint",
+  },
+  {
+    id: "deal-analyzer",
+    emoji: "📊",
+    title: "Deal Analyzer",
+    description: "Paste any address, get max offer in 30 seconds.",
+    section: "find",
+    href: "https://realventurestudio.com/analyze",
+    external: true,
+  },
+  {
+    id: "buyer-network",
+    emoji: "👥",
+    title: "Vetted Buyer Network",
+    description: "Cash buyers ready to close in 21-30 days.",
+    section: "close",
+    href: "https://realventurestudio.com/buyers",
+    external: true,
+  },
+  {
+    id: "deal-submission",
+    emoji: "📥",
+    title: "Submit a Deal for Review",
+    description: "Get a JV verdict before you sign anything.",
+    section: "close",
+    href: "https://realventurestudio.com/analyze",
+    external: true,
+  },
+  {
+    id: "live-calls",
+    emoji: "🎥",
+    title: "7 Live Calls Per Week",
+    description: "Coaching, cold calls, deal underwriting, Q&A.",
+    section: "coach",
+    href: "/dashboard",
+    badge: "LIVE",
+  },
+  {
+    id: "call-recordings",
+    emoji: "📼",
+    title: "Call Recordings Archive",
+    description: "Every past call, searchable, in Discord.",
+    section: "coach",
+    href: "https://discord.com/channels/1268090071848980500/1522403978862657577",
+    external: true,
+  },
+  {
+    id: "discord-guide",
+    emoji: "💬",
+    title: "Discord Community Guide",
+    description: "How to get the most out of the Discord.",
+    section: "connect",
+    href: "/dashboard/discord-help",
+  },
+  {
+    id: "wins-channel",
+    emoji: "🏆",
+    title: "Wins Channel",
+    description: "See what members closed this week.",
+    section: "connect",
+    href: "https://discord.com/channels/1268090071848980500/1523839588999757904",
+    external: true,
+  },
+  {
+    id: "introduce-yourself",
+    emoji: "👋",
+    title: "Introduce Yourself",
+    description: "New here? Post your market and your goal.",
+    section: "connect",
+    href: "https://discord.com/channels/1268090071848980500/1491892609684345044",
+    external: true,
   },
 ];

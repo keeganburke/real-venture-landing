@@ -3,7 +3,56 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { TOOL_ITEMS } from "./tools-config";
+import { TOOL_ITEMS, type ToolItem } from "./tools-config";
+import { SOFTWARE } from "./software-data";
+
+// ToolItem flattens software down to `icon`, so the brand mark is looked up by
+// slug here rather than widening the shared ToolItem type.
+const SOFTWARE_LOGOS = new Map(
+  SOFTWARE.filter((s) => s.logo).map((s) => [s.id, s.logo as string])
+);
+
+// Brand mark when one exists, emoji otherwise. If the image 404s the <img>
+// hides itself and reveals the emoji, so a dead logo host degrades to exactly
+// what the card looked like before.
+function IconSlot({ item }: { item: ToolItem }) {
+  const logo = item.tab === "software" ? SOFTWARE_LOGOS.get(item.slug) : undefined;
+  if (!logo) {
+    return (
+      <div className="soft-icon" aria-hidden="true">
+        {item.icon}
+      </div>
+    );
+  }
+  return (
+    <div className="soft-icon" aria-hidden="true">
+      <img
+        src={logo}
+        alt=""
+        className="soft-icon-img"
+        width={40}
+        height={40}
+        onError={(e) => {
+          e.currentTarget.style.display = "none";
+          const fallback = e.currentTarget.nextElementSibling as HTMLElement | null;
+          if (fallback) fallback.style.display = "inline";
+        }}
+      />
+      <span style={{ display: "none" }}>{item.icon}</span>
+    </div>
+  );
+}
+
+// Resources are grouped by journey stage. Sections with no items are skipped
+// entirely, so "coach" and "connect" stay invisible until cards land there.
+const SECTIONS = [
+  { key: "start", label: "Start Here", emoji: "🚀" },
+  { key: "find", label: "Find Deals", emoji: "🔍" },
+  { key: "close", label: "Close Deals", emoji: "💼" },
+  { key: "scale", label: "Scale", emoji: "📈" },
+  { key: "coach", label: "Live Coaching", emoji: "🎥" },
+  { key: "connect", label: "Community", emoji: "💬" },
+] as const;
 
 // The hub shell becomes a 2-column grid on desktop; this wrapper spans both
 // columns and centers the stack so there is no dead right column.
@@ -64,40 +113,86 @@ function ToolsContent() {
         </button>
       </div>
 
-      <div className="soft-list" role="tabpanel">
-        {items.map((item) =>
-          item.resource ? (
-            <Link key={item.slug} href={`/dashboard/tools/${item.slug}`} className="soft-card">
-              <div className="soft-icon" aria-hidden="true">{item.icon}</div>
-              <div className="soft-body">
-                <div className="soft-title-row">
-                  <div className="soft-title">{item.title}</div>
-                </div>
-                <div className="soft-desc">{item.description}</div>
+      {tab === "resources" ? (
+        <div role="tabpanel">
+          {SECTIONS.map((section) => {
+            const inSection = items.filter((i) => i.resource?.section === section.key);
+            if (inSection.length === 0) return null;
+            return (
+              <div className="tools-section" key={section.key}>
+                <h2 className="tools-section-head">
+                  <span aria-hidden="true">{section.emoji}</span>
+                  {section.label}
+                </h2>
+                <div className="soft-list">{inSection.map(renderItem)}</div>
               </div>
-              <div className="soft-arrow" aria-hidden="true">{"›"}</div>
-            </Link>
-          ) : (
-            <a
-              key={item.slug}
-              href={item.href}
-              {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-              className="soft-card"
-            >
-              <div className="soft-icon" aria-hidden="true">{item.icon}</div>
-              <div className="soft-body">
-                <div className="soft-title-row">
-                  <div className="soft-title">{item.title}</div>
-                  {item.badge && <span className="soft-badge">{item.badge}</span>}
-                </div>
-                <div className="soft-desc">{item.description}</div>
-              </div>
-              <div className="soft-arrow" aria-hidden="true">{item.external ? "↗" : "→"}</div>
-            </a>
-          )
-        )}
-      </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="soft-list" role="tabpanel">{items.map(renderItem)}</div>
+      )}
     </div>
+  );
+}
+
+function renderItem(item: ToolItem) {
+  const r = item.resource;
+
+  // Link-out resource: points at existing infrastructure, not a resource page.
+  if (r?.href) {
+    const body = (
+      <>
+        <IconSlot item={item} />
+        <div className="soft-body">
+          <div className="soft-title-row">
+            <div className="soft-title">{item.title}</div>
+            {r.badge && <span className="soft-badge">{r.badge}</span>}
+          </div>
+          <div className="soft-desc">{item.description}</div>
+        </div>
+        <div className="soft-arrow" aria-hidden="true">{r.external ? "↗" : "→"}</div>
+      </>
+    );
+    return r.external ? (
+      <a key={item.slug} href={r.href} target="_blank" rel="noreferrer" className="soft-card">
+        {body}
+      </a>
+    ) : (
+      <Link key={item.slug} href={r.href} className="soft-card">
+        {body}
+      </Link>
+    );
+  }
+
+  return r ? (
+    <Link key={item.slug} href={`/dashboard/tools/${item.slug}`} className="soft-card">
+      <IconSlot item={item} />
+      <div className="soft-body">
+        <div className="soft-title-row">
+          <div className="soft-title">{item.title}</div>
+        </div>
+        <div className="soft-desc">{item.description}</div>
+      </div>
+      <div className="soft-arrow" aria-hidden="true">{"›"}</div>
+    </Link>
+  ) : (
+    <a
+      key={item.slug}
+      href={item.href}
+      {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+      className="soft-card"
+    >
+      <IconSlot item={item} />
+      <div className="soft-body">
+        <div className="soft-title-row">
+          <div className="soft-title">{item.title}</div>
+          {item.badge && <span className="soft-badge">{item.badge}</span>}
+        </div>
+        <div className="soft-desc">{item.description}</div>
+      </div>
+      <div className="soft-arrow" aria-hidden="true">{item.external ? "↗" : "→"}</div>
+    </a>
   );
 }
 

@@ -44,7 +44,7 @@ body.modal-open{overflow:hidden}
 /* MODAL - inherited from v5 */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(10px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity .25s ease;overflow-y:auto}
 .modal-overlay.active{opacity:1;pointer-events:auto}
-.modal{width:100%;max-width:1020px;background:var(--bg);border:1px solid var(--line-dark-hi);border-radius:24px;position:relative;transform:translateY(20px) scale(.98);transition:transform .3s cubic-bezier(.16,1,.3,1);box-shadow:0 40px 100px -20px rgba(0,0,0,.7),0 0 0 1px rgba(229,181,71,.1);margin:auto}
+.modal{width:100%;max-width:1020px;background:var(--bg);border:1px solid rgba(229,181,71,.45);border-radius:24px;position:relative;transform:translateY(20px) scale(.98);transition:transform .3s cubic-bezier(.16,1,.3,1);box-shadow:0 40px 100px -20px rgba(0,0,0,.7),0 0 0 1px rgba(229,181,71,.45),0 0 60px rgba(229,181,71,.22);margin:auto}
 .modal-overlay.active .modal{transform:translateY(0) scale(1)}
 .modal-close{position:absolute;top:20px;right:20px;background:rgba(244,233,208,.08);border:none;color:var(--txt-dark);width:36px;height:36px;border-radius:99px;font-size:20px;line-height:1;cursor:pointer;display:grid;place-items:center;transition:all .15s ease;z-index:10}
 .modal-close:hover{background:rgba(244,233,208,.15);transform:rotate(90deg)}
@@ -119,7 +119,8 @@ body.modal-open{overflow:hidden}
 .wel-av.h{z-index:1}
 .wel-h{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:36px;line-height:1.05;letter-spacing:-.03em;color:var(--txt);margin-bottom:16px}
 .wel-h span{color:var(--gold)}
-.wel-body{color:var(--txt-mut);font-size:14px;line-height:1.55;margin-bottom:8px;max-width:320px}
+.wel-body{color:var(--txt);font-size:15px;line-height:1.55;margin-bottom:8px;max-width:320px;font-weight:500}
+.wel-body-em{color:var(--gold);font-weight:800}
 .wel-from{color:var(--txt-dim);font-size:13px;margin-bottom:36px}
 .wel-from b{color:var(--txt);font-weight:700}
 .wel-cta{background:var(--cta);color:var(--cta-text);border:none;padding:16px 32px;border-radius:12px;font-weight:900;font-size:16px;display:flex;align-items:center;gap:8px;box-shadow:var(--cta-glow);font-family:"Cabinet Grotesk",sans-serif;letter-spacing:-.01em;margin-bottom:14px;width:100%;max-width:320px;justify-content:center}
@@ -3687,124 +3688,16 @@ a.tier-cta {
   }
 }
 
-/* ============================================================================
-   CHECKOUT SUMMARY ROW
-   Compact plan summary shared by the addons + checkout steps: name and
-   tagline left, price right, inline back pill. Tier color = left accent.
-   Trust footer sits below the Whop embed.
-   ============================================================================ */
-
-.checkout-summary {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 18px 20px;
-  background: #141418;
-  border: 1.5px solid rgba(255, 255, 255, 0.06);
-  border-radius: 14px;
-  margin-bottom: 20px;
-}
-.checkout-summary.tier-blue {
-  border-color: rgba(95, 179, 224, 0.5);
-  box-shadow: inset 0 0 0 1px rgba(95, 179, 224, 0.15);
-}
-.checkout-summary.tier-gold {
-  border-color: rgba(229, 181, 71, 0.55);
-  box-shadow: inset 0 0 0 1px rgba(229, 181, 71, 0.2);
-}
-
-.checkout-summary-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.checkout-summary-name {
-  font-family: "Cabinet Grotesk", sans-serif;
-  font-weight: 700;
-  font-size: 17px;
-  color: #ffffff;
-}
-.checkout-summary-tagline {
-  font-family: "Inter", sans-serif;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.55);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.checkout-summary-price {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  flex-shrink: 0;
-}
-.checkout-summary-amount {
-  font-family: "Cabinet Grotesk", sans-serif;
-  font-weight: 800;
-  font-size: 20px;
-  background: linear-gradient(135deg, #FFE89A, #E5A544);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.checkout-summary-cadence {
-  font-family: "Inter", sans-serif;
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.5);
-  letter-spacing: 0.02em;
-}
-
-.checkout-summary-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.85);
-  font-family: "Cabinet Grotesk", sans-serif;
-  font-weight: 600;
-  font-size: 13px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.15s ease;
-}
-.checkout-summary-back:hover {
-  background: rgba(255, 255, 255, 0.12);
-}
-
 .checkout-trust-footer {
   margin-top: 16px;
   text-align: center;
   font-family: "Inter", sans-serif;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: #fff;
   letter-spacing: 0.02em;
 }
 
-@media (max-width: 640px) {
-  .checkout-summary-back span:last-child {
-    display: none;
-  }
-  .checkout-summary-tagline {
-    white-space: normal;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-}
 
-@media (prefers-reduced-motion: reduce) {
-  .checkout-summary-back {
-    transition: none;
-  }
-}
 
 /* ============================================================================
    HUB STATUS BANNER
@@ -3894,47 +3787,138 @@ a.tier-cta {
 }
 
 .res-card {
-  background: #141418;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 14px;
+  background: var(--card-dark);
+  border: 1px solid var(--line-dark);
+  border-radius: 16px;
   overflow: hidden;
   transition: border-color 0.15s ease;
 }
 
-.res-card[open] {
-  border-color: rgba(245, 197, 96, 0.25);
-}
-
-
-.res-title {
-  font-family: "Cabinet Grotesk", "Inter", sans-serif;
-  font-weight: 700;
-  font-size: 16px;
-  color: #ffffff;
-  margin-bottom: 4px;
-}
-
-.res-desc {
-  font-family: "Inter", sans-serif;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.55);
-  line-height: 1.5;
-}
 
 
 .res-body {
-  padding: 4px 22px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  margin-top: 4px;
-  padding-top: 20px;
+  padding: 20px 18px 24px;
 }
 
 .res-para {
   font-family: "Inter", sans-serif;
-  font-size: 14.5px;
-  line-height: 1.65;
-  color: rgba(255, 255, 255, 0.82);
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--txt-dark);
   margin: 0 0 16px;
+  max-width: 68ch;
+}
+
+/* ── Parsed structure: headings, lists, callouts ──────────────────────── */
+
+.res-term {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 20px;
+  color: var(--gold);
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  margin: 32px 0 12px;
+}
+.res-term:first-child { margin-top: 0; }
+
+.res-subhead {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--txt-dark-hi);
+  line-height: 1.3;
+  margin: 24px 0 10px;
+}
+
+.res-emoji-head {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--txt-dark-hi);
+  line-height: 1.3;
+  margin: 20px 0 8px;
+}
+
+.res-bullets {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 20px;
+}
+.res-bullets li {
+  position: relative;
+  padding-left: 20px;
+  margin-bottom: 8px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--txt-dark);
+  max-width: 68ch;
+}
+.res-bullets li::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 10px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+
+.res-steps {
+  list-style: none;
+  counter-reset: step-counter;
+  padding: 0;
+  margin: 12px 0 20px;
+}
+.res-steps li {
+  counter-increment: step-counter;
+  position: relative;
+  padding: 4px 0 4px 40px;
+  margin-bottom: 10px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--txt-dark);
+  max-width: 68ch;
+}
+.res-steps li::before {
+  content: counter(step-counter);
+  position: absolute;
+  left: 0;
+  top: 4px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(229, 181, 71, 0.12);
+  border: 1px solid rgba(229, 181, 71, 0.3);
+  color: var(--gold);
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.res-callout {
+  background: linear-gradient(135deg, rgba(229, 181, 71, 0.08), rgba(229, 181, 71, 0.03));
+  border: 1px solid rgba(229, 181, 71, 0.25);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin: 20px 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--txt-dark);
+}
+.res-callout-label {
+  display: inline-block;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-right: 8px;
 }
 
 .res-para:last-child {
@@ -3967,8 +3951,8 @@ a.tier-cta {
 }
 
 .res-link:hover {
-  background: rgba(245, 197, 96, 0.1);
-  border-color: rgba(245, 197, 96, 0.3);
+  background: rgba(229, 181, 71, 0.1);
+  border-color: rgba(229, 181, 71, 0.3);
 }
 
 .res-downloads {
@@ -3986,8 +3970,8 @@ a.tier-cta {
   gap: 12px;
   padding: 14px 18px;
   border-radius: 12px;
-  background: linear-gradient(135deg, rgba(245, 197, 96, 0.08), rgba(245, 197, 96, 0.02));
-  border: 1px solid rgba(245, 197, 96, 0.2);
+  background: linear-gradient(135deg, rgba(229, 181, 71, 0.08), rgba(229, 181, 71, 0.02));
+  border: 1px solid rgba(229, 181, 71, 0.2);
   color: #ffffff;
   font-family: "Cabinet Grotesk", "Inter", sans-serif;
   font-weight: 600;
@@ -3997,13 +3981,13 @@ a.tier-cta {
 }
 
 .res-download:hover {
-  background: linear-gradient(135deg, rgba(245, 197, 96, 0.15), rgba(245, 197, 96, 0.05));
-  border-color: rgba(245, 197, 96, 0.4);
+  background: linear-gradient(135deg, rgba(229, 181, 71, 0.15), rgba(229, 181, 71, 0.05));
+  border-color: rgba(229, 181, 71, 0.4);
 }
 
 .res-download-icon {
   font-size: 16px;
-  color: #F5C560;
+  color: var(--gold);
 }
 
 .res-download-label {
@@ -4017,16 +4001,15 @@ a.tier-cta {
   font-weight: 500;
 }
 
+@media (max-width: 640px) {
+  .res-term {
+    font-size: 18px;
+  }
+}
+
 @media (min-width: 900px) {
-  
   .res-body {
-    padding: 4px 28px 28px;
-  }
-  .res-title {
-    font-size: 17px;
-  }
-  .res-desc {
-    font-size: 14px;
+    padding: 32px 32px 36px;
   }
 }
 
@@ -6874,4 +6857,619 @@ a.trust-badge-trustpilot:hover {
    3-card row. */
 .modal-tiers.pro-only .tier.pro {
   transform: none;
+}
+
+/* Tools sections (2026-09-02) */
+.tools-section {
+  margin-bottom: 40px;
+}
+.tools-section:last-child {
+  margin-bottom: 0;
+}
+.tools-section-head {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--gold);
+  letter-spacing: 0.02em;
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Software brand marks (2026-09-02) */
+.soft-icon-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 6px;
+}
+
+/* Spotlight tour — restored from 2faf393 (2026-09-03) */
+.tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+.tour-backdrop {
+  position: fixed;
+  border-radius: 16px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75);
+  outline: 2px solid rgba(229, 181, 71, 0.9);
+  outline-offset: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+.tour-backdrop-full {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  pointer-events: none;
+}
+
+/* Closing step: no highlight, card centered in the viewport. Two classes so
+   it outranks .tour-card's bottom/transform regardless of source order. */
+.tour-card.tour-card-center {
+  bottom: auto;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.tour-card {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(400px, calc(100vw - 32px));
+  background: #14110f;
+  border: 1px solid rgba(229, 181, 71, 0.4);
+  border-radius: 20px;
+  padding: 32px 24px 20px;
+  color: #f5f2ed;
+  pointer-events: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.tour-avatars {
+  position: absolute;
+  top: -32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+}
+.tour-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid rgba(229, 181, 71, 0.9);
+  background: #14110f;
+  display: inline-block;
+}
+.tour-avatar-back {
+  margin-right: -18px;
+  z-index: 1;
+}
+.tour-avatar-front {
+  z-index: 2;
+}
+.tour-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tour-name {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--gold);
+  margin: 12px 0 8px;
+}
+.tour-important-pill {
+  /* .tour-card is a plain block, so align-self does nothing here -- a
+     fit-content box with auto side margins is what actually centers it. */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+  background: #dc2626;
+  border: 1px solid #f87171;
+  color: #ffffff;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 12.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border-radius: 999px;
+  margin-bottom: 12px;
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.18), 0 0 24px rgba(239, 68, 68, 0.55);
+  animation: tour-important-pulse 1.8s ease-in-out infinite;
+}
+.tour-important-bang {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #dc2626;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 900;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+@keyframes tour-important-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.18), 0 0 24px rgba(239, 68, 68, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.10), 0 0 34px rgba(239, 68, 68, 0.75);
+  }
+}
+.tour-title {
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0 0 12px;
+}
+.tour-body {
+  text-align: center;
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0 0 20px;
+}
+.tour-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+.tour-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transition: all 0.2s;
+}
+.tour-dot-active {
+  width: 24px;
+  border-radius: 100px;
+  background: var(--gold);
+}
+.tour-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.tour-skip {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 8px 4px;
+}
+.tour-skip:hover { color: rgba(255, 255, 255, 0.8); }
+.tour-nav {
+  display: flex;
+  gap: 8px;
+}
+.tour-btn {
+  padding: 10px 20px;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.15s, filter 0.15s;
+}
+.tour-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+.tour-btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
+}
+.tour-btn-primary {
+  background: var(--gold);
+  color: #1a1208;
+}
+
+@media (max-width: 640px) {
+  .tour-card { padding: 28px 20px 16px; }
+  .tour-title { font-size: 19px; }
+  .tour-body { font-size: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-backdrop { transition: none; }
+  .tour-important-pill { animation: none; }
+}
+
+/* ============================================================================
+   Onboarding v2 — new input kinds + closing screens (2026-09-03)
+   Extends the existing .intake-* aesthetic; nothing above is modified.
+   ============================================================================ */
+
+.intake-sub {
+  font-size: 14px;
+  color: var(--txt-mut);
+  margin: -20px 0 24px;
+}
+
+/* The answer block used to grow (flex: 1) and shove the footer to the bottom
+   of a 100vh screen, leaving Next stranded far below the question. These sit
+   at their natural height so the footer follows the content directly. */
+.intake-opts,
+.intake-text-wrap,
+.intake-scale {
+  flex: 0 0 auto;
+}
+
+/* Free-text questions */
+.intake-text-wrap { flex: 1; }
+.intake-textarea {
+  width: 100%;
+  background: var(--card);
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  padding: 16px 18px;
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--txt);
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.intake-textarea::placeholder { color: var(--txt-dim); }
+.intake-textarea:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(229, 181, 71, 0.15);
+}
+/* Multi-select checkboxes */
+.intake-opt-multi { align-items: center; }
+.intake-check {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  border: 1.5px solid var(--line-hi);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: transparent;
+  transition: all 0.15s ease;
+}
+.intake-check.on {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #1a1208;
+}
+
+/* Inline follow-up (Q3b, and Q4's "Something else") */
+.intake-followup { margin-top: 18px; }
+.intake-followup-label {
+  display: block;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--txt);
+  margin-bottom: 10px;
+}
+
+/* 1-10 scale */
+.intake-scale { flex: 1; }
+.intake-scale-row {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 6px;
+}
+.intake-scale-dot {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: var(--card);
+  border: 1.5px solid var(--line);
+  color: var(--txt);
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.intake-scale-dot:hover { border-color: var(--gold); }
+.intake-scale-dot.on {
+  background: var(--cta);
+  border-color: var(--gold);
+  color: var(--cta-text);
+  box-shadow: 0 0 0 3px rgba(229, 181, 71, 0.18);
+}
+.intake-scale-anchors {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 16px;
+  font-size: 12.5px;
+  color: var(--txt-mut);
+}
+.intake-scale-anchor b { color: var(--gold); font-weight: 800; }
+
+/* Pricing modal header - vibrant branded block (2026-09-04) */
+
+/* The header bleeds to the modal's edges, so it cancels .modal-body padding
+   (36px 28px, 28px 20px under 900px) with negative margins. */
+.modal-step-narrow { padding-top: 0; }
+
+.pm-header {
+  position: relative;
+  margin: -36px -28px 0;
+  padding: 16px 24px 22px;
+  text-align: left;
+  border-radius: 24px 24px 0 0;
+  overflow: hidden;
+  background:
+    radial-gradient(130% 110% at 0% 0%, rgba(255, 232, 154, 0.34) 0%, transparent 60%),
+    linear-gradient(158deg, rgba(229, 181, 71, 0.30) 0%, rgba(229, 181, 71, 0.10) 55%, rgba(229, 181, 71, 0) 100%);
+}
+/* Diagonal sheen across the header, so the gold reads as a polished surface
+   rather than a flat tint. */
+.pm-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    rgba(255, 255, 255, 0) 30%,
+    rgba(255, 248, 231, 0.10) 46%,
+    rgba(255, 255, 255, 0) 62%
+  );
+}
+.pm-header > * { position: relative; z-index: 1; }
+
+.pm-title {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 900;
+  font-size: 27px;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  color: #ffffff;
+  margin: 0 0 12px;
+}
+
+/* Two columns, two rows. Column widths track content so the pairs line up. */
+.pm-trust {
+  display: grid;
+  /* minmax(0,...) lets a column shrink below its content width instead of
+     overflowing the header, so the 2x2 holds all the way down to ~360px. */
+  grid-template-columns: minmax(0, auto) minmax(0, auto);
+  justify-content: start;
+  align-items: center;
+  gap: 7px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+}
+.pm-trust-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.pm-trust-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+}
+.pm-trust-check { color: #4ade80; }
+.pm-trust-star {
+  color: var(--gold);
+  font-size: 13px;
+  text-shadow: 0 0 10px rgba(229, 181, 71, 0.55);
+}
+.pm-trust-tp {
+  color: #00b67a;
+  font-size: 13px;
+  text-shadow: 0 0 10px rgba(0, 182, 122, 0.5);
+}
+.pm-trust-count { color: #fff; font-weight: 400; font-size: 0.86em; }
+
+/* Thick accent rule flush to the header's bottom edge. */
+.pm-accent-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5px;
+  background: var(--cta);
+  box-shadow: 0 0 18px rgba(229, 181, 71, 0.55);
+}
+
+/* Plan + Back on one row, on the dark surface below the header. */
+.pm-planbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 0 16px;
+}
+.pm-planbar-info { min-width: 0; }
+.pm-plan-name {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 900;
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+  /* Polished gold: bright at the top edge, deep at the base. */
+  background: linear-gradient(180deg, #FFF3C9 0%, #FFE89A 30%, #E5B547 62%, #B8881F 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.pm-plan-tagline {
+  font-size: 13px;
+  line-height: 1.4;
+  color: #fff;
+}
+
+.pm-back {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 2px 0;
+  color: var(--gold);
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.pm-back:hover { color: var(--gold-bright); }
+
+.pm-footer-note {
+  text-align: center;
+  padding: 4px 24px 8px;
+  font-size: 12px;
+  color: #fff;
+}
+
+/* Friction reversal, below the embed */
+.pm-friction {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: rgba(74, 222, 128, 0.06);
+  border: 1px solid rgba(74, 222, 128, 0.2);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 16px 0 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #fff;
+}
+.pm-friction-check {
+  color: #4ade80;
+  font-weight: 900;
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+@media (max-width: 900px) {
+  .pm-header { margin: -28px -20px 0; padding: 14px 18px 20px; }
+}
+@media (max-width: 640px) {
+  .pm-title { font-size: 23px; }
+  .pm-trust { font-size: 11.5px; gap: 6px 10px; }
+  .pm-plan-name { font-size: 16px; }
+  .pm-plan-tagline { font-size: 12.5px; }
+  .pm-friction { font-size: 12px; padding: 10px 12px; }
+}
+
+/* Pricing modal: plan features + per-tier accent (2026-09-04) */
+
+.pm-feats {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.pm-feat {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #fff;
+}
+.pm-feat-check {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9.5px;
+  font-weight: 900;
+  margin-top: 1px;
+  background: rgba(229, 181, 71, 0.15);
+  color: var(--gold);
+}
+
+.pm-feats-toggle {
+  background: none;
+  border: none;
+  padding: 2px 0 0;
+  margin-bottom: 4px;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 12.5px;
+  color: var(--gold);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.pm-feats-toggle:hover { color: var(--gold-bright); }
+
+/* ── Base tier: blue. Pro keeps the gold defined above. ────────────────── */
+
+/* Outer ring follows the tier. .modal carries the theme class so this can
+   restyle the shell itself, not just its children. */
+.modal.pm-theme-blue {
+  border-color: rgba(95, 179, 224, 0.45);
+  box-shadow:
+    0 40px 100px -20px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(95, 179, 224, 0.45),
+    0 0 60px rgba(95, 179, 224, 0.22);
+}
+
+.pm-theme-blue .pm-header {
+  background:
+    radial-gradient(130% 110% at 0% 0%, rgba(143, 209, 240, 0.32) 0%, transparent 60%),
+    linear-gradient(158deg, rgba(95, 179, 224, 0.30) 0%, rgba(95, 179, 224, 0.10) 55%, rgba(95, 179, 224, 0) 100%);
+}
+.pm-theme-blue .pm-accent-bar {
+  background: linear-gradient(135deg, #8FD1F0, #5FB3E0 55%, #2E7FA8);
+  box-shadow: 0 0 18px rgba(95, 179, 224, 0.55);
+}
+.pm-theme-blue .pm-plan-name {
+  background: linear-gradient(180deg, #D8EEFA 0%, #8FD1F0 30%, #5FB3E0 62%, #2E7FA8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.pm-theme-blue .pm-back { color: var(--ice); }
+.pm-theme-blue .pm-back:hover { color: var(--ice-bright); }
+.pm-theme-blue .pm-feat-check {
+  background: rgba(95, 179, 224, 0.16);
+  color: var(--ice);
+}
+.pm-theme-blue .pm-feats-toggle { color: var(--ice); }
+.pm-theme-blue .pm-feats-toggle:hover { color: var(--ice-bright); }
+
+@media (max-width: 640px) {
+  .pm-feat { font-size: 12.5px; gap: 8px; }
+  .pm-feats-toggle { font-size: 12px; }
 }

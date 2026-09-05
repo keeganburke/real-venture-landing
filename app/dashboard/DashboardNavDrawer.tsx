@@ -59,9 +59,19 @@ export default function DashboardNavDrawer({ open, onClose }: Props) {
             <span className="lp-drawer-num">04</span>
             Tools
           </Link>
+          <button
+            className="lp-drawer-item"
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent("rv:openTour"));
+              onClose();
+            }}
+          >
+            <span className="lp-drawer-num">05</span>
+            Take the tour
+          </button>
           <div className="dash-drawer-sep" aria-hidden="true"></div>
           <button className="lp-drawer-item dash-drawer-signout" onClick={signOut}>
-            <span className="lp-drawer-num">05</span>
+            <span className="lp-drawer-num">06</span>
             Sign Out
           </button>
         </nav>
