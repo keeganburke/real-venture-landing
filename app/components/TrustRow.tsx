@@ -8,17 +8,6 @@ export default function TrustRow() {
         5.0 on Whop
         <span className="trust-count">(53 reviews)</span>
       </span>
-      <span className="trust-dot" aria-hidden="true">•</span>
-      <a
-        className="trust-badge trust-badge-trustpilot"
-        href="https://www.trustpilot.com/review/realventure.io"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <span className="trust-star trust-star-green">★</span>
-        4.6 on Trustpilot
-        <span className="trust-count">(20 reviews)</span>
-      </a>
     </div>
   );
 }

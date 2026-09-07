@@ -5595,21 +5595,12 @@ body:has(.hub-page) {
 .trust-star-gold {
   color: #E5C066;
 }
-.trust-star-green {
-  color: #00B67A;
-}
 .trust-count {
   font-weight: 400;
   color: rgba(255, 255, 255, 0.4);
 }
 .trust-dot {
   color: rgba(255, 255, 255, 0.25);
-}
-a.trust-badge-trustpilot {
-  transition: color 0.15s ease;
-}
-a.trust-badge-trustpilot:hover {
-  color: #ffffff;
 }
 
 .install-banner {
@@ -5652,9 +5643,6 @@ a.trust-badge-trustpilot:hover {
 @media (prefers-reduced-motion: reduce) {
   .install-banner {
     animation: none;
-  }
-  a.trust-badge-trustpilot {
-    transition: none;
   }
 }
 
@@ -6685,9 +6673,9 @@ a.trust-badge-trustpilot:hover {
 
 .lp-walkthrough .lp-section-head { margin-bottom: 40px; }
 
-/* TrustRow is already a wrapping flex row with a dot divider; scoped here it
-   just gets more air and a hair less type so Whop + Trustpilot clear one line
-   on desktop. Other TrustRow instances on the page are untouched. */
+/* TrustRow is already a wrapping flex row; scoped here it just gets more air
+   and a hair less type so the Whop badge clears one line on desktop. Other
+   TrustRow instances on the page are untouched. */
 .lp-walkthrough .trust-row {
   gap: 24px;
   font-size: 11.5px;
@@ -7285,11 +7273,6 @@ a.trust-badge-trustpilot:hover {
   font-size: 13px;
   text-shadow: 0 0 10px rgba(229, 181, 71, 0.55);
 }
-.pm-trust-tp {
-  color: #00b67a;
-  font-size: 13px;
-  text-shadow: 0 0 10px rgba(0, 182, 122, 0.5);
-}
 .pm-trust-count { color: #fff; font-weight: 400; font-size: 0.86em; }
 
 /* Thick accent rule flush to the header's bottom edge. */
@@ -7472,4 +7455,197 @@ a.trust-badge-trustpilot:hover {
 @media (max-width: 640px) {
   .pm-feat { font-size: 12.5px; gap: 8px; }
   .pm-feats-toggle { font-size: 12px; }
+}
+
+/* Admin - onboarding responses (2026-09-05) */
+.admin-page {
+  padding: 32px 24px 48px;
+  max-width: 100%;
+}
+.admin-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.admin-title {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 900;
+  font-size: 32px;
+  color: var(--txt-dark-hi);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+.admin-count {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--gold);
+  padding: 6px 14px;
+  background: rgba(229, 181, 71, 0.1);
+  border: 1px solid rgba(229, 181, 71, 0.3);
+  border-radius: 999px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.admin-empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--mut-dark-hi);
+  background: var(--card-dark);
+  border: 1px solid var(--line-dark);
+  border-radius: 12px;
+}
+.admin-table-wrap {
+  overflow-x: auto;
+  background: var(--card-dark);
+  border: 1px solid var(--line-dark);
+  border-radius: 12px;
+}
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--txt-dark);
+}
+.admin-table thead th {
+  text-align: left;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--line-dark);
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+}
+.admin-table tbody td {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: top;
+  line-height: 1.4;
+}
+.admin-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.admin-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+.admin-td-member {
+  min-width: 160px;
+}
+.admin-td-name {
+  font-weight: 700;
+  color: var(--txt-dark-hi);
+  margin-bottom: 2px;
+}
+.admin-td-id {
+  font-family: "SF Mono", ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--mut-dark-hi);
+}
+.admin-td-text {
+  max-width: 320px;
+  min-width: 200px;
+}
+
+/* Admin - nav, stats, filters, discord status (2026-09-05) */
+.admin-nav {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--line-dark);
+}
+.admin-nav-link {
+  padding: 12px 20px;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--mut-dark-hi);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+.admin-nav-link:hover {
+  color: var(--txt-dark-hi);
+}
+.admin-nav-link.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+}
+.admin-stats-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.admin-stat-card {
+  background: var(--card-dark);
+  border: 1px solid var(--line-dark);
+  border-radius: 12px;
+  padding: 16px 20px;
+  min-width: 180px;
+}
+.admin-stat-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mut-dark-hi);
+  margin-bottom: 6px;
+}
+.admin-stat-value {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 900;
+  font-size: 24px;
+  color: var(--txt-dark-hi);
+}
+.admin-stat-value.gold {
+  color: var(--gold);
+}
+.admin-filter-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.admin-filter-tab {
+  padding: 6px 14px;
+  background: var(--card-dark);
+  border: 1px solid var(--line-dark);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mut-dark-hi);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.admin-filter-tab:hover {
+  color: var(--txt-dark-hi);
+}
+.admin-filter-tab.active {
+  background: rgba(229, 181, 71, 0.15);
+  border-color: rgba(229, 181, 71, 0.4);
+  color: var(--gold);
+}
+.admin-td-empty {
+  color: var(--mut-dark-hi);
+  font-style: italic;
+  font-size: 12px;
+}
+.admin-td-mono {
+  font-family: "SF Mono", ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--txt-dark-hi);
+}
+.admin-row-warn {
+  background: rgba(239, 68, 68, 0.04);
+}
+.admin-row-warn:hover {
+  background: rgba(239, 68, 68, 0.07) !important;
 }

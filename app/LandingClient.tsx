@@ -949,9 +949,9 @@ export default function LandingClient({ variant }: Props) {
               <div className="modal-step modal-step-narrow" key="step-checkout">
                 <div className="pm-header">
                   <h2 className="pm-title">{modalTitle}</h2>
-                  {/* Two rows of two. DOM order fills the grid:
+                  {/* Two-column grid. DOM order fills it:
                       row 1 = Cancel anytime + Whop rating
-                      row 2 = Secured by Whop + Trustpilot rating */}
+                      row 2 = Secured by Whop */}
                   <div className="pm-trust">
                     <span className="pm-trust-item">
                       <span className="pm-trust-icon pm-trust-check" aria-hidden="true">{"✓"}</span>
@@ -964,10 +964,6 @@ export default function LandingClient({ variant }: Props) {
                     <span className="pm-trust-item">
                       <span className="pm-trust-icon pm-trust-check" aria-hidden="true">{"✓"}</span>
                       Secured by Whop
-                    </span>
-                    <span className="pm-trust-item">
-                      <span className="pm-trust-icon pm-trust-tp" aria-hidden="true">{"★"}</span>
-                      4.6 on Trustpilot <span className="pm-trust-count">(20 reviews)</span>
                     </span>
                   </div>
                   <span className="pm-accent-bar" aria-hidden="true" />
