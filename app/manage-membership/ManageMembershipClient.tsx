@@ -5,6 +5,7 @@ import CancelFlow from "./CancelFlow";
 
 export type MembershipSummary = {
   membershipId: string | null;
+  planId: string | null;
   planName: string;
   price: string;
   status: string;

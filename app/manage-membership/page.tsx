@@ -9,10 +9,32 @@ function formatRenewal(value: unknown): string | null {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
+// Reads the plan id from a Whop membership response. The memberships list
+// endpoint puts the id at m.plan.id; older callers assumed m.plan_id at
+// the top level. Fall back to m.plan_id for defensive compatibility.
+function readPlanId(m: Record<string, unknown>): string | null {
+  const plan = m.plan as Record<string, unknown> | undefined;
+  if (plan && typeof plan.id === "string" && plan.id.length > 0) return plan.id;
+  if (typeof m.plan_id === "string" && m.plan_id.length > 0) return m.plan_id;
+  return null;
+}
+
+// Canonical plan names. Whop's plan object does NOT return a title on the
+// memberships endpoint, so we resolve it locally. Unknown plan ids fall
+// through to the raw plan id (better than FALLBACK "Pro" for debugging).
+const PLAN_NAMES: Record<string, string> = {
+  plan_2NqC2WJzV87QY: "Base",
+  plan_J8vFpCWME75W3: "Pro",
+  plan_9nyRNbuhQF0pk: "Pro (3 months)",
+  plan_SIYHeHyFp1dbR: "Pro (legacy)",
+  plan_SGscR3JhdTtKh: "Base (legacy)",
+};
+
 // Mockup placeholder values, shown when the live fetch cannot resolve a
 // field. TODO: confirm real field names against a production response.
 const FALLBACK: MembershipSummary = {
   membershipId: null,
+  planId: null,
   planName: "Pro",
   price: "$49.99 / month",
   status: "Active",
@@ -76,16 +98,16 @@ async function fetchMembership(whopUserId: string): Promise<MembershipSummary | 
         ? m.status.charAt(0).toUpperCase() + m.status.slice(1)
         : FALLBACK.status;
 
+    const planId = readPlanId(m);
+    const rawPrice =
+      typeof m.formatted_renewal_price === "string" && m.formatted_renewal_price.length > 0
+        ? m.formatted_renewal_price
+        : null;
     return {
       membershipId: typeof m.id === "string" ? m.id : null,
-      planName:
-        (typeof m.plan === "object" &&
-          m.plan &&
-          typeof (m.plan as Record<string, unknown>).title === "string" &&
-          ((m.plan as Record<string, unknown>).title as string)) ||
-        (typeof m.plan_id === "string" && m.plan_id) ||
-        FALLBACK.planName,
-      price: FALLBACK.price, // TODO: derive from plan pricing once real response shape is confirmed
+      planId,
+      planName: (planId && PLAN_NAMES[planId]) || planId || FALLBACK.planName,
+      price: rawPrice ?? FALLBACK.price,
       status,
       renewalDate: formatRenewal(m.renewal_period_end) ?? formatRenewal(m.expires_at),
     };
