@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { WhopCheckoutEmbed } from "@whop/checkout/react";
+import { WhopCheckoutEmbed, useCheckoutEmbedControls } from "@whop/checkout/react";
 import NavDrawer from "./components/NavDrawer";
 import CtaStrip from "./components/CtaStrip";
 import TrustRow from "./components/TrustRow";
@@ -195,6 +195,9 @@ export default function LandingClient({ variant }: Props) {
   const [selectedPlan, setSelectedPlan] = useState<"base" | "pro" | null>(null);
   const [proTerm, setProTerm] = useState<"monthly" | "quarterly">("monthly");
   const [featuresOpen, setFeaturesOpen] = useState(false);
+  // Handle to the embedded checkout iframe so the buyer's email can be read
+  // back (getEmail) before the modal closes and the iframe unmounts.
+  const checkoutControls = useCheckoutEmbedControls();
 
   // Surface OAuth failures redirected here by /api/auth/whop/callback.
   useEffect(() => {
@@ -265,12 +268,38 @@ export default function LandingClient({ variant }: Props) {
     setStep("checkout");
   };
 
-  const handleCheckoutComplete = (planId: string, receiptId?: string) => {
-    // Fires once on payment success; close the modal and send the user to
-    // OAuth so they land in the dashboard.
-    console.log("Whop checkout complete", { planId, receiptId });
+  const handleCheckoutComplete = async (planId: string, receiptId?: string, result?: unknown) => {
+    // Fires once on payment success. Read the checkout email from the iframe
+    // BEFORE closing the modal (closing unmounts the iframe), stash it for
+    // /login, then send the user to OAuth so they land in the dashboard.
+    console.log("Whop checkout complete", { planId, receiptId, result });
+
+    let email: string | null = null;
+    try {
+      const raw = await checkoutControls.current?.getEmail(1000);
+      if (typeof raw === "string" && raw.includes("@")) email = raw.trim();
+    } catch {
+      // Timed out or iframe already gone: fall through to the result probe.
+    }
+    // Fallback: some SDK versions may carry the email on the complete result.
+    // The 0.6.0 types do not declare one, so this is a defensive runtime check.
+    if (!email && result && typeof result === "object") {
+      const maybe = (result as { email?: unknown }).email;
+      if (typeof maybe === "string" && maybe.includes("@")) email = maybe.trim();
+    }
+
+    // sessionStorage is the primary handoff to /login; the URL param is the
+    // fallback in case the flow crosses tabs.
+    if (email) {
+      try {
+        sessionStorage.setItem("rv_purchase_email", email);
+      } catch {}
+    }
+
     closePricing();
-    router.push("/login?justpurchased=1");
+    const params = new URLSearchParams({ justpurchased: "1" });
+    if (email) params.set("email", email);
+    router.push(`/login?${params.toString()}`);
   };
 
   // Checkout target: Base is monthly-only; Pro follows the selected term.
@@ -1009,6 +1038,7 @@ export default function LandingClient({ variant }: Props) {
 
                 <div className="modal-checkout-wrap">
                   <WhopCheckoutEmbed
+                    ref={checkoutControls}
                     planId={activePlan.planId}
                     theme="dark"
                     themeOptions={{

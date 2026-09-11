@@ -151,6 +151,7 @@ export default function ManageMembershipClient({ membership }: Props) {
         onClose={() => setCancelOpen(false)}
         membershipId={membership.membershipId ?? ""}
         plan={membership.planName || "Pro"}
+        planId={membership.planId}
       />
     </main>
   );

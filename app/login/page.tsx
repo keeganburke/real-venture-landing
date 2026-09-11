@@ -2,8 +2,10 @@
 
 import { Suspense, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
+import PurchaseEmailBanner from "./_components/PurchaseEmailBanner";
 
-type Banner = { title: string; body: ReactNode; denied: boolean };
+// `extra` renders after the copy paragraph (block content cannot live inside <p>).
+type Banner = { title: string; body: ReactNode; denied: boolean; extra?: ReactNode };
 
 // Whop OAuth failures redirect here as /login?auth=<code> so the retry button
 // is on the same screen as the explanation. LandingClient keeps its own
@@ -20,6 +22,24 @@ function bannerFor(code: string): Banner {
           </>
         ),
         denied: true,
+        extra: (
+          <>
+            <div className="login-denied-helper">
+              Not sure which email you used? Check your inbox for a receipt from{" "}
+              <strong>no-reply@whop.com</strong> - the To: address is what you should use.
+            </div>
+            {/* Whop keeps its own session; without signing out there, "Login with
+                Whop" silently reuses the wrong account. */}
+            <a
+              className="login-signout-whop"
+              href="https://whop.com/logout"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Sign out of Whop first {"\u2197"}
+            </a>
+          </>
+        ),
       };
     case "state_mismatch":
       return {
@@ -66,6 +86,7 @@ function AuthBanner() {
       <div className="lp-login-banner-body">
         <div className="lp-login-banner-title">{banner.title}</div>
         <p className="lp-login-banner-copy">{banner.body}</p>
+        {banner.extra}
       </div>
       <button
         type="button"
@@ -80,6 +101,9 @@ function AuthBanner() {
 }
 
 export default function LoginPage() {
+  // True while the just-purchased banner is visible; the always-on warning
+  // hides then so two email warnings never stack.
+  const [purchaseShown, setPurchaseShown] = useState(false);
   return (
     <div className="wrap">
       <main className="lp-login">
@@ -97,10 +121,20 @@ export default function LoginPage() {
           {/* useSearchParams needs a Suspense boundary to keep this page
               statically prerenderable. */}
           <Suspense fallback={null}>
+            <PurchaseEmailBanner onShown={setPurchaseShown} />
             <AuthBanner />
           </Suspense>
           <h1 className="lp-login-h">Welcome Back</h1>
           <p className="lp-login-sub">Sign in with your Whop account to continue</p>
+          {!purchaseShown && (
+            <div className="login-warn" role="note">
+              <span className="login-warn-icon" aria-hidden="true">{"\u26A0"}</span>
+              <p className="login-warn-body">
+                Sign in with the <b>EXACT email</b> you used to buy. A different email will look
+                like an empty account.
+              </p>
+            </div>
+          )}
           <button
             className="lp-cta-primary lp-login-cta"
             onClick={() => {
@@ -110,10 +144,6 @@ export default function LoginPage() {
             <img src="/whoplogo3.png" alt="" className="lp-login-whop-icon" />
             Login with Whop {"→"}
           </button>
-          <p className="lp-login-note">
-            Sign in with the <strong>EXACT</strong> email you used to buy. A{" "}
-            <strong>different email</strong> will look like an empty account.
-          </p>
           <p className="lp-login-join">
             {"Don't have an account? "}
             <a href="/?pricing=1">Join</a>

@@ -7649,3 +7649,107 @@ body:has(.hub-page) {
 .admin-row-warn:hover {
   background: rgba(239, 68, 68, 0.07) !important;
 }
+
+/* Cancel flow - full-page routes under /manage-membership/cancel/*.
+   Uses .manage-mem-page tokens; .cancel-page is additive layout. */
+.cancel-page{min-height:100vh;padding:60px 24px 40px;display:flex;flex-direction:column;background:radial-gradient(700px 500px at 50% -20%,rgba(229,181,71,.10),transparent 60%),var(--bg)}
+.cancel-shell{max-width:520px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:24px}
+.cancel-progress{display:flex;flex-direction:column;gap:6px;font-family:"Cabinet Grotesk",sans-serif}
+.cancel-progress-meta{font-size:11px;color:var(--txt-mut);letter-spacing:.08em;text-transform:uppercase;font-weight:800}
+.cancel-progress-bar{height:3px;background:var(--line);border-radius:2px;overflow:hidden}
+.cancel-progress-fill{height:100%;background:var(--cta);transition:width .3s ease}
+.cancel-head{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.cancel-eyebrow{color:var(--gold);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.cancel-h{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:clamp(28px,4vw,36px);line-height:1.1;letter-spacing:-.02em;color:var(--txt)}
+.cancel-sub{color:var(--txt-mut);font-size:15px;line-height:1.5}
+.cancel-body{display:flex;flex-direction:column;gap:16px}
+.cancel-foot{margin-top:24px;text-align:center;padding-top:24px;border-top:1px solid var(--line)}
+.cancel-foot-link{color:var(--txt-dim);font-size:13px;text-decoration:underline;text-decoration-color:var(--line-hi);text-underline-offset:3px;background:none;border:none;font-family:inherit;cursor:pointer;padding:8px}
+.cancel-foot-link:hover{color:var(--red)}
+
+/* Cancel flow - interactive components */
+.cancel-opt{background:var(--card-hi);border:1.5px solid var(--line);border-radius:12px;padding:18px 20px;text-align:left;cursor:pointer;font-weight:600;color:var(--txt);font-size:16px;font-family:"Inter",sans-serif;width:100%;transition:all .15s}
+.cancel-opt:hover{border-color:var(--gold);background:rgba(229,181,71,.05)}
+.cancel-opts{display:flex;flex-direction:column;gap:10px}
+
+.cancel-testimonial-placeholder{background:transparent;border:2px dashed var(--line-hi);border-radius:14px;padding:32px 20px;text-align:center;color:var(--txt-dim);font-size:13px;letter-spacing:.08em;text-transform:uppercase;font-family:"Cabinet Grotesk",sans-serif;font-weight:800}
+
+.cancel-continue{display:flex;flex-direction:column;gap:12px;margin-top:8px}
+.cancel-btn-primary{background:var(--cta);color:var(--cta-text);border:none;padding:16px 20px;border-radius:12px;font-weight:800;font-size:16px;cursor:pointer;width:100%;font-family:"Inter",sans-serif;letter-spacing:-.005em}
+.cancel-btn-primary:hover{filter:brightness(1.05)}
+.cancel-btn-secondary{background:transparent;color:var(--txt-mut);border:none;padding:12px;font-size:14px;cursor:pointer;width:100%;text-align:center;text-decoration:underline;text-decoration-color:var(--line-hi);text-underline-offset:3px;font-family:"Inter",sans-serif}
+.cancel-btn-secondary:hover{color:var(--txt)}
+
+.pause-cards{display:flex;flex-direction:column;gap:12px}
+.pause-card{background:var(--card-hi);border:1.5px solid var(--line);border-radius:14px;padding:20px;cursor:pointer;font-family:"Inter",sans-serif;text-align:left;color:var(--txt);width:100%;transition:all .15s;display:flex;align-items:baseline;gap:16px}
+.pause-card:hover{border-color:var(--gold);background:rgba(229,181,71,.05)}
+.pause-card-num{font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:44px;line-height:1;color:var(--gold);letter-spacing:-.03em}
+.pause-card-label{font-size:16px;font-weight:700;color:var(--txt)}
+.pause-card-sub{font-size:13px;color:var(--txt-mut);margin-top:2px}
+.pause-card-text{display:flex;flex-direction:column}
+
+.keeps-block{background:rgba(74,222,128,.04);border:1px solid rgba(74,222,128,.15);border-radius:12px;padding:16px;margin-top:16px}
+.keeps-h{font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:11px;color:var(--green);letter-spacing:.10em;text-transform:uppercase;margin-bottom:10px}
+.keeps-list{display:flex;flex-direction:column;gap:8px}
+.keeps-item{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--txt)}
+.keeps-check{color:var(--green);flex-shrink:0;font-weight:800}
+
+.free-days-icn{width:88px;height:88px;background:var(--cta);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto;position:relative}
+.free-days-icn::after{content:"15";font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:38px;color:#1a1208;letter-spacing:-.03em}
+.free-days-pitch{background:linear-gradient(135deg,rgba(229,181,71,.08),rgba(229,181,71,.02));border:1px solid rgba(229,181,71,.30);border-radius:12px;padding:18px;text-align:center;color:var(--txt-mut);font-size:14px;line-height:1.5}
+.free-days-pitch b{color:var(--txt);font-weight:700}
+
+.loss-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}
+.loss-item{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--txt-mut);text-decoration:line-through;text-decoration-color:rgba(248,113,113,.4)}
+.loss-x{color:var(--red);flex-shrink:0;font-weight:800;font-family:"Cabinet Grotesk",sans-serif;font-size:12px}
+.cancel-btn-quit{background:transparent;color:var(--txt-dim);border:none;padding:12px;font-size:13px;cursor:pointer;width:100%;text-align:center;text-decoration:underline;text-decoration-color:var(--line-hi);text-underline-offset:3px;font-family:"Inter",sans-serif}
+.cancel-btn-quit:hover{color:var(--red)}
+
+/* Cancel flow - William letter card */
+.william-letter{background:var(--card-hi);border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:14px;padding:22px 20px;display:flex;flex-direction:column;gap:14px}
+.william-letter-head{display:flex;align-items:center;gap:12px}
+.william-letter-avatar{width:40px;height:40px;border-radius:50%;background:var(--cta);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--cta-text);font-family:"Cabinet Grotesk",sans-serif;font-weight:900;font-size:18px}
+.william-letter-name{font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:15px;color:var(--txt);line-height:1.2}
+.william-letter-role{font-size:12px;color:var(--txt-mut);margin-top:2px}
+.william-letter-body{color:var(--txt);font-size:15px;line-height:1.6;white-space:pre-wrap;font-family:"Inter",sans-serif}
+.william-letter-body p{margin:0 0 12px 0}
+.william-letter-body p:last-child{margin-bottom:0}
+
+/* Cancel flow - confirmed page sub with multi-paragraph */
+.cancel-sub-block{color:var(--txt-mut);font-size:15px;line-height:1.6;display:flex;flex-direction:column;gap:12px}
+
+/* Cancel flow - shell footer "Cancel my membership": same style, easier to hit.
+   Appended override rather than editing the Prompt 1 rule. */
+.cancel-foot-link{font-size:15px;padding:14px}
+
+/* Cancel flow - confirmed page styling override */
+.cancel-sub-block{font-family:"Cabinet Grotesk",sans-serif;font-weight:700;color:var(--txt)}
+.cancel-highlight{color:var(--gold);font-weight:800}
+
+/* Cancel flow - final page cancel error */
+.cancel-error{color:var(--red);font-size:14px;line-height:1.5;text-align:center;padding:12px;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.20);border-radius:8px;margin-top:12px}
+
+/* Login page - purchase email banner (just after payment) */
+.login-purchase-banner{background:linear-gradient(135deg,rgba(74,222,128,.10),rgba(229,181,71,.06));border:1.5px solid rgba(74,222,128,.30);border-radius:14px;padding:20px 24px;margin-bottom:24px;display:flex;flex-direction:column;gap:10px;text-align:left}
+.login-purchase-banner-eyebrow{color:var(--green);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:11px;letter-spacing:.10em;text-transform:uppercase}
+.login-purchase-banner-body{color:var(--txt);font-size:15px;line-height:1.5;font-family:"Inter",sans-serif}
+.login-purchase-banner-body b{color:var(--gold);font-weight:800}
+
+/* Login page - louder warning above button */
+.login-warn{background:rgba(229,181,71,.08);border:1px solid rgba(229,181,71,.30);border-left:3px solid var(--gold);border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start}
+.login-warn-icon{font-size:18px;flex-shrink:0;line-height:1.4}
+.login-warn-body{color:var(--txt);font-size:14px;line-height:1.5;font-family:"Inter",sans-serif}
+.login-warn-body b{color:var(--gold);font-weight:800}
+
+/* Login page - denied banner enhancements */
+.login-denied-helper{margin-top:12px;padding-top:12px;border-top:1px solid rgba(248,113,113,.15);color:var(--txt-mut);font-size:13px;line-height:1.5}
+.login-signout-whop{margin-top:12px;background:transparent;color:var(--txt);border:1.5px solid rgba(248,113,113,.30);border-radius:10px;padding:10px 14px;font-family:"Inter",sans-serif;font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.login-signout-whop:hover{background:rgba(248,113,113,.06);border-color:rgba(248,113,113,.50)}
+
+/* Login page - glue for the rules above (appended, nothing existing edited).
+   --txt / --txt-mut only exist inside .onb, .hub-page and .manage-mem-page, so
+   they are defined here for /login; the two new blocks also need a width inside
+   the centered flex column of .lp-login-card or they shrink-wrap their text. */
+.lp-login{--txt:#ffffff;--txt-mut:rgba(255,255,255,.6)}
+.lp-login-card .login-purchase-banner{align-self:stretch;max-width:500px}
+.lp-login-card .login-warn{width:100%;max-width:400px;text-align:left}
