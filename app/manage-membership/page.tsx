@@ -28,6 +28,7 @@ const PLAN_NAMES: Record<string, string> = {
   plan_9nyRNbuhQF0pk: "Pro (3 months)",
   plan_SIYHeHyFp1dbR: "Pro (legacy)",
   plan_SGscR3JhdTtKh: "Base (legacy)",
+  plan_mjpuBNS3KJqmw: "Ultra",
 };
 
 // Mockup placeholder values, shown when the live fetch cannot resolve a
