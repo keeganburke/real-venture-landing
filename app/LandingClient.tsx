@@ -85,6 +85,7 @@ const PLANS = {
 const PRO_TERMS = {
   monthly: { planId: "plan_J8vFpCWME75W3", amount: "49.99", price: "$49.99", cadence: "per month" },
   quarterly: { planId: "plan_9nyRNbuhQF0pk", amount: "130", price: "$130", cadence: "per 3 months" },
+  semiannual: { planId: "plan_tfYMBwmuOwuB0", amount: "250", price: "$250", cadence: "per 6 months" },
 } as const;
 
 // Checkout-header copy for the selected plan. Price lives in the name line, so
@@ -121,7 +122,7 @@ type PlanCopy = {
   features: string[];
 };
 
-const PLAN_COPY: Record<"base" | "pro" | "pro3", PlanCopy> = {
+const PLAN_COPY: Record<"base" | "pro" | "pro3" | "pro6", PlanCopy> = {
   base: {
     name: "Base - $19.99/mo",
     tagline: "Everything you need to close your first $10K deal.",
@@ -137,6 +138,12 @@ const PLAN_COPY: Record<"base" | "pro" | "pro3", PlanCopy> = {
   pro3: {
     name: "Pro - $130 for 3 months",
     tagline: "Everything you need to close your first $10K deal, with extra support included. Save $20 vs monthly.",
+    accent: "gold",
+    features: PRO_FEATURES,
+  },
+  pro6: {
+    name: "Pro - $250 for 6 months",
+    tagline: "Same Pro plan, paid every 6 months. Save $50 vs monthly.",
     accent: "gold",
     features: PRO_FEATURES,
   },
@@ -157,7 +164,7 @@ type Props = {
   // "free" switches the hero; "pro" keeps the default hero but hides every
   // tier except Pro in both pricing sites (phone-setter close-protection
   // page at /pro). Everything else is shared, so the routes cannot drift.
-  variant: "default" | "free" | "pro";
+  variant: "default" | "free" | "pro" | "pro6";
 };
 
 // Whop OAuth failure codes land the user back on "/" with ?auth=<code>.
@@ -172,7 +179,9 @@ const AUTH_MESSAGES: Record<string, string> = {
 };
 
 export default function LandingClient({ variant }: Props) {
-  const proOnly = variant === "pro";
+  // "pro6" is the Pro-only page pinned to the 6-month plan: no term toggle.
+  const sixMonth = variant === "pro6";
+  const proOnly = variant === "pro" || sixMonth;
   const router = useRouter();
   const [authNotice, setAuthNotice] = useState<string | null>(null);
   // Tracked separately from the message so "denied" (wrong email after
@@ -193,7 +202,9 @@ export default function LandingClient({ variant }: Props) {
   // 2-step wizard inside the pricing modal: tiers -> embedded checkout.
   const [step, setStep] = useState<"pricing" | "checkout">("pricing");
   const [selectedPlan, setSelectedPlan] = useState<"base" | "pro" | null>(null);
-  const [proTerm, setProTerm] = useState<"monthly" | "quarterly">("monthly");
+  const [proTerm, setProTerm] = useState<"monthly" | "quarterly" | "semiannual">(
+    sixMonth ? "semiannual" : "monthly"
+  );
   const [featuresOpen, setFeaturesOpen] = useState(false);
   // Handle to the embedded checkout iframe so the buyer's email can be read
   // back (getEmail) before the modal closes and the iframe unmounts.
@@ -305,12 +316,14 @@ export default function LandingClient({ variant }: Props) {
   // Checkout target: Base is monthly-only; Pro follows the selected term.
   const modalTitle = selectedPlan === "pro" ? "Join Real Venture Pro" : "Join Real Venture";
 
-  // pro splits into monthly / quarterly copy; base has one line.
+  // pro splits into monthly / quarterly / semiannual copy; base has one line.
   const planCopy =
     selectedPlan === "pro"
-      ? proTerm === "quarterly"
-        ? PLAN_COPY.pro3
-        : PLAN_COPY.pro
+      ? proTerm === "semiannual"
+        ? PLAN_COPY.pro6
+        : proTerm === "quarterly"
+          ? PLAN_COPY.pro3
+          : PLAN_COPY.pro
       : PLAN_COPY.base;
 
   const activePlan = selectedPlan
@@ -540,7 +553,7 @@ export default function LandingClient({ variant }: Props) {
                 <span className="lp-hero-line-3">{"We'll walk you there."}</span>
               </h1>
               <p className="lp-hero-sub">{"We teach you live, hand you the tools, and send real buyers to your deals. No license, no capital, no experience needed."}</p>
-              <CtaStrip onJoin={openPricing} label={proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
+              <CtaStrip onJoin={openPricing} label={sixMonth ? "Join Pro for $250 / 6 months \u2192" : proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
               <TrustRow />
               <div className="lp-trust">
                 <div className="lp-trust-item"><span className="lp-trust-check">{"✓"}</span> Cancel anytime</div>
@@ -561,7 +574,7 @@ export default function LandingClient({ variant }: Props) {
           <PayoutCarousel />
         </section>
 
-        <VideoWalkthrough onJoin={openPricing} ctaLabel={proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
+        <VideoWalkthrough onJoin={openPricing} ctaLabel={sixMonth ? "Join Pro for $250 / 6 months \u2192" : proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
 
         <section className="lp-success-stories">
           <div className="shell">
@@ -675,6 +688,7 @@ export default function LandingClient({ variant }: Props) {
                 <div className="tier-name">Pro</div>
                 <div className="tier-price"><span className="cur">$</span><span className="amt">{PRO_TERMS[proTerm].amount}</span></div>
                 <div className="tier-per">/ {PRO_TERMS[proTerm].cadence}</div>
+                {!sixMonth && (
                 <div className="tier-term-toggle" role="tablist">
                   <button
                     type="button"
@@ -696,6 +710,7 @@ export default function LandingClient({ variant }: Props) {
                   </button>
                   {proTerm === "quarterly" && <span className="tier-save-badge">Save $20</span>}
                 </div>
+                )}
                 <div className="tier-tag">Stop learning, start closing.</div>
                 <div className="tier-divider"></div>
                 <ul className="tier-feats">
@@ -826,7 +841,7 @@ export default function LandingClient({ variant }: Props) {
           <div className="shell">
             <h2 className="lp-section-h2">Your first payday <span>starts today.</span></h2>
             <p className="lp-section-sub lp-final-sub">Join 350+ students who stopped watching and started closing.</p>
-            <CtaStrip onJoin={openPricing} label={proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
+            <CtaStrip onJoin={openPricing} label={sixMonth ? "Join Pro for $250 / 6 months \u2192" : proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
             <TrustRow />
             <div className="lp-trust">
               <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Cancel anytime</div>
@@ -909,6 +924,7 @@ export default function LandingClient({ variant }: Props) {
                 <div className="tier-name">Pro</div>
                 <div className="tier-price"><span className="cur">$</span><span className="amt">{PRO_TERMS[proTerm].amount}</span></div>
                 <div className="tier-per">/ {PRO_TERMS[proTerm].cadence}</div>
+                {!sixMonth && (
                 <div className="tier-term-toggle" role="tablist">
                   <button
                     type="button"
@@ -930,6 +946,7 @@ export default function LandingClient({ variant }: Props) {
                   </button>
                   {proTerm === "quarterly" && <span className="tier-save-badge">Save $20</span>}
                 </div>
+                )}
                 <div className="tier-tag">Stop learning, start closing.</div>
                 <div className="tier-divider"></div>
                 <ul className="tier-feats">
