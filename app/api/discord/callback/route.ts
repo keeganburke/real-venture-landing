@@ -27,6 +27,7 @@ const PLAN_TIERS: Record<string, "Base" | "Pro"> = {
   plan_SGscR3JhdTtKh: "Base",  // legacy $1 entry plan
   plan_9nyRNbuhQF0pk: "Pro",   // Pro 3-month, $130
   plan_mjpuBNS3KJqmw: "Pro",   // Ultra monthly, $249.99 (Pro role until an Ultra role exists)
+  plan_tfYMBwmuOwuB0: "Pro",   // Pro 6-month, $250
 };
 
 // Best-effort tier from the caller's Whop memberships. Any failure returns

@@ -24,6 +24,7 @@ const PLAN_TIERS: Record<string, "Base" | "Pro"> = {
   plan_SGscR3JhdTtKh: "Base",
   plan_9nyRNbuhQF0pk: "Pro",
   plan_mjpuBNS3KJqmw: "Pro",
+  plan_tfYMBwmuOwuB0: "Pro",
 };
 
 const EMPTY: WhopMemberSummary = {

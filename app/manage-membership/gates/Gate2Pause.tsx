@@ -5,6 +5,7 @@ const PRO_PLAN_IDS = new Set([
   "plan_9nyRNbuhQF0pk",   // Pro 3-month
   "plan_SIYHeHyFp1dbR",   // legacy Pro
   "plan_mjpuBNS3KJqmw",   // Ultra monthly, $249.99
+  "plan_tfYMBwmuOwuB0",   // Pro 6-month, $250
 ]);
 
 // Tier-aware "you keep" list. Sprint progress is not persisted anywhere, so
