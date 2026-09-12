@@ -164,7 +164,7 @@ type Props = {
   // "free" switches the hero; "pro" keeps the default hero but hides every
   // tier except Pro in both pricing sites (phone-setter close-protection
   // page at /pro). Everything else is shared, so the routes cannot drift.
-  variant: "default" | "free" | "pro" | "pro6";
+  variant: "default" | "free" | "pro" | "pro6" | "pro3";
 };
 
 // Whop OAuth failure codes land the user back on "/" with ?auth=<code>.
@@ -179,9 +179,11 @@ const AUTH_MESSAGES: Record<string, string> = {
 };
 
 export default function LandingClient({ variant }: Props) {
-  // "pro6" is the Pro-only page pinned to the 6-month plan: no term toggle.
+  // "pro6" / "pro3" are the Pro-only page pinned to the 6- or 3-month plan:
+  // no term toggle, one fixed price.
   const sixMonth = variant === "pro6";
-  const proOnly = variant === "pro" || sixMonth;
+  const threeMonth = variant === "pro3";
+  const proOnly = variant === "pro" || sixMonth || threeMonth;
   const router = useRouter();
   const [authNotice, setAuthNotice] = useState<string | null>(null);
   // Tracked separately from the message so "denied" (wrong email after
@@ -203,7 +205,7 @@ export default function LandingClient({ variant }: Props) {
   const [step, setStep] = useState<"pricing" | "checkout">("pricing");
   const [selectedPlan, setSelectedPlan] = useState<"base" | "pro" | null>(null);
   const [proTerm, setProTerm] = useState<"monthly" | "quarterly" | "semiannual">(
-    sixMonth ? "semiannual" : "monthly"
+    sixMonth ? "semiannual" : threeMonth ? "quarterly" : "monthly"
   );
   const [featuresOpen, setFeaturesOpen] = useState(false);
   // Handle to the embedded checkout iframe so the buyer's email can be read
@@ -553,7 +555,7 @@ export default function LandingClient({ variant }: Props) {
                 <span className="lp-hero-line-3">{"We'll walk you there."}</span>
               </h1>
               <p className="lp-hero-sub">{"We teach you live, hand you the tools, and send real buyers to your deals. No license, no capital, no experience needed."}</p>
-              <CtaStrip onJoin={openPricing} label={sixMonth ? "Join Pro for $250 / 6 months \u2192" : proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
+              <CtaStrip onJoin={openPricing} label={threeMonth ? "Join Pro for $130 / 3 months \u2192" : sixMonth ? "Join Pro for $250 / 6 months \u2192" : proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
               <TrustRow />
               <div className="lp-trust">
                 <div className="lp-trust-item"><span className="lp-trust-check">{"✓"}</span> Cancel anytime</div>
@@ -574,7 +576,7 @@ export default function LandingClient({ variant }: Props) {
           <PayoutCarousel />
         </section>
 
-        <VideoWalkthrough onJoin={openPricing} ctaLabel={sixMonth ? "Join Pro for $250 / 6 months \u2192" : proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
+        <VideoWalkthrough onJoin={openPricing} ctaLabel={threeMonth ? "Join Pro for $130 / 3 months \u2192" : sixMonth ? "Join Pro for $250 / 6 months \u2192" : proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
 
         <section className="lp-success-stories">
           <div className="shell">
@@ -688,7 +690,7 @@ export default function LandingClient({ variant }: Props) {
                 <div className="tier-name">Pro</div>
                 <div className="tier-price"><span className="cur">$</span><span className="amt">{PRO_TERMS[proTerm].amount}</span></div>
                 <div className="tier-per">/ {PRO_TERMS[proTerm].cadence}</div>
-                {!sixMonth && (
+                {!sixMonth && !threeMonth && (
                 <div className="tier-term-toggle" role="tablist">
                   <button
                     type="button"
@@ -821,7 +823,7 @@ export default function LandingClient({ variant }: Props) {
                   <li>Live coaching 7x/week</li>
                   <li>Vetted buyer network on tap</li>
                   <li>Deal analyzer + contract templates</li>
-                  <li>350+ members closing deals with you</li>
+                  <li>450+ members closing deals with you</li>
                   <li>Finally start your journey in entrepreneurship</li>
                 </ul>
                 <button
@@ -840,8 +842,8 @@ export default function LandingClient({ variant }: Props) {
         <section className="lp-final">
           <div className="shell">
             <h2 className="lp-section-h2">Your first payday <span>starts today.</span></h2>
-            <p className="lp-section-sub lp-final-sub">Join 350+ students who stopped watching and started closing.</p>
-            <CtaStrip onJoin={openPricing} label={sixMonth ? "Join Pro for $250 / 6 months \u2192" : proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
+            <p className="lp-section-sub lp-final-sub">Join 450+ students who stopped watching and started closing.</p>
+            <CtaStrip onJoin={openPricing} label={threeMonth ? "Join Pro for $130 / 3 months \u2192" : sixMonth ? "Join Pro for $250 / 6 months \u2192" : proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
             <TrustRow />
             <div className="lp-trust">
               <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Cancel anytime</div>
@@ -924,7 +926,7 @@ export default function LandingClient({ variant }: Props) {
                 <div className="tier-name">Pro</div>
                 <div className="tier-price"><span className="cur">$</span><span className="amt">{PRO_TERMS[proTerm].amount}</span></div>
                 <div className="tier-per">/ {PRO_TERMS[proTerm].cadence}</div>
-                {!sixMonth && (
+                {!sixMonth && !threeMonth && (
                 <div className="tier-term-toggle" role="tablist">
                   <button
                     type="button"
@@ -1005,7 +1007,7 @@ export default function LandingClient({ variant }: Props) {
                     </span>
                     <span className="pm-trust-item">
                       <span className="pm-trust-icon pm-trust-star" aria-hidden="true">{"★"}</span>
-                      5.0 on Whop <span className="pm-trust-count">(53 reviews)</span>
+                      5.0 on Whop <span className="pm-trust-count">(127 reviews)</span>
                     </span>
                     <span className="pm-trust-item">
                       <span className="pm-trust-icon pm-trust-check" aria-hidden="true">{"✓"}</span>
