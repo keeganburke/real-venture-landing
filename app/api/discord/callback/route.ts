@@ -91,6 +91,9 @@ async function getWhopTier(
 async function recordConnection(args: {
   whopUserId: string;
   discordUserId: string;
+  // Discord username (the unique handle, not global_name) for the admin
+  // table (migration 019). Null if Discord did not return one.
+  discordUsername: string | null;
   tier: "Base" | "Pro" | null;
   roleId: string;
 }) {
@@ -101,6 +104,7 @@ async function recordConnection(args: {
       {
         whop_user_id: args.whopUserId,
         discord_user_id: args.discordUserId,
+        discord_username: args.discordUsername,
         tier: args.tier,
         role_id: args.roleId,
         connected_at: now,
@@ -256,6 +260,10 @@ export async function GET(request: NextRequest) {
     if (!discordUserId) {
       return redirectWithStatus("user_failed");
     }
+    const discordUsername: string | null =
+      typeof userData.username === "string" && userData.username.length > 0
+        ? userData.username
+        : null;
 
     // Enforce 1:1 before assigning anything. On conflict: no role, no DB row.
     const conflict = await findBindingConflict(session.whopUserId, discordUserId);
@@ -289,7 +297,7 @@ export async function GET(request: NextRequest) {
     // If already in server, we need a separate call to assign the role.
     if (addRes.status === 201) {
       // Fresh join: the role rode along in the PUT body, so the grant succeeded.
-      await recordConnection({ whopUserId: session.whopUserId, discordUserId, tier, roleId });
+      await recordConnection({ whopUserId: session.whopUserId, discordUserId, discordUsername, tier, roleId });
       // Drop them straight into the server they just entered.
       return NextResponse.redirect(`https://discord.com/channels/${guildId}`);
     }
@@ -310,7 +318,7 @@ export async function GET(request: NextRequest) {
         return redirectWithStatus("role_failed");
       }
 
-      await recordConnection({ whopUserId: session.whopUserId, discordUserId, tier, roleId });
+      await recordConnection({ whopUserId: session.whopUserId, discordUserId, discordUsername, tier, roleId });
       return redirectWithStatus("already_in_server");
     }
 
