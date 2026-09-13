@@ -10,27 +10,7 @@ import SectionHead from "./components/SectionHead";
 import PayoutCarousel from "./components/PayoutCarousel";
 import VideoWalkthrough from "./components/VideoWalkthrough";
 import Reviews from "./components/Reviews";
-import Timeline from "./components/Timeline";
-import { REVIEW_STATS } from "./lib/whop-reviews";
-
-const LP_COMPARE_BAD = [
-  "Watch YouTube for hours without taking action",
-  "Trying to piece all the information together yourself",
-  "Getting stuck with nowhere to ask questions",
-  "No idea how to actually spot a deal",
-  "Never talked to a real cash buyer, no reliable path to finding buyers",
-  "Quit after one week because it seems hopeless",
-];
-
-const LP_COMPARE_GOOD = [
-  "Direct access to William + Keegan every day",
-  "Step-by-step 14-day sprint with clear checkpoints",
-  "Live Q&A calls 7x/week + Discord 24/7",
-  "Deal analyzer + contract templates ready",
-  "Proven strategies to find buyers from the founders",
-  "Countless testimonials and students actually getting paid",
-  "Starting at the same price as your DoorDash order",
-];
+import { REVIEW_STATS, TRUST_COUNTS } from "./lib/whop-reviews";
 
 const LP_STORIES = [
   {
@@ -39,7 +19,7 @@ const LP_STORIES = [
     age: 20,
     videoId: "1221681436",
     amount: "$42,000",
-    blurb: "Full-time college student with a part-time job.",
+    blurb: "Full-time college student in a fraternity with a part-time job. Kept closing deals without giving up.",
   },
   {
     id: "yves",
@@ -47,7 +27,7 @@ const LP_STORIES = [
     age: 21,
     videoId: "1197200708",
     amount: "$11,000",
-    blurb: "Was working 70 hours a week in fast food.",
+    blurb: "70 hours a week between two fast food jobs. Still made this a side hustle and closed every one.",
   },
   {
     id: "zach",
@@ -55,7 +35,7 @@ const LP_STORIES = [
     age: 23,
     videoId: "1197200691",
     amount: "$6,000",
-    blurb: "Doorman. Made his first $6K in 45 days.",
+    blurb: "Doorman when he closed $6K in 45 days. Used the money to move out of his parents' house.",
   },
 ];
 
@@ -343,7 +323,7 @@ export default function LandingClient({ variant }: Props) {
 
   return (
     <>
-      <div className="wrap">
+      <div className="wrap lp">
         {authNotice && authCode === "denied" && (
           <div className="lp-auth-warning" role="alert">
             <div className="lp-auth-warning-icon" aria-hidden="true">{"\u{1F6D1}"}</div>
@@ -482,6 +462,9 @@ export default function LandingClient({ variant }: Props) {
                   {"Pick up, we're here to help you get your first deal."}
                 </p>
               </div>
+              {/* White label bar sitting on the top edge of the player. Kept
+                  outside the frame so it never covers Vimeo's Unmute button. */}
+              <div className="lp-video-overlay">{"Video tutorial \u00b7 2 minute watch"}</div>
               <div className="lp-hero-video">
                 <iframe
                   src="https://player.vimeo.com/video/1193039444?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&muted=1&playsinline=1"
@@ -499,12 +482,16 @@ export default function LandingClient({ variant }: Props) {
               >
                 {"🙋 I'll pick up when you call"}
               </button>
-              <p className="lp-hero-cap">{"Watch this first. It's the same method behind every deal below."}</p>
-              <div className="lp-hero-scrollcue">
-                <span>Want the whole system? Keep scrolling.</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
+              <p className="lp-free-hours">
+                {"We call between 6am-8pm Pacific. If you opted in outside those hours, we'll reach out the next morning."}
+              </p>
+              {/* Outro: the shared trust row (stars + Whop mark, "(127 reviews)"
+                  beneath) and a one-line nudge to watch and browse. */}
+              <div className="lp-free-outro">
+                <TrustRow />
+                <p className="lp-free-outro-text">
+                  In the meantime, watch the video above and check out the rest of this site.
+                </p>
               </div>
 
               {/* Commitment modal — vertical call-path timeline. */}
@@ -537,18 +524,11 @@ export default function LandingClient({ variant }: Props) {
                   </div>
                 </div>
               )}
-              <TrustRow />
-              <div className="lp-trust">
-                <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Cancel anytime</div>
-                <div className="lp-trust-dot" />
-                <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Secured by Whop</div>
-              </div>
             </div>
           </section>
         ) : (
           <section className="lp-hero">
             <div className="shell">
-              <div className="lp-hero-badge">Real Venture {"·"} Proven Path</div>
               <h1 className="lp-hero-h">
                 <span className="lp-hero-line-1">Your first</span>
                 <span className="lp-hero-line-2">real estate payday.</span>
@@ -557,11 +537,6 @@ export default function LandingClient({ variant }: Props) {
               <p className="lp-hero-sub">{"We teach you live, hand you the tools, and send real buyers to your deals. No license, no capital, no experience needed."}</p>
               <CtaStrip onJoin={openPricing} label={threeMonth ? "Join Pro for $130 / 3 months \u2192" : sixMonth ? "Join Pro for $250 / 6 months \u2192" : proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
               <TrustRow />
-              <div className="lp-trust">
-                <div className="lp-trust-item"><span className="lp-trust-check">{"✓"}</span> Cancel anytime</div>
-                <div className="lp-trust-dot" />
-                <div className="lp-trust-item"><span className="lp-trust-check">{"✓"}</span> Secured by Whop</div>
-              </div>
             </div>
           </section>
         )}
@@ -607,48 +582,6 @@ export default function LandingClient({ variant }: Props) {
                 </div>
               ))}
             </div>
-          </div>
-        </section>
-
-        <section className="lp-compare">
-          <div className="shell">
-            <SectionHead
-              heading={<>Their way <span className="lp-vs-red">vs</span> our way.</>}
-              sub={"Most people never make it. Here's why."}
-            />
-            <div className="lp-compare-grid">
-              <div className="lp-compare-col bad">
-                <div className="lp-compare-head">Their Way</div>
-                <ul className="lp-compare-list">
-                  {LP_COMPARE_BAD.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="lp-vs-box">VS</div>
-              <div className="lp-compare-col good">
-                <div className="lp-compare-head">Real Venture</div>
-                <ul className="lp-compare-list">
-                  {LP_COMPARE_GOOD.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-            <div className="lp-cta-after">
-              <CtaStrip onJoin={openPricing} label={"Join Real Venture \u2192"} />
-              <TrustRow />
-            </div>
-          </div>
-        </section>
-
-        <section className="lp-phases">
-          <div className="shell">
-            <SectionHead
-              heading={<>The simple 7-step path to success.</>}
-              sub="Each distinct phase to your first deal."
-            />
-            <Timeline />
           </div>
         </section>
 
@@ -749,6 +682,10 @@ export default function LandingClient({ variant }: Props) {
               )}
 
             </div>
+            <div className="pricing-risk-row">
+              <span><span className="lp-trust-check">{"\u2713"}</span> Cancel anytime</span>
+              <span><span className="lp-trust-check">{"\u2713"}</span> Instant access</span>
+            </div>
           </div>
         </section>
 
@@ -761,12 +698,26 @@ export default function LandingClient({ variant }: Props) {
             <div className="lp-review-summary">
               <div className="lp-reviews-score">{REVIEW_STATS.average.toFixed(1)}</div>
               <div>
-                <div className="lp-reviews-stars">{"\u2605\u2605\u2605\u2605\u2605"}</div>
+                <div className="lp-reviews-stars trust-rating-stars">{"\u2605\u2605\u2605\u2605\u2605"}</div>
                 <div className="lp-reviews-count">{REVIEW_STATS.total} verified reviews</div>
               </div>
               <img src="/whoplogo3.png" alt="Whop" className="lp-reviews-whop-logo" />
             </div>
             <Reviews />
+          </div>
+        </section>
+
+        <section className="lp-final">
+          <div className="shell">
+            <h2 className="lp-section-h2">Your first payday <span>starts today.</span></h2>
+            <p className="lp-section-sub lp-final-sub">Join {TRUST_COUNTS.students}+ students who stopped watching and started closing.</p>
+            <CtaStrip onJoin={openPricing} label={threeMonth ? "Join Pro for $130 / 3 months \u2192" : sixMonth ? "Join Pro for $250 / 6 months \u2192" : proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
+            <TrustRow />
+            <div className="lp-trust">
+              <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Cancel anytime</div>
+              <div className="lp-trust-dot" />
+              <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Instant access</div>
+            </div>
           </div>
         </section>
 
@@ -823,7 +774,7 @@ export default function LandingClient({ variant }: Props) {
                   <li>Live coaching 7x/week</li>
                   <li>Vetted buyer network on tap</li>
                   <li>Deal analyzer + contract templates</li>
-                  <li>450+ members closing deals with you</li>
+                  <li>{TRUST_COUNTS.students}+ members closing deals with you</li>
                   <li>Finally start your journey in entrepreneurship</li>
                 </ul>
                 <button
@@ -835,20 +786,6 @@ export default function LandingClient({ variant }: Props) {
                 </button>
               </div>
 
-            </div>
-          </div>
-        </section>
-
-        <section className="lp-final">
-          <div className="shell">
-            <h2 className="lp-section-h2">Your first payday <span>starts today.</span></h2>
-            <p className="lp-section-sub lp-final-sub">Join 450+ students who stopped watching and started closing.</p>
-            <CtaStrip onJoin={openPricing} label={threeMonth ? "Join Pro for $130 / 3 months \u2192" : sixMonth ? "Join Pro for $250 / 6 months \u2192" : proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
-            <TrustRow />
-            <div className="lp-trust">
-              <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Cancel anytime</div>
-              <div className="lp-trust-dot" />
-              <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Secured by Whop</div>
             </div>
           </div>
         </section>
@@ -988,7 +925,7 @@ export default function LandingClient({ variant }: Props) {
             <div className="modal-foot">
               <span><CheckIcon />Cancel anytime</span>
               <span>{"•"}</span>
-              <span><CheckIcon />Secured by Whop</span>
+              <span><CheckIcon />Instant access</span>
             </div>
             </div>
             )}
@@ -999,20 +936,25 @@ export default function LandingClient({ variant }: Props) {
                   <h2 className="pm-title">{modalTitle}</h2>
                   {/* Two-column grid. DOM order fills it:
                       row 1 = Cancel anytime + Whop rating
-                      row 2 = Secured by Whop */}
+                      row 2 = Instant access */}
                   <div className="pm-trust">
-                    <span className="pm-trust-item">
-                      <span className="pm-trust-icon pm-trust-check" aria-hidden="true">{"✓"}</span>
-                      Cancel anytime
-                    </span>
-                    <span className="pm-trust-item">
-                      <span className="pm-trust-icon pm-trust-star" aria-hidden="true">{"★"}</span>
-                      5.0 on Whop <span className="pm-trust-count">(127 reviews)</span>
-                    </span>
-                    <span className="pm-trust-item">
-                      <span className="pm-trust-icon pm-trust-check" aria-hidden="true">{"✓"}</span>
-                      Secured by Whop
-                    </span>
+                    <div className="pm-trust-checks">
+                      <span className="pm-trust-item">
+                        <span className="pm-trust-icon pm-trust-check" aria-hidden="true">{"✓"}</span>
+                        Cancel anytime
+                      </span>
+                      <span className="pm-trust-item">
+                        <span className="pm-trust-icon pm-trust-check" aria-hidden="true">{"✓"}</span>
+                        Instant access
+                      </span>
+                    </div>
+                    <div className="pm-trust-rating">
+                      <span className="pm-trust-rating-row">
+                        <span aria-label="5 stars" className="trust-stars">★★★★★</span>
+                        <img src="/whoplogo3.png" alt="Whop" className="trust-whop-logo" width={18} height={18} />
+                      </span>
+                      <span className="pm-trust-count trust-reviews-count">{`(${TRUST_COUNTS.reviews} reviews)`}</span>
+                    </div>
                   </div>
                   <span className="pm-accent-bar" aria-hidden="true" />
                 </div>
@@ -1078,7 +1020,7 @@ export default function LandingClient({ variant }: Props) {
                 </div>
                 <div className="pm-footer-note">Cancel anytime. One click, no hoops.</div>
                 <div className="checkout-trust-footer">
-                  Secured by Whop <span aria-hidden="true">·</span> Encrypted <span aria-hidden="true">·</span> Cancel anytime
+                  Instant access <span aria-hidden="true">·</span> Encrypted <span aria-hidden="true">·</span> Cancel anytime
                 </div>
               </div>
             )}

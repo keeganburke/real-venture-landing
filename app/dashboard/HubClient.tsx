@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { TRUST_COUNTS } from "@/app/lib/whop-reviews";
 import { WEEKLY_SCHEDULE } from "./hub-copy";
 import type { Destination, FeedbackAction } from "./hub-copy";
 import { getCallDurationMs, getLiveCall, getNextCalls } from "./lib/next-calls";
@@ -314,7 +315,7 @@ export default function HubClient({
             </div>
             <div className="hub2-discord-title">Join the community</div>
             <p className="hub2-discord-sub">
-              350+ members closing deals every week. Ask questions, share wins, get help.
+              {TRUST_COUNTS.students}+ members closing deals every week. Ask questions, share wins, get help.
             </p>
             <Link href="/dashboard/discord-help" className="hub2-discord-cta">
               <span>Join Discord</span>
