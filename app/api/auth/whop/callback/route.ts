@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSessionToken, SESSION_COOKIE_NAME, sessionCookieOptions } from "../../../../../lib/session";
 import { setIntakeCookie } from "../../../../../lib/intake-cookie";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getWhopMemberDetail } from "@/lib/whop-member-detail";
 
 function clearOAuthCookies(response: NextResponse): NextResponse {
   const clear = { maxAge: 0, path: "/" };
@@ -152,6 +154,38 @@ export async function GET(request: NextRequest) {
 
   if (!membership.active) {
     return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=denied`));
+  }
+
+  // Non-blocking: stamp whop_* fields onto member_profiles so admin
+  // dashboards and cohort features have real data from first login.
+  // If Whop API hiccups, log and continue - backfill script is the
+  // safety net. NEVER block login on this.
+  try {
+    const detail = await getWhopMemberDetail(whopUserId);
+    if (detail) {
+      const admin = createAdminClient();
+      const { error: profileError } = await admin
+        .from("member_profiles")
+        .upsert(
+          {
+            whop_user_id: whopUserId,
+            whop_display_name: detail.whopDisplayName,
+            whop_username: detail.whopUsername,
+            whop_tier: detail.whopTier,
+            whop_plan_id: detail.whopPlanId,
+            whop_joined_at: detail.whopJoinedAt,
+          },
+          { onConflict: "whop_user_id" },
+        );
+      if (profileError) {
+        console.error(
+          "[whop-callback] member_profiles upsert failed",
+          profileError,
+        );
+      }
+    }
+  } catch (err) {
+    console.error("[whop-callback] whop detail stamp failed", err);
   }
 
   const sessionToken = await createSessionToken(whopUserId);
