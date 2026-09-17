@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../../../../../lib/session";
 import { createAdminClient } from "../../../../../lib/supabase/server";
 import LessonClient from "./LessonClient";
-import { DIFFICULTY_BY_COURSE_SLUG, type Course, type Lesson } from "../../learn-types";
-import { getWhopMemberSummary } from "../../../../../lib/whop-member";
+import type { Course, Lesson } from "../../learn-types";
 
 export const metadata: Metadata = {
   title: "Real Venture | Lesson",
@@ -36,12 +35,8 @@ export default async function LessonPage({
 
   if (!course) notFound();
 
-  // Advanced lessons are Pro-only. Unknown tier gates like Base; the catalog
-  // opens the upgrade modal via the query param.
-  if (DIFFICULTY_BY_COURSE_SLUG[course.slug] === "advanced") {
-    const whopMember = await getWhopMemberSummary(userId);
-    if (whopMember.tier !== "Pro") redirect("/dashboard/learn?upgrade=1");
-  }
+  // No Pro gate and no sequence gate: any published lesson renders for any
+  // member. Progress is still read for the sidebar and the quiz state.
 
   const [lessonsRes, progressRes] = await Promise.all([
     supabase
@@ -69,23 +64,6 @@ export default async function LessonPage({
       .map((row) => row.lesson_id as string)
       .filter((id) => lessonIds.has(id)),
   );
-
-  // Sequential gate: mirror CourseClient exactly. Highest completed + 1 unlocks.
-  let highestCompletedIndex = -1;
-  lessons.forEach((lesson, index) => {
-    if (completedLessonIds.has(lesson.id)) highestCompletedIndex = index;
-  });
-  const maxUnlockedIndex = highestCompletedIndex + 1;
-
-  // Hardcoded "base" tier for now; Whop tier detection is a future pass.
-  const userTier = "base" as const;
-  const proLocked = currentLesson.requires_pro && userTier === "base";
-  const sequenceLocked =
-    !completedLessonIds.has(currentLesson.id) && currentIndex > maxUnlockedIndex;
-
-  if (proLocked || sequenceLocked) {
-    redirect(`/dashboard/learn/${courseSlug}`);
-  }
 
   // Compute "next lesson" href: next in this course, or first of next course, or null.
   let nextLessonHref: string | null = null;
