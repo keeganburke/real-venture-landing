@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { WhopCheckoutEmbed, useCheckoutEmbedControls } from "@whop/checkout/react";
+import { WhopElements, Checkout, CheckoutElement } from "@whop/elements-react";
+import { loadWhop } from "@whop/elements";
 import NavDrawer from "./components/NavDrawer";
 import CtaStrip from "./components/CtaStrip";
 import TrustRow from "./components/TrustRow";
@@ -164,7 +164,6 @@ export default function LandingClient({ variant }: Props) {
   const sixMonth = variant === "pro6";
   const threeMonth = variant === "pro3";
   const proOnly = variant === "pro" || sixMonth || threeMonth;
-  const router = useRouter();
   const [authNotice, setAuthNotice] = useState<string | null>(null);
   // Tracked separately from the message so "denied" (wrong email after
   // checkout) can render the loud red variant instead of the subtle banner.
@@ -188,10 +187,6 @@ export default function LandingClient({ variant }: Props) {
     sixMonth ? "semiannual" : threeMonth ? "quarterly" : "monthly"
   );
   const [featuresOpen, setFeaturesOpen] = useState(false);
-  // Handle to the embedded checkout iframe so the buyer's email can be read
-  // back (getEmail) before the modal closes and the iframe unmounts.
-  const checkoutControls = useCheckoutEmbedControls();
-
   // Surface OAuth failures redirected here by /api/auth/whop/callback.
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get("auth");
@@ -259,40 +254,6 @@ export default function LandingClient({ variant }: Props) {
   const choosePlan = (plan: "base" | "pro") => {
     setSelectedPlan(plan);
     setStep("checkout");
-  };
-
-  const handleCheckoutComplete = async (planId: string, receiptId?: string, result?: unknown) => {
-    // Fires once on payment success. Read the checkout email from the iframe
-    // BEFORE closing the modal (closing unmounts the iframe), stash it for
-    // /login, then send the user to OAuth so they land in the dashboard.
-    console.log("Whop checkout complete", { planId, receiptId, result });
-
-    let email: string | null = null;
-    try {
-      const raw = await checkoutControls.current?.getEmail(1000);
-      if (typeof raw === "string" && raw.includes("@")) email = raw.trim();
-    } catch {
-      // Timed out or iframe already gone: fall through to the result probe.
-    }
-    // Fallback: some SDK versions may carry the email on the complete result.
-    // The 0.6.0 types do not declare one, so this is a defensive runtime check.
-    if (!email && result && typeof result === "object") {
-      const maybe = (result as { email?: unknown }).email;
-      if (typeof maybe === "string" && maybe.includes("@")) email = maybe.trim();
-    }
-
-    // sessionStorage is the primary handoff to /login; the URL param is the
-    // fallback in case the flow crosses tabs.
-    if (email) {
-      try {
-        sessionStorage.setItem("rv_purchase_email", email);
-      } catch {}
-    }
-
-    closePricing();
-    const params = new URLSearchParams({ justpurchased: "1" });
-    if (email) params.set("email", email);
-    router.push(`/login?${params.toString()}`);
   };
 
   // Checkout target: Base is monthly-only; Pro follows the selected term.
@@ -998,18 +959,23 @@ export default function LandingClient({ variant }: Props) {
                 )}
 
                 <div className="modal-checkout-wrap">
-                  <WhopCheckoutEmbed
-                    ref={checkoutControls}
-                    planId={activePlan.planId}
-                    theme="dark"
-                    themeOptions={{
-                      backgroundColor: "#0f0f12",
-                      accentColor: "#E5A544",
-                      borderRadius: 12,
-                    }}
-                    skipRedirect
-                    onComplete={handleCheckoutComplete}
-                  />
+                  {/* Whop Elements checkout. A finished payment redirects the tab
+                      to returnUrl (Elements appends the payment id); /login then
+                      resolves the buyer email server-side via
+                      /api/whop/lookup-purchase. Every option is fixed at mount, so
+                      the key remounts a fresh checkout when the plan changes.
+                      appearance: Elements takes a named accent palette, not a hex,
+                      so "gold" stands in for the old #E5A544 until tuned. */}
+                  <WhopElements elements={loadWhop()}>
+                    <Checkout
+                      key={activePlan.planId}
+                      plan={activePlan.planId}
+                      returnUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/login?justpurchased=1`}
+                      appearance={{ theme: { appearance: "dark", accentColor: "gold" } }}
+                    >
+                      <CheckoutElement />
+                    </Checkout>
+                  </WhopElements>
                 </div>
                 <div className="pm-friction">
                   <span className="pm-friction-check" aria-hidden="true">{"✓"}</span>
