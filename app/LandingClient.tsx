@@ -187,6 +187,12 @@ export default function LandingClient({ variant }: Props) {
     sixMonth ? "semiannual" : threeMonth ? "quarterly" : "monthly"
   );
   const [featuresOpen, setFeaturesOpen] = useState(false);
+  // Server-created Whop checkout configuration (ch_...) for the plan being
+  // bought. The config carries plan + redirect_url server-side, so the
+  // <Checkout> mount passes neither. Keyed to the planId it was minted for.
+  const [checkoutConfigId, setCheckoutConfigId] = useState<string | null>(null);
+  const [checkoutConfigPlanId, setCheckoutConfigPlanId] = useState<string | null>(null);
+  const [checkoutConfigError, setCheckoutConfigError] = useState<string | null>(null);
   // Surface OAuth failures redirected here by /api/auth/whop/callback.
   useEffect(() => {
     const code = new URLSearchParams(window.location.search).get("auth");
@@ -274,6 +280,49 @@ export default function LandingClient({ variant }: Props) {
       ? { ...PLANS.pro, ...PRO_TERMS[proTerm] }
       : PLANS.base
     : null;
+
+  // Mint a checkout configuration whenever the checkout step opens or the
+  // plan under it changes (Pro term toggle). Stale ids are cleared first so
+  // the mount never shows a config for a different plan.
+  useEffect(() => {
+    if (step !== "checkout" || !activePlan) return;
+
+    const currentPlanId = activePlan.planId;
+    let cancelled = false;
+
+    // Clear any stale config before fetching the new one
+    setCheckoutConfigId(null);
+    setCheckoutConfigPlanId(null);
+    setCheckoutConfigError(null);
+
+    fetch("/api/whop/checkout-config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ planId: currentPlanId }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (typeof data?.id === "string" && data.id.startsWith("ch_")) {
+          setCheckoutConfigId(data.id);
+          setCheckoutConfigPlanId(currentPlanId);
+        } else {
+          setCheckoutConfigError(data?.error ?? "unknown");
+        }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("checkout-config fetch error", err);
+        setCheckoutConfigError("fetch_error");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // activePlan is derived from selectedPlan + proTerm; its planId is the
+    // only input that matters here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, activePlan?.planId]);
 
   const toggleDrawer = () => setDrawerOpen((open) => !open);
   const closeDrawer = () => setDrawerOpen(false);
@@ -959,23 +1008,35 @@ export default function LandingClient({ variant }: Props) {
                 )}
 
                 <div className="modal-checkout-wrap">
-                  {/* Whop Elements checkout. A finished payment redirects the tab
-                      to returnUrl (Elements appends the payment id); /login then
-                      resolves the buyer email server-side via
-                      /api/whop/lookup-purchase. Every option is fixed at mount, so
-                      the key remounts a fresh checkout when the plan changes.
-                      appearance: Elements takes a named accent palette, not a hex,
-                      so "gold" stands in for the old #E5A544 until tuned. */}
-                  <WhopElements elements={loadWhop()}>
-                    <Checkout
-                      key={activePlan.planId}
-                      plan={activePlan.planId}
-                      returnUrl={`${typeof window !== "undefined" ? window.location.origin : ""}/login?justpurchased=1`}
-                      appearance={{ theme: { appearance: "dark", accentColor: "gold" } }}
-                    >
-                      <CheckoutElement />
-                    </Checkout>
-                  </WhopElements>
+                  {/* Whop Elements checkout driven by a server-minted checkout
+                      configuration. The config carries the plan and the
+                      redirect_url (/login?justpurchased=1) server-side, so no
+                      plan / returnUrl prop is passed here. After payment Whop
+                      redirects the tab; /login resolves the buyer email via
+                      /api/whop/lookup-purchase. appearance: Elements takes a
+                      named accent palette, not a hex, so "gold" stands in for
+                      the old #E5A544 until tuned. */}
+                  {checkoutConfigError && (
+                    <div style={{ padding: 24, textAlign: "center", color: "#f87171" }}>
+                      Something went wrong loading checkout. Please refresh and try again.
+                    </div>
+                  )}
+                  {!checkoutConfigError && (!checkoutConfigId || checkoutConfigPlanId !== activePlan.planId) && (
+                    <div style={{ padding: 24, textAlign: "center", color: "#e5e7eb" }}>
+                      Loading checkout...
+                    </div>
+                  )}
+                  {!checkoutConfigError && checkoutConfigId && checkoutConfigPlanId === activePlan.planId && (
+                    <WhopElements elements={loadWhop()}>
+                      <Checkout
+                        key={checkoutConfigId}
+                        checkoutConfiguration={checkoutConfigId}
+                        appearance={{ theme: { appearance: "dark", accentColor: "gold" } }}
+                      >
+                        <CheckoutElement />
+                      </Checkout>
+                    </WhopElements>
+                  )}
                 </div>
                 <div className="pm-friction">
                   <span className="pm-friction-check" aria-hidden="true">{"✓"}</span>
