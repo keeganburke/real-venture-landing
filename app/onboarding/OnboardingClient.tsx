@@ -7,6 +7,9 @@ import Welcome from "./steps/Welcome";
 import QuestionText from "./steps/QuestionText";
 import QuestionSingle from "./steps/QuestionSingle";
 import QuestionMulti from "./steps/QuestionMulti";
+import QuestionPhone from "./steps/QuestionPhone";
+import QuestionNumber from "./steps/QuestionNumber";
+import QuestionScaleTen from "./steps/QuestionScaleTen";
 
 type Props = {
   initialAnswers: Partial<IntakeAnswers>;
@@ -151,6 +154,56 @@ export default function OnboardingClient({ initialAnswers }: Props) {
         onFollowupChange={(v) => set("tried_failure", v)}
         onBack={onBack}
         onNext={() => void advance({ tried: value, tried_failure: followup || null })}
+        nextLabel={nextLabel}
+      />
+    );
+  }
+
+  if (q.kind === "scaleTen") {
+    // Tap a number, hit Next. The seriousness_followup field is no longer
+    // collected here; the server keeps accepting it for older cookies.
+    const value = answers.seriousness_scale ?? null;
+    return shell(
+      <QuestionScaleTen
+        question={q}
+        number={number}
+        total={TOTAL_Q}
+        value={value}
+        onChange={(n) => set("seriousness_scale", n)}
+        onBack={onBack}
+        onNext={() => void advance({ seriousness_scale: value })}
+        nextLabel={nextLabel}
+      />
+    );
+  }
+
+  if (q.kind === "number") {
+    const value = answers.age == null ? "" : String(answers.age);
+    return shell(
+      <QuestionNumber
+        question={q}
+        number={number}
+        total={TOTAL_Q}
+        value={value}
+        onChange={(v) => set("age", v === "" ? null : Number(v))}
+        onBack={onBack}
+        onNext={() => void advance({ age: value === "" ? null : Number(value) })}
+        nextLabel={nextLabel}
+      />
+    );
+  }
+
+  if (q.kind === "phone") {
+    const value = answers.phone ?? "";
+    return shell(
+      <QuestionPhone
+        question={q}
+        number={number}
+        total={TOTAL_Q}
+        value={value}
+        onChange={(v) => set("phone", v)}
+        onBack={onBack}
+        onNext={() => void advance({ phone: value.trim() || null })}
         nextLabel={nextLabel}
       />
     );
