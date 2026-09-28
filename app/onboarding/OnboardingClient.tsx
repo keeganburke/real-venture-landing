@@ -19,6 +19,24 @@ type Props = {
 // straight to the hub, where /dashboard?tour=1 opens the spotlight tour.
 const TOTAL_Q = INTAKE_QUESTIONS.length;
 
+// Branch follow-up under the 1-10 scale. Copy lives here, not in the config,
+// because it depends on the picked value. No em dashes (repo rule).
+function scaleFollowupCopy(value: number): { prompt: string; hint?: string } {
+  if (value >= 9) {
+    return { prompt: "You're all-in. What's the first deal size you want to hit?" };
+  }
+  if (value >= 5) {
+    return {
+      prompt: "What would push you to a 10?",
+      hint: "If there was a guarantee, if it was cheaper, if you had more time, if the community was different - whatever it is. There's no wrong answer.",
+    };
+  }
+  return {
+    prompt: "You answered honestly, which we respect.",
+    hint: "Tell us what's making you feel that way so William can build you the best plan for your situation. A guarantee, price, time, confidence - whatever it is. There's no wrong answer.",
+  };
+}
+
 async function saveAnswers(
   partial: Partial<IntakeAnswers>,
   complete: boolean
@@ -160,9 +178,11 @@ export default function OnboardingClient({ initialAnswers }: Props) {
   }
 
   if (q.kind === "scaleTen") {
-    // Tap a number, hit Next. The seriousness_followup field is no longer
-    // collected here; the server keeps accepting it for older cookies.
+    // Tap a number, then an optional follow-up whose copy depends on the
+    // number. Both save with this step (seriousness_followup may be null).
     const value = answers.seriousness_scale ?? null;
+    const followupText = answers.seriousness_followup ?? "";
+    const copy = value == null ? null : scaleFollowupCopy(value);
     return shell(
       <QuestionScaleTen
         question={q}
@@ -170,8 +190,22 @@ export default function OnboardingClient({ initialAnswers }: Props) {
         total={TOTAL_Q}
         value={value}
         onChange={(n) => set("seriousness_scale", n)}
+        followup={
+          copy
+            ? {
+                ...copy,
+                value: followupText,
+                onChange: (v: string) => set("seriousness_followup", v),
+              }
+            : null
+        }
         onBack={onBack}
-        onNext={() => void advance({ seriousness_scale: value })}
+        onNext={() =>
+          void advance({
+            seriousness_scale: value,
+            seriousness_followup: followupText.trim() || null,
+          })
+        }
         nextLabel={nextLabel}
       />
     );

@@ -2,6 +2,13 @@
 
 import QuestionShell from "./QuestionShell";
 
+export type ScaleFollowup = {
+  prompt: string;
+  hint?: string;
+  value: string;
+  onChange: (v: string) => void;
+};
+
 type Props = {
   // anchorLow / anchorHigh still arrive from intake-config but are not
   // rendered: the copy below is the source of truth for this screen.
@@ -10,6 +17,10 @@ type Props = {
   total: number;
   value: number | null;
   onChange: (n: number) => void;
+  // Optional follow-up rendered under the anchors once a value is picked. The
+  // client decides the copy from the value; this component only renders it.
+  // It never blocks Next.
+  followup: ScaleFollowup | null;
   onBack?: () => void;
   onNext: () => void;
   nextLabel: string;
@@ -46,7 +57,7 @@ const ANCHOR_ABOVE: React.CSSProperties = { ...ANCHOR_BASE, textAlign: "left", m
 const ANCHOR_BELOW: React.CSSProperties = { ...ANCHOR_BASE, textAlign: "right", margin: "12px 0 0" };
 
 export default function QuestionScaleTen({
-  question, number, total, value, onChange, onBack, onNext, nextLabel,
+  question, number, total, value, onChange, followup, onBack, onNext, nextLabel,
 }: Props) {
   const steps: number[] = [];
   for (let n = question.min; n <= question.max; n++) steps.push(n);
@@ -92,6 +103,31 @@ export default function QuestionScaleTen({
         <div className="intake-scale-anchor-green" style={ANCHOR_BELOW} aria-hidden="true">
           {ANCHOR_HIGH}
         </div>
+
+        {followup && (
+          <div className="intake-followup">
+            <label className="intake-followup-label">{followup.prompt}</label>
+            {followup.hint && (
+              <p
+                style={{
+                  margin: "-4px 0 10px",
+                  fontSize: "13px",
+                  lineHeight: 1.5,
+                  color: "#fff",
+                }}
+              >
+                {followup.hint}
+              </p>
+            )}
+            <textarea
+              className="intake-textarea"
+              value={followup.value}
+              onChange={(e) => followup.onChange(e.target.value)}
+              rows={3}
+              autoFocus
+            />
+          </div>
+        )}
       </div>
     </QuestionShell>
   );
