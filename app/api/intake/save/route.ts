@@ -9,35 +9,22 @@ type FieldSpec =
   | { kind: "multi"; values: string[] }
   | { kind: "int"; min: number; max: number };
 
-// 7-question flow (migrations 021 + 022 add the new columns). The old keys
-// hours / identity / invest / seriousness / worry are no longer accepted;
-// their DB columns keep historical data and stay null for new rows.
 const FIELD_SPECS: Record<string, FieldSpec> = {
   dream: { kind: "text" },
-  commitment_min: { kind: "enum", values: ["15", "30", "60", "120"] },
+  hours: { kind: "enum", values: ["under_5", "five_ten", "ten_twenty", "twenty_plus"] },
   tried: {
     kind: "multi",
-    values: ["drop_shipping", "trading", "reselling", "freelance", "content", "nothing", "other"],
+    values: ["dropshipping", "trading", "reselling", "freelance", "content", "nothing_yet", "other"],
   },
   tried_failure: { kind: "text" },
-  situation: { kind: "enum", values: ["full_time", "part_time", "not_working", "in_school"] },
-  seriousness_scale: { kind: "int", min: 1, max: 10 },
-  seriousness_followup: { kind: "text" },
-  // Age has no floor or ceiling (migration 022 dropped the CHECK); digits only,
-  // capped at the Postgres int4 maximum so the insert can never overflow.
-  age: { kind: "int", min: 0, max: 2147483647 },
-  phone: { kind: "text" },
+  worry: { kind: "enum", values: ["time", "money", "fail_again", "consistency"] },
+  identity: {
+    kind: "enum",
+    values: ["full_time", "part_time_gig", "not_working", "student"],
+  },
+  invest: { kind: "enum", values: ["easy", "manageable", "stretch", "not_sure"] },
+  seriousness: { kind: "enum", values: ["curious", "interested", "committed", "all_in"] },
 };
-
-// Phone is optional free text; when present it must look like a phone number
-// (digits, spaces, + ( ) - .) with at least 10 digits, at most 30 chars.
-function validPhone(value: unknown): boolean {
-  if (value === null || value === undefined) return true;
-  if (typeof value !== "string") return false;
-  const trimmed = value.trim();
-  if (trimmed === "") return true;
-  return trimmed.length <= 30 && /^[0-9+()\-.\s]+$/.test(trimmed) && trimmed.replace(/\D/g, "").length >= 10;
-}
 
 const MAX_TEXT = 2000;
 
@@ -55,17 +42,13 @@ function validate(spec: FieldSpec, value: unknown): unknown | typeof INVALID {
         value.every((v) => typeof v === "string" && spec.values.includes(v))
         ? value
         : INVALID;
-    case "int": {
-      // Accept a number or a digit string (the inputs are text fields), then
-      // coerce to an integer and range-check.
-      const n =
-        typeof value === "number"
-          ? value
-          : typeof value === "string" && /^\d+$/.test(value.trim())
-            ? Number(value.trim())
-            : NaN;
-      return Number.isInteger(n) && n >= spec.min && n <= spec.max ? n : INVALID;
-    }
+    case "int":
+      return typeof value === "number" &&
+        Number.isInteger(value) &&
+        value >= spec.min &&
+        value <= spec.max
+        ? value
+        : INVALID;
   }
 }
 
@@ -88,14 +71,6 @@ export async function POST(request: NextRequest) {
     (incoming as Record<string, unknown>)[field] = result;
   }
 
-  if ("phone" in incoming) {
-    if (!validPhone(incoming.phone)) {
-      return NextResponse.json({ ok: false, error: "invalid phone" }, { status: 400 });
-    }
-    const trimmed = typeof incoming.phone === "string" ? incoming.phone.trim() : "";
-    incoming.phone = trimmed === "" ? null : trimmed;
-  }
-
   const existing = (await getIntakeCookie()) ?? {};
   const merged: Partial<IntakeAnswers> = { ...existing, ...incoming };
 
@@ -116,14 +91,13 @@ export async function POST(request: NextRequest) {
           {
             whop_user_id: session.whopUserId,
             intake_dream: merged.dream ?? null,
+            intake_hours: merged.hours ?? null,
             intake_tried: merged.tried ?? null,
             intake_tried_failure: merged.tried_failure ?? null,
-            intake_situation: merged.situation ?? null,
-            intake_seriousness_scale: merged.seriousness_scale ? Number(merged.seriousness_scale) : null,
-            intake_seriousness_followup: merged.seriousness_followup ?? null,
-            intake_age: merged.age ? Number(merged.age) : null,
-            whop_commitment_min: merged.commitment_min ? Number(merged.commitment_min) : null,
-            whop_phone: merged.phone ?? null,
+            intake_worry: merged.worry ?? null,
+            intake_identity: merged.identity ?? null,
+            intake_invest: merged.invest ?? null,
+            intake_seriousness: merged.seriousness ?? null,
             intake_completed_at: new Date().toISOString(),
           },
           { onConflict: "whop_user_id" }

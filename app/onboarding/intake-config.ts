@@ -4,7 +4,7 @@ import type { IntakeAnswers } from "../../lib/intake-cookie";
 // timestamps, which are set by the save route, never by a question.
 export type IntakeField = Exclude<keyof IntakeAnswers, "completedAt" | "tourCompletedAt">;
 
-export type QuestionKind = "text" | "single" | "multi" | "scaleTen" | "number" | "phone";
+export type QuestionKind = "text" | "single" | "multi";
 
 export type IntakeOption = { value: string; label: string; icon?: string };
 
@@ -21,7 +21,7 @@ export type IntakeQuestion =
     }
   | {
       kind: "single";
-      id: "commitment_min" | "situation";
+      id: "hours" | "worry" | "identity" | "invest" | "seriousness";
       question: string;
       subheading?: string;
       options: IntakeOption[];
@@ -34,109 +34,92 @@ export type IntakeQuestion =
       options: IntakeOption[];
       minSelections: number;
       textFollowup?: { id: "tried_failure"; prompt: string; placeholder: string };
-    }
-  | {
-      // 1-10 tap scale, two rows of five. The client renders a branch
-      // follow-up text field under the grid (seriousness_followup).
-      kind: "scaleTen";
-      id: "seriousness_scale";
-      question: string;
-      min: number;
-      max: number;
-      anchorLow: string;
-      anchorHigh: string;
-    }
-  | {
-      // Integer input (age). Digits only; any non-empty value is accepted.
-      kind: "number";
-      id: "age";
-      question: string;
-      subheading?: string;
-      placeholder: string;
-    }
-  | {
-      // Optional single-line tel input; Next is always allowed (skip = null).
-      kind: "phone";
-      id: "phone";
-      question: string;
-      subheading: string;
-      placeholder: string;
     };
 
 export const INTAKE_QUESTIONS: IntakeQuestion[] = [
   {
     kind: "text",
     id: "dream",
-    question: "What would the first $5,000 change for you?",
-    placeholder: "Like - pay off my car, quit my job, move out, help my mom...",
+    question: "What would your first $5,000 change for you?",
+    placeholder: "Like — pay off my car, quit my job, move out, help my mom...",
     minChars: 1,
     required: true,
   },
   {
     kind: "single",
-    id: "commitment_min",
-    question: "How much time can you commit each day?",
-    subheading: "This helps us match you with people who have similar time to put in.",
+    id: "hours",
+    question: "How many hours a week can you put into this?",
+    subheading: "This helps us build your custom roadmap.",
     options: [
-      { value: "15", label: "15 minutes" },
-      { value: "30", label: "30 minutes" },
-      { value: "60", label: "1 hour" },
-      { value: "120", label: "2+ hours" },
+      { value: "under_5", label: "Under 5 hours" },
+      { value: "five_ten", label: "5 to 10 hours" },
+      { value: "ten_twenty", label: "10 to 20 hours" },
+      { value: "twenty_plus", label: "More than 20 hours" },
     ],
   },
   {
     kind: "multi",
     id: "tried",
-    question: "What have you tried before to make money online?",
-    subheading: "This helps us see your experience with making money online.",
+    question: "What have you tried before to make money?",
+    subheading: "Pick any that apply.",
     minSelections: 1,
     options: [
-      { value: "drop_shipping", label: "Dropshipping" },
+      { value: "dropshipping", label: "Dropshipping" },
       { value: "trading", label: "Trading stocks or crypto" },
       { value: "reselling", label: "Reselling stuff online" },
       { value: "freelance", label: "Freelance work" },
       { value: "content", label: "Content or social media" },
-      { value: "nothing", label: "Nothing yet" },
+      { value: "nothing_yet", label: "Nothing yet" },
       { value: "other", label: "Other" },
     ],
     textFollowup: {
       id: "tried_failure",
-      prompt: "Then what happened?",
-      placeholder: "Like - I lost money, it took too long, I gave up...",
+      prompt: "What happened?",
+      placeholder: "Like — I lost money, it took too long, I gave up...",
     },
   },
   {
     kind: "single",
-    id: "situation",
-    question: "What's your situation right now?",
+    id: "worry",
+    question: "What's your biggest worry about starting?",
     options: [
-      { value: "full_time", label: "Working full time" },
-      { value: "part_time", label: "Working part time" },
-      { value: "not_working", label: "Not working" },
-      { value: "in_school", label: "In school" },
+      { value: "time", label: "I don't have enough time" },
+      { value: "money", label: "I don't have money to spend on tools" },
+      { value: "fail_again", label: "I'm scared I'll fail again" },
+      { value: "consistency", label: "I don't know if I can stick with it" },
     ],
   },
   {
-    kind: "scaleTen",
-    id: "seriousness_scale",
+    kind: "single",
+    id: "identity",
+    question: "What's your situation right now?",
+    options: [
+      { value: "full_time", label: "Working a full-time job" },
+      { value: "part_time_gig", label: "Working part-time or side gigs" },
+      { value: "not_working", label: "Not working right now" },
+      { value: "student", label: "In school" },
+    ],
+  },
+  {
+    kind: "single",
+    id: "invest",
+    question: "If a tool cost $200 and made you money faster, could you swing it?",
+    options: [
+      { value: "easy", label: "Yes, no problem" },
+      { value: "manageable", label: "Yes, once I see it working" },
+      { value: "stretch", label: "Not right now" },
+      { value: "not_sure", label: "Not sure" },
+    ],
+  },
+  {
+    kind: "single",
+    id: "seriousness",
     question: "How serious are you about making this work?",
-    min: 1,
-    max: 10,
-    anchorLow: "Just browsing around",
-    anchorHigh: "I saw everyone else succeed. I'm going to make this happen, no matter what.",
-  },
-  {
-    kind: "number",
-    id: "age",
-    question: "How old are you?",
-    subheading: "So we can match you with people who just joined, just like you.",
-    placeholder: "Your age",
-  },
-  {
-    kind: "phone",
-    id: "phone",
-    question: "What's your phone number?",
-    subheading: "So we can text you about live calls, deals, and keeping your streak alive. Reply STOP to opt out.",
-    placeholder: "(555) 555-5555",
+    options: [
+      { value: "curious", label: "Just checking it out" },
+      { value: "interested", label: "Pretty interested" },
+      { value: "committed", label: "Committed" },
+      { value: "all_in", label: "All in" },
+    ],
   },
 ];

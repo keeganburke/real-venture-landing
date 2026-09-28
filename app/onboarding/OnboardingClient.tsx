@@ -7,10 +7,6 @@ import Welcome from "./steps/Welcome";
 import QuestionText from "./steps/QuestionText";
 import QuestionSingle from "./steps/QuestionSingle";
 import QuestionMulti from "./steps/QuestionMulti";
-import QuestionPhone from "./steps/QuestionPhone";
-import QuestionNumber from "./steps/QuestionNumber";
-import QuestionScaleTen from "./steps/QuestionScaleTen";
-import SituationMatchCard, { type Situation } from "./steps/SituationMatchCard";
 
 type Props = {
   initialAnswers: Partial<IntakeAnswers>;
@@ -19,24 +15,6 @@ type Props = {
 // Step map: 0 = welcome hero, 1..N = questions. The final question redirects
 // straight to the hub, where /dashboard?tour=1 opens the spotlight tour.
 const TOTAL_Q = INTAKE_QUESTIONS.length;
-
-// Branch follow-up under the 1-10 scale. Copy lives here, not in the config,
-// because it depends on the picked value. No em dashes (repo rule).
-function scaleFollowupCopy(value: number): { prompt: string; hint?: string } {
-  if (value >= 9) {
-    return { prompt: "You're all-in. What's the first deal size you want to hit?" };
-  }
-  if (value >= 5) {
-    return {
-      prompt: "What would push you to a 10?",
-      hint: "If there was a guarantee, if it was cheaper, if you had more time, if the community was different - whatever it is. There's no wrong answer.",
-    };
-  }
-  return {
-    prompt: "You answered honestly, which we respect.",
-    hint: "Tell us what's making you feel that way so William can build you the best plan for your situation. A guarantee, price, time, confidence - whatever it is. There's no wrong answer.",
-  };
-}
 
 async function saveAnswers(
   partial: Partial<IntakeAnswers>,
@@ -71,9 +49,6 @@ export default function OnboardingClient({ initialAnswers }: Props) {
   const [step, setStep] = useState(() => (initialAnswers.tourCompletedAt ? 1 : 0));
   const [answers, setAnswers] = useState<Partial<IntakeAnswers>>(initialAnswers);
   const [busy, setBusy] = useState(false);
-  // Display-only interstitial after the situation question. Not a step:
-  // it collects nothing and does not count toward TOTAL_Q.
-  const [showingMatchCard, setShowingMatchCard] = useState(false);
 
   const set = <K extends keyof IntakeAnswers>(key: K, value: IntakeAnswers[K]) =>
     setAnswers((current) => ({ ...current, [key]: value }));
@@ -147,31 +122,6 @@ export default function OnboardingClient({ initialAnswers }: Props) {
 
   if (q.kind === "single") {
     const value = (answers[q.id] as string | null | undefined) ?? null;
-
-    // Situation: save the answer, then show the match card instead of
-    // advancing. Continue on the card performs the step change.
-    if (q.id === "situation" && showingMatchCard && value) {
-      return shell(
-        <SituationMatchCard
-          situation={value as Situation}
-          onBack={() => setShowingMatchCard(false)}
-          onContinue={() => {
-            setShowingMatchCard(false);
-            setStep((s) => s + 1);
-          }}
-        />
-      );
-    }
-    const onNext =
-      q.id === "situation"
-        ? async () => {
-            setBusy(true);
-            await saveAnswers({ situation: value as IntakeAnswers["situation"] }, false);
-            setBusy(false);
-            setShowingMatchCard(true);
-          }
-        : () => void advance({ [q.id]: value } as Partial<IntakeAnswers>);
-
     return shell(
       <QuestionSingle
         question={q}
@@ -180,7 +130,7 @@ export default function OnboardingClient({ initialAnswers }: Props) {
         value={value}
         onChange={(v) => set(q.id, v as never)}
         onBack={onBack}
-        onNext={() => void onNext()}
+        onNext={() => void advance({ [q.id]: value } as Partial<IntakeAnswers>)}
         nextLabel={nextLabel}
       />
     );
@@ -201,63 +151,6 @@ export default function OnboardingClient({ initialAnswers }: Props) {
         onFollowupChange={(v) => set("tried_failure", v)}
         onBack={onBack}
         onNext={() => void advance({ tried: value, tried_failure: followup || null })}
-        nextLabel={nextLabel}
-      />
-    );
-  }
-
-  if (q.kind === "scaleTen") {
-    const value = answers.seriousness_scale ?? null;
-    const followupText = answers.seriousness_followup ?? "";
-    const copy = value == null ? null : scaleFollowupCopy(value);
-    return shell(
-      <QuestionScaleTen
-        question={q}
-        number={number}
-        total={TOTAL_Q}
-        value={value}
-        onChange={(n) => set("seriousness_scale", n)}
-        followup={
-          copy
-            ? { ...copy, value: followupText, onChange: (v) => set("seriousness_followup", v) }
-            : null
-        }
-        onBack={onBack}
-        onNext={() =>
-          void advance({ seriousness_scale: value, seriousness_followup: followupText.trim() || null })
-        }
-        nextLabel={nextLabel}
-      />
-    );
-  }
-
-  if (q.kind === "number") {
-    const value = answers.age == null ? "" : String(answers.age);
-    return shell(
-      <QuestionNumber
-        question={q}
-        number={number}
-        total={TOTAL_Q}
-        value={value}
-        onChange={(v) => set("age", v === "" ? null : Number(v))}
-        onBack={onBack}
-        onNext={() => void advance({ age: value === "" ? null : Number(value) })}
-        nextLabel={nextLabel}
-      />
-    );
-  }
-
-  if (q.kind === "phone") {
-    const value = answers.phone ?? "";
-    return shell(
-      <QuestionPhone
-        question={q}
-        number={number}
-        total={TOTAL_Q}
-        value={value}
-        onChange={(v) => set("phone", v)}
-        onBack={onBack}
-        onNext={() => void advance({ phone: value.trim() || null })}
         nextLabel={nextLabel}
       />
     );
