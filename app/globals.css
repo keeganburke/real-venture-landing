@@ -6288,7 +6288,7 @@ body:has(.hub-page) {
      thing floating above the video. */
   max-width: 860px;
   margin: 0 auto 18px;
-  padding: 20px 24px;
+  padding: 16px 24px;
   text-align: left;
   /* A wash rather than a tint: the flat 7% fill plus a 1px border read as a
      disabled control next to the glowing H1. Same --gold ramp, more of it. */
@@ -6316,15 +6316,19 @@ body:has(.hub-page) {
   }
 }
 /* The anchor the box had none of. Ring expands and fades on a 2s loop. */
-/* Line 1 — largest, and the ONLY gold one. */
+/* Line 1 — largest, and the ONLY gold one.
+   Family and weight already matched .lp-hero-h ("Cabinet Grotesk", 900); the
+   TRACKING did not. The H1 is -0.04em and this was -0.02em, which is what made
+   the two read as different faces sitting next to each other. Copied off the
+   H1, not chosen. */
 .lp-hero-free .lp-hero-callout-main {
   font-family: "Cabinet Grotesk", sans-serif;
   font-weight: 900;
   font-size: 22px;
-  line-height: 1.25;
-  letter-spacing: -0.02em;
+  line-height: 1.18;
+  letter-spacing: -0.04em;
   color: #ffe89a;
-  margin: 0 0 12px;
+  margin: 0 0 7px;
   text-wrap: balance;
 }
 /* Lines 2 and 3 — body size, SOLID WHITE, regular weight. Two near-equal bold
@@ -6335,9 +6339,12 @@ body:has(.hub-page) {
   font-family: "Inter", sans-serif;
   font-weight: 400;
   font-size: 15px;
-  line-height: 1.5;
+  /* 1.4 leading and a 7px gap, down from 1.5 and 12px. Four lines spaced like
+     paragraphs is what made this box 211px tall at 375. The height came out of
+     spacing, not type: line 1 is still 19px against 15px body. */
+  line-height: 1.4;
   color: #fff;
-  margin: 0 0 12px;
+  margin: 0 0 7px;
   text-wrap: pretty;
 }
 /* Line 4 — a step smaller than 2 and 3, and STILL SOLID WHITE. It used to be
@@ -6347,7 +6354,7 @@ body:has(.hub-page) {
   font-family: "Inter", sans-serif;
   font-weight: 400;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.4;
   color: #fff;
   margin: 0;
 }
@@ -6356,7 +6363,7 @@ body:has(.hub-page) {
   .lp-hero-free .lp-hero-callout { animation: none; }
 }
 @media (max-width: 640px) {
-  .lp-hero-free .lp-hero-callout { padding: 18px; }
+  .lp-hero-free .lp-hero-callout { padding: 14px 16px; }
   .lp-hero-free .lp-hero-callout-main { font-size: 19px; }
 }
 .lp-callmodal-overlay {
@@ -6457,12 +6464,11 @@ body:has(.hub-page) {
      52px box at 17px with a 14px radius read as a card you were meant to
      study rather than a button you were meant to press. */
   min-height: 46px;
-  padding: 11px 6px;
-  font-family: "Cabinet Grotesk", sans-serif;
-  font-weight: 800;
+  padding: 11px 4px;
   font-size: 15px;
-  letter-spacing: -0.015em;
-  color: var(--gold-bright);
+  /* The panel keeps its own wash; the NUMBER carries the gold, so the
+     gradient-clipped treatment lives on the inner span (below), where it
+     cannot fight this background. */
   background: rgba(229, 181, 71, 0.07);
   /* Lighter border, tighter radius: button, not panel. */
   border: 1px solid rgba(229, 181, 71, 0.26);
@@ -6471,6 +6477,26 @@ body:has(.hub-page) {
   white-space: nowrap;
   transition: background 0.16s ease, border-color 0.16s ease,
               transform 0.16s ease, box-shadow 0.16s ease;
+}
+/* Lifted verbatim from .payout-amount, the gold figures on the student payout
+   cards, so the dollar figures on this page are all treated one way. Same
+   family, same 900, same -0.02em, same 180deg #f0c86a -> #d19f3a clipped to
+   the glyphs. */
+.lp-hero-goal-amt {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  background: linear-gradient(180deg, #f0c86a, #d19f3a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+/* On press the panel goes solid gold, so the figure has to invert with it. */
+.lp-hero-goal:active .lp-hero-goal-amt {
+  background: none;
+  -webkit-text-fill-color: #1a1208;
+  color: #1a1208;
 }
 .lp-hero-goal:hover {
   background: rgba(229, 181, 71, 0.16);

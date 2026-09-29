@@ -554,7 +554,7 @@ export default function LandingClient({ variant }: Props) {
                           setCallModalOpen(true);
                         }}
                       >
-                        {label}
+                        <span className="lp-hero-goal-amt">{label}</span>
                       </button>
                     ),
                   )}
