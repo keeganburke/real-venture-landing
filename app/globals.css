@@ -5680,38 +5680,12 @@ body:has(.hub-page) {
 .lp-hero-free .lp-hero-video {
   margin-bottom: 16px;
 }
-.lp-hero-free .lp-hero-cap {
-  max-width: 560px;
-  margin: 0 auto 14px;
-  color: #888;
-  font-size: 14px;
-  line-height: 1.4;
-}
-.lp-hero-free .lp-hero-scrollcue {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  margin: 0 auto 26px;
-  color: #5f5f66;
-  font-size: 12.5px;
-  line-height: 1.4;
-}
-.lp-hero-free .lp-hero-scrollcue svg {
-  width: 16px;
-  height: 16px;
-  opacity: 0.75;
-  animation: lp-hero-scrollcue-bob 2s ease-in-out infinite;
-}
 @keyframes lp-hero-scrollcue-bob {
   0%, 100% { transform: translateY(0); }
   50%      { transform: translateY(3px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lp-hero-free .lp-hero-scrollcue svg {
-    animation: none;
-  }
 }
 
 /* ============ FREE TRAINING HERO v3 (/free only) ============
@@ -5734,12 +5708,6 @@ body:has(.hub-page) {
   white-space: nowrap;
   /* 21.3px at 390px; caps at the original hero maximum on desktop */
   font-size: clamp(12px, 5.45vw, 62px);
-}
-.lp-hero-free .lp-hero-cap {
-  white-space: nowrap;
-  /* 11.0px at 390px; back to the original 14px from 497px up */
-  font-size: clamp(8px, 2.82vw, 14px);
-  max-width: none;
 }
 .lp-hero-free .lp-hero-h-em {
   /* Cabinet Grotesk ships no italic, so the browser synthesises the oblique.
@@ -6280,9 +6248,11 @@ body:has(.hub-page) {
 
 /* ================= /free HERO: CALL CALLOUT + COMMITMENT MODAL ============
    LIVE CSS — do NOT treat as orphaned. Referenced by app/LandingClient.tsx's
-   variant="free" hero (lp-hero-callout*, lp-hero-commit) and its commitment
-   modal (lp-callmodal*), rendered conditionally so a static orphan grep can
-   miss them. See the restored FREE TRAINING HERO block above for precedent
+   variant="free" hero (lp-hero-callout*, lp-hero-goal*) and its payoff modal
+   (lp-callmodal*), rendered conditionally so a static orphan grep can miss
+   them. lp-hero-commit and lp-callmodal-h were removed here on purpose when
+   the trigger button and the modal's screen 1 were replaced by the inline
+   picker — those two ARE dead, the rest is not. See the restored FREE TRAINING HERO block above for precedent
    (311a430 deleted live scoped rules once already). */
 /* "You're in" load-flash: in flow (no layout shift), fades in, holds ~1.7s,
    fades out and stays invisible. Skipped entirely under reduced motion. */
@@ -6313,47 +6283,107 @@ body:has(.hub-page) {
   .lp-hero-free .lp-hero-yourein { display: none; }
 }
 .lp-hero-free .lp-hero-callout {
-  max-width: 640px;
+  /* 860px, the SAME max-width as .lp-hero-video below it, so the two boxes
+     share a left and right edge. It was 640 and read as a narrower, lesser
+     thing floating above the video. */
+  max-width: 860px;
   margin: 0 auto 18px;
-  padding: 16px 20px;
-  text-align: left;
-  background: rgba(229, 181, 71, 0.07);
-  border: 1px solid rgba(229, 181, 71, 0.45);
+  padding: 16px 24px;
+  /* Centred, like every other block on the site. Left-aligned, the box read as
+     misaligned against the centred H1 and video card directly beneath it —
+     three stacked elements sharing a max-width, one of them ragged. */
+  text-align: center;
+  /* A wash rather than a tint: the flat 7% fill plus a 1px border read as a
+     disabled control next to the glowing H1. Same --gold ramp, more of it. */
+  background:
+    linear-gradient(135deg, rgba(229, 181, 71, 0.16) 0%, rgba(229, 181, 71, 0.05) 55%, rgba(229, 181, 71, 0.10) 100%),
+    rgba(229, 181, 71, 0.04);
+  border: 1.5px solid rgba(229, 181, 71, 0.55);
   border-radius: 14px;
+  /* THE PULSE. Border colour and outer glow ONLY — no transform, no scale, no
+     opacity on the box. Scale would nudge the H1 and video below it on every
+     cycle; opacity would make the text breathe while someone reads it. Border
+     travels between the existing 0.55 gold and --gold-bright at 0.85, the glow
+     between 10% and 22%. 2.5s: a heartbeat, not a warning light. */
+  box-shadow: 0 0 28px rgba(229, 181, 71, 0.10), inset 0 1px 0 rgba(255, 232, 154, 0.12);
+  animation: lp-callout-breathe 2.5s ease-in-out infinite;
 }
+@keyframes lp-callout-breathe {
+  0%, 100% {
+    border-color: rgba(229, 181, 71, 0.55);
+    box-shadow: 0 0 28px rgba(229, 181, 71, 0.10), inset 0 1px 0 rgba(255, 232, 154, 0.12);
+  }
+  50% {
+    border-color: rgba(255, 232, 154, 0.85);
+    box-shadow: 0 0 38px rgba(229, 181, 71, 0.22), inset 0 1px 0 rgba(255, 232, 154, 0.20);
+  }
+}
+/* The anchor the box had none of. Ring expands and fades on a 2s loop. */
+/* Line 1 — largest, and the ONLY gold one.
+   Family and weight already matched .lp-hero-h ("Cabinet Grotesk", 900); the
+   TRACKING did not. The H1 is -0.04em and this was -0.02em, which is what made
+   the two read as different faces sitting next to each other. Copied off the
+   H1, not chosen. */
 .lp-hero-free .lp-hero-callout-main {
   font-family: "Cabinet Grotesk", sans-serif;
-  font-weight: 800;
-  font-size: 16.5px;
-  line-height: 1.45;
+  font-weight: 900;
+  font-size: 22px;
+  line-height: 1.18;
+  letter-spacing: -0.04em;
   color: #ffe89a;
-  margin: 0 0 10px;
+  /* Read off .lp-hero-h-em, the "Secured Wholesaling" span, not off the H1's
+     base text: that glow is white and this line is gold. Verbatim, both stops,
+     so the two gold display lines in the hero glow identically. */
+  text-shadow: rgba(229, 181, 71, 0.4) 0 0 20px, rgba(229, 181, 71, 0.2) 0 0 40px;
+  margin: 0 0 7px;
+  text-wrap: balance;
 }
-.lp-hero-free .lp-hero-callout-sub {
-  font-family: "Inter", sans-serif;
-  font-size: 13.5px;
-  line-height: 1.6;
-  color: rgba(255, 255, 255, 0.72);
-  margin: 0;
-}
-.lp-hero-free .lp-hero-commit {
-  display: inline-block;
-  margin: 16px auto 26px;
-  padding: 13px 26px;
+/* Lines 2 and 3 — body size, SOLID WHITE. Line 1 stays the loudest by SIZE and
+   colour (19px gold vs 15px white), not by weight, now that the whole box sits
+   at the hero's Cabinet Grotesk 800. The even margins give four statements,
+   not a paragraph. */
+/* Family, weight and tracking copied off .lp-video-overlay, the hero's
+   established treatment for supporting text that is not a headline. These
+   three were the ONLY Inter and the ONLY weight-400 text in a hero that is
+   otherwise entirely Cabinet Grotesk at 800/900, and that compound difference
+   is what read as wrong. Sizes deliberately unchanged: 15/15/14 against the
+   19px headline, so the hierarchy survives.
+   Weight 800 is loaded — Fontshare serves 500, 700, 800 and 900 for this
+   family, and NOT 400, so the old 400 would have been synthesised had these
+   ever been Cabinet Grotesk. */
+.lp-hero-free .lp-hero-callout-second,
+.lp-hero-free .lp-hero-callout-third {
   font-family: "Cabinet Grotesk", sans-serif;
   font-weight: 800;
+  letter-spacing: normal;
   font-size: 15px;
-  color: #1a1208;
-  background: linear-gradient(135deg, #FFE89A 0%, #E5B547 55%, #B8881F 100%);
-  border: none;
-  border-radius: 999px;
-  cursor: pointer;
-  box-shadow: 0 4px 20px rgba(229, 181, 71, 0.35);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  /* 1.4 leading and a 7px gap, down from 1.5 and 12px. Four lines spaced like
+     paragraphs is what made this box 211px tall at 375. The height came out of
+     spacing, not type: line 1 is still 19px against 15px body. */
+  line-height: 1.4;
+  color: #fff;
+  margin: 0 0 7px;
+  text-wrap: pretty;
 }
-.lp-hero-free .lp-hero-commit:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 26px rgba(229, 181, 71, 0.5);
+/* Line 4 — a step smaller than 2 and 3, and STILL SOLID WHITE. It used to be
+   rgba(...,0.55); that greying is exactly what is being removed. There is no
+   muted text anywhere in this box now. */
+.lp-hero-free .lp-hero-callout-fine {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  letter-spacing: normal;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #fff;
+  margin: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Holds at the resting end of the cycle, not mid-pulse. */
+  .lp-hero-free .lp-hero-callout { animation: none; }
+}
+@media (max-width: 640px) {
+  .lp-hero-free .lp-hero-callout { padding: 14px 16px; }
+  .lp-hero-free .lp-hero-callout-main { font-size: 19px; }
 }
 .lp-callmodal-overlay {
   position: fixed;
@@ -6365,6 +6395,12 @@ body:has(.hub-page) {
   align-items: center;
   justify-content: center;
   padding: 24px;
+  /* Screen 2 is three zones tall and will not fit a short phone. Scroll the
+     OVERLAY, same as .modal-overlay already does for the pricing modal, so the
+     whole card travels and the close copy is always reachable. `margin: auto`
+     on the card keeps it centred while it still fits. */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .lp-callmodal {
   position: relative;
@@ -6373,9 +6409,12 @@ body:has(.hub-page) {
   background: #131313;
   border: 1px solid rgba(229, 181, 71, 0.35);
   border-radius: 20px;
-  padding: 32px 28px 26px;
+  /* Tightened from 32/28/26: the modal was filling a 375px screen edge to
+     edge, which made three zones read as one column of text. */
+  padding: 26px 22px 20px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(229, 181, 71, 0.12);
   text-align: left;
+  margin: auto;
 }
 .lp-callmodal-close {
   position: absolute;
@@ -6395,119 +6434,285 @@ body:has(.hub-page) {
   justify-content: center;
 }
 .lp-callmodal-close:hover { color: #fff; }
-.lp-callmodal-h {
+
+/* ===== /free commitment modal: goal picker -> your-number screen ==========
+   Every value below is already in this stylesheet: the gold ramp from :root
+   (--gold / --gold-bright), #131313 and the rgba(229,181,71,*) border and glow
+   from .lp-callmodal, the 20px radius, Cabinet Grotesk for figures and Inter
+   for body. Nothing here introduces a colour or a type size. */
+
+/* The modal mounts with a short, deliberate entrance rather than appearing
+   instantly. 240ms. Keyed on the goal, so tapping a different number on the
+   page re-runs it. */
+.lp-callmodal-screen {
+  animation: lp-callmodal-screen-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes lp-callmodal-screen-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── The goal picker — ON THE PAGE, not in the modal ──────────────────────
+   These rules moved out of the modal when screen 1 did. Same look, same
+   measurements, new home: the picker sits where the "I'll pick up" button used
+   to, and tapping one opens the modal straight to that variant. */
+.lp-hero-free .lp-hero-goals-wrap {
+  max-width: 420px;
+  margin: 18px auto 24px;
+}
+.lp-hero-free .lp-hero-goals-h {
   font-family: "Cabinet Grotesk", sans-serif;
   font-weight: 900;
-  font-size: 24px;
+  font-size: 20px;
   letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: #fff;
+  text-wrap: balance;
+  margin: 0 0 14px;
+}
+.lp-hero-goals {
+  display: grid;
+  /* Three across at EVERY width now that the picker sits on the page rather
+     than inside a padded card: .shell leaves 327px at 375px viewport, and
+     (327 - 2x8) / 3 = 103px a button, which "$20K/mo" clears at 15px. */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.lp-hero-goal {
+  /* 46px: still clear of the 44px tap floor, but no longer a panel. The old
+     52px box at 17px with a 14px radius read as a card you were meant to
+     study rather than a button you were meant to press. */
+  min-height: 46px;
+  padding: 11px 4px;
+  font-size: 15px;
+  /* The panel keeps its own wash; the NUMBER carries the gold, so the
+     gradient-clipped treatment lives on the inner span (below), where it
+     cannot fight this background. */
+  background: rgba(229, 181, 71, 0.07);
+  /* Lighter border, tighter radius: button, not panel. */
+  border: 1px solid rgba(229, 181, 71, 0.26);
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  /* The callout box's RESTING glow, same colour and same alpha — 0.10 outer,
+     0.12 inset highlight — so this is not brighter, only smaller. The blur
+     scales 28px -> 14px because the callout is 327x179 and a button is
+     104x47; an unscaled 28px blur on a 104px box is a halo, not a glow. Sits
+     clearly under the 0.22 hover state below. */
+  box-shadow: 0 0 14px rgba(229, 181, 71, 0.10),
+              inset 0 1px 0 rgba(255, 232, 154, 0.12);
+  transition: background 0.16s ease, border-color 0.16s ease,
+              transform 0.16s ease, box-shadow 0.16s ease;
+}
+/* Lifted verbatim from .payout-amount, the gold figures on the student payout
+   cards, so the dollar figures on this page are all treated one way. Same
+   family, same 900, same -0.02em, same 180deg #f0c86a -> #d19f3a clipped to
+   the glyphs. */
+.lp-hero-goal-amt {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  background: linear-gradient(180deg, #f0c86a, #d19f3a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+/* On press the panel goes solid gold, so the figure has to invert with it. */
+.lp-hero-goal:active .lp-hero-goal-amt {
+  background: none;
+  -webkit-text-fill-color: #1a1208;
+  color: #1a1208;
+}
+.lp-hero-goal:hover {
+  background: rgba(229, 181, 71, 0.16);
+  border-color: var(--gold);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(229, 181, 71, 0.22);
+}
+/* Pressing one should feel like a decision, so the active state goes solid
+   gold on the existing --cta ramp rather than just darkening. */
+.lp-hero-goal:active {
+  transform: translateY(0) scale(0.98);
+  background: linear-gradient(135deg, #FFE89A 0%, #E5B547 55%, #B8881F 100%);
+  border-color: #FFE89A;
+  color: #1a1208;
+  box-shadow: 0 2px 10px rgba(229, 181, 71, 0.4);
+}
+.lp-hero-goal:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* ── Zone 1: the number ───────────────────────────────────────────────────
+   Hierarchy is figure, then verdict, then support. */
+/* Centred to match the close section at the bottom of the same card; the two
+   were inconsistent inside one modal.
+   The 34px padding-right this replaces is GONE, not mirrored. It existed to
+   keep LEFT-aligned text from sliding under the absolutely-positioned close
+   button in the top-right — a hazard centring removes by itself, because
+   centred text pulls away from both edges symmetrically instead of running to
+   the right one. Mirroring it to `0 34px` was measurably wrong: it cut the
+   wrap width to 221.0px at 375, and "$20,000 a month" needs 221.9px, so the
+   figure broke to two lines against the explicit intent of the 29px mobile
+   size below. At padding 0 the figure keeps its single line with 67px to
+   spare, and lands 5.5px clear of the close button anyway. */
+.lp-callmodal-num {
+  padding: 0;
+  text-align: center;
+}
+.lp-callmodal-fig {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 900;
+  font-size: 34px;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: #fff;
+  margin: 0 0 10px;
+}
+.lp-callmodal-avg {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 14px;
+}
+.lp-callmodal-verdict {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: var(--gold-bright);
+  margin: 0 0 8px;
+  text-wrap: balance;
+}
+.lp-callmodal-trail {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  text-wrap: pretty;
+}
+/* ── Zone 2: what happens on the call ─────────────────────────────────────
+   Three zones, three beats. The hairline does the separating, so the gap
+   around it can be tighter than it was without the beats collapsing. */
+.lp-callmodal-pickup {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+/* Centres the five-item block AS A UNIT without touching the alignment of the
+   text inside it. fit-content shrinks to the block's natural width and the auto
+   inline margins centre what is left over; max-width keeps it from overflowing
+   once the items are wide enough to fill the card, at which point it simply
+   spans the full width and the left edge lands where it always did.
+   Deliberately NOT text-align:center: centring a bulleted list destroys the
+   left edge that makes it scannable. */
+.lp-callmodal-pickup-inner {
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  text-align: left;
+}
+/* The emoji sits in its own fixed column so all five text blocks share one
+   left edge. No bullet characters: the emoji IS the bullet. */
+.lp-callmodal-pickup-h,
+.lp-callmodal-pickup-list li {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 0 10px;
+  align-items: start;
+}
+.lp-callmodal-pickup-h {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  color: #fff;
+  margin: 0 0 12px;
+}
+/* Balanced, so this breaks as "...when you / pick up" rather than orphaning
+   "up" on a line of its own, which is what it does at 375px unbalanced. */
+.lp-callmodal-pickup-h > span:last-child { text-wrap: balance; }
+.lp-callmodal-pickup-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.lp-callmodal-pickup-list li {
+  font-family: "Inter", sans-serif;
+  font-size: 14.5px;
+  /* 1.42 rather than 1.5: every one of these wraps to two lines, so the
+     leading is paid five times over. */
+  line-height: 1.42;
+  color: rgba(255, 255, 255, 0.82);
+}
+.lp-callmodal-bullet {
+  font-size: 15px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+/* ── Zone 3: the close, then the fee disclaimer ──────────────────────────── */
+.lp-callmodal-end {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+.lp-callmodal-end-main {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -0.01em;
   color: #fff;
   margin: 0 0 6px;
 }
-.lp-callmodal-sub {
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
-  margin: 0 0 22px;
-}
-.lp-callmodal-steps {
-  list-style: none;
-  margin: 0 0 20px;
-  padding: 0;
-}
-.lp-callmodal-steps li {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 0 0 26px 0;
-  /* Staggered reveal: the path draws itself node by node on open. The modal
-     is conditionally rendered, so every open remounts and replays this. */
-  animation: lp-callmodal-step-in 0.35s ease-out both;
-}
-.lp-callmodal-steps li:nth-child(2) { animation-delay: 0.15s; }
-.lp-callmodal-steps li:nth-child(3) { animation-delay: 0.3s; }
-.lp-callmodal-steps li:nth-child(4) { animation-delay: 0.45s; }
-@keyframes lp-callmodal-step-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.lp-callmodal-steps li:last-child { padding-bottom: 0; }
-/* Vertical connector, brightening segment by segment toward the payoff so
-   the eye travels down to the money node. */
-.lp-callmodal-steps li:not(:last-child)::before {
-  content: "";
-  position: absolute;
-  left: 15px;
-  top: 32px;
-  bottom: -2px;
-  width: 2px;
-}
-.lp-callmodal-steps li:nth-child(1)::before {
-  background: linear-gradient(180deg, rgba(229, 181, 71, 0.2), rgba(229, 181, 71, 0.4));
-}
-.lp-callmodal-steps li:nth-child(2)::before {
-  background: linear-gradient(180deg, rgba(229, 181, 71, 0.4), rgba(229, 181, 71, 0.65));
-}
-.lp-callmodal-steps li:nth-child(3)::before {
-  background: linear-gradient(180deg, rgba(229, 181, 71, 0.65), rgba(229, 181, 71, 0.95));
-}
-.lp-callmodal-node {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  border: 2px solid rgba(229, 181, 71, 0.7);
-  background: #131313;
-  font-size: 15px;
-  line-height: 1;
-  /* Lift off the flat card */
-  box-shadow: 0 0 10px rgba(229, 181, 71, 0.25), 0 2px 8px rgba(0, 0, 0, 0.5);
-}
-.lp-callmodal-step-txt {
-  font-family: "Inter", sans-serif;
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.82);
-}
-/* The payoff node glows brighter than the path to it */
-.lp-callmodal-steps li.is-payoff .lp-callmodal-node {
-  background: linear-gradient(135deg, #FFE89A 0%, #E5B547 100%);
-  border-color: #FFE89A;
-  box-shadow: 0 0 16px rgba(229, 181, 71, 0.55);
-  /* Gentle pulse: the payoff keeps drawing the eye */
-  animation: lp-callmodal-payoff-pulse 2.2s ease-in-out infinite;
-}
-@keyframes lp-callmodal-payoff-pulse {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.06); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .lp-callmodal-steps li,
-  .lp-callmodal-steps li.is-payoff .lp-callmodal-node {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
-}
-.lp-callmodal-steps li.is-payoff .lp-callmodal-step-txt {
-  color: #ffe89a;
-  font-weight: 600;
-}
-.lp-callmodal-foot {
+.lp-callmodal-end-sub {
   font-family: "Inter", sans-serif;
   font-size: 13px;
+  line-height: 1.5;
   color: rgba(255, 255, 255, 0.55);
   margin: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 16px;
+  text-wrap: pretty;
+}
+/* Fee disclaimer. Smallest muted style in the modal — the same 0.55 footnote
+   treatment as .lp-callmodal-end-sub, a step smaller. */
+.lp-callmodal-note {
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 12px 0 0;
   text-align: center;
+  text-wrap: pretty;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-callmodal-screen { animation: none; }
+  .lp-hero-goal:hover { transform: none; }
+}
+
+
+@media (max-width: 640px) {
+  /* 390px and 375px: the figure drops a notch so "$20,000 a month" stays on
+     one line, and the zone gaps tighten so the close copy stays reachable. */
+  .lp-callmodal-fig { font-size: 29px; }
+  .lp-callmodal-verdict { font-size: 18px; }
+  .lp-callmodal-pickup { margin-top: 18px; padding-top: 14px; }
+  .lp-callmodal-end { margin-top: 18px; }
 }
 @media (max-width: 640px) {
-  .lp-hero-free .lp-hero-callout { padding: 14px 16px; }
-  .lp-hero-free .lp-hero-callout-main { font-size: 15px; }
-  .lp-callmodal { padding: 28px 20px 22px; }
+  /* The callout's own mobile block sits earlier in this file and sets
+     padding 18px and font-size 19px on the heading. The two lines that used to
+     be here — padding 14px 16px and a 15px heading — were from the box's first
+     version and, being later, silently won: the "largest line" was rendering
+     SMALLER than the body copy beneath it. Removed rather than reordered. */
+  .lp-callmodal { padding: 22px 18px 18px; }
 }
 
 /* Video Walkthrough section (2026-09-02) */
@@ -7610,10 +7815,17 @@ body:has(.hub-page) {
 
 /* Experimental: brighten grey text on landing pages. Scoped to the .lp class
    on LandingClient's root wrapper (the pricing modal sits outside it). --txt is
-   not defined at landing scope, so it is set here. Muted stays on: .tier-per,
-   .tier-tag, the footer legal line, and the call-modal footnote. */
+   not defined at landing scope, so it is set here.
+ 
+   The :not() list is the OPT-OUT, and it is load-bearing: this rule is
+   `color: #fff !important`, so anything not excluded loses its colour outright.
+   The free hero's callout and the payoff modal both build a deliberate tier
+   ladder out of muted whites AND a gold verdict line, so every one of those
+   paragraphs opts out here or the hierarchy flattens to a single white.
+   .lp-callmodal-foot dropped off the list because that element no longer
+   exists. */
 .lp{--txt:#ffffff}
-.lp p:not(.tier-per):not(.tier-tag):not(.lp-callmodal-foot):not(.lp-free-hours),
+.lp p:not(.tier-per):not(.tier-tag):not(.lp-free-hours):not(.lp-hero-callout-main):not(.lp-callmodal-avg):not(.lp-callmodal-verdict):not(.lp-callmodal-trail):not(.lp-callmodal-end-sub):not(.lp-callmodal-note),
 .lp .lp-trust,
 .lp .lp-tk-desc,
 .lp .lp-reviews-count,
@@ -7979,36 +8191,22 @@ body:has(.hub-page) {
    .trust-stars / .trust-whop-logo rules, 18.75px / 27.5px) and a one-line
    nudge to watch the video and browse. --txt fallback: token only exists
    inside .lp. */
-.lp-free-outro {
-  margin-top: 24px;
-  max-width: 460px;
-  margin-left: auto;
-  margin-right: auto;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-.lp-free-outro-text {
-  color: var(--txt, #ffffff);
-  font-size: 15px;
-  line-height: 1.5;
-  margin: 0;
-}
 
 /* /free - business hours line between the CTA and the outro.
    --txt-mut is not defined at landing scope; literal fallback. */
+/* Only rendered outside 6am-8pm Pacific. Styled as the callout's SMALLEST
+   muted tier and width-matched to it, so it reads as a footnote hanging off
+   the box rather than a centred line floating on its own. */
 .lp-free-hours {
-  color: var(--txt-mut, rgba(255,255,255,.6));
-  font-size: 13px;
-  line-height: 1.5;
+  max-width: 860px;
+  margin: 8px auto 0;
+  padding: 0 4px;
+  font-family: "Inter", sans-serif;
+  font-size: 12.5px;
+  line-height: 1.55;
+  /* Follows the callout it hangs off. */
   text-align: center;
-  margin-top: 20px;
-  max-width: 460px;
-  margin-left: auto;
-  margin-right: auto;
-  font-style: italic;
+  color: rgba(255, 255, 255, 0.55);
 }
 
 /* /free - "You're in" pill stays. The committed rule (6289) starts it at
