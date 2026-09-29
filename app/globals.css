@@ -6297,47 +6297,26 @@ body:has(.hub-page) {
     rgba(229, 181, 71, 0.04);
   border: 1.5px solid rgba(229, 181, 71, 0.55);
   border-radius: 14px;
+  /* THE PULSE. Border colour and outer glow ONLY — no transform, no scale, no
+     opacity on the box. Scale would nudge the H1 and video below it on every
+     cycle; opacity would make the text breathe while someone reads it. Border
+     travels between the existing 0.55 gold and --gold-bright at 0.85, the glow
+     between 10% and 22%. 2.5s: a heartbeat, not a warning light. */
   box-shadow: 0 0 28px rgba(229, 181, 71, 0.10), inset 0 1px 0 rgba(255, 232, 154, 0.12);
-  /* Icon column, then text. Left-aligned inside, which is what makes this
-     read as a live notice rather than another centred content block. */
-  display: grid;
-  grid-template-columns: 52px 1fr;
-  gap: 18px;
-  align-items: start;
+  animation: lp-callout-breathe 2.5s ease-in-out infinite;
+}
+@keyframes lp-callout-breathe {
+  0%, 100% {
+    border-color: rgba(229, 181, 71, 0.55);
+    box-shadow: 0 0 28px rgba(229, 181, 71, 0.10), inset 0 1px 0 rgba(255, 232, 154, 0.12);
+  }
+  50% {
+    border-color: rgba(255, 232, 154, 0.85);
+    box-shadow: 0 0 38px rgba(229, 181, 71, 0.22), inset 0 1px 0 rgba(255, 232, 154, 0.20);
+  }
 }
 /* The anchor the box had none of. Ring expands and fades on a 2s loop. */
-.lp-hero-free .lp-hero-callout-icon {
-  position: relative;
-  width: 52px;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--gold);
-}
-.lp-hero-free .lp-hero-callout-icon svg {
-  width: 30px;
-  height: 30px;
-  position: relative;
-  z-index: 1;
-  filter: drop-shadow(0 0 8px rgba(229, 181, 71, 0.45));
-}
-.lp-hero-free .lp-hero-callout-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 2px solid rgba(229, 181, 71, 0.55);
-  background: rgba(229, 181, 71, 0.08);
-  animation: lp-callout-ring 2s ease-out infinite;
-}
-@keyframes lp-callout-ring {
-  0%   { transform: scale(0.78); opacity: 0.9; }
-  70%  { transform: scale(1.12); opacity: 0; }
-  100% { transform: scale(1.12); opacity: 0; }
-}
-.lp-hero-free .lp-hero-callout-body { min-width: 0; }
-/* TIER 1 — unmissable. Both old lines carried the same weight, which is why
-   the whole box read as fine print. */
+/* Line 1 — largest, and the ONLY gold one. */
 .lp-hero-free .lp-hero-callout-main {
   font-family: "Cabinet Grotesk", sans-serif;
   font-weight: 900;
@@ -6345,41 +6324,40 @@ body:has(.hub-page) {
   line-height: 1.25;
   letter-spacing: -0.02em;
   color: #ffe89a;
-  margin: 0 0 6px;
+  margin: 0 0 12px;
   text-wrap: balance;
 }
-/* TIER 1b — one step down, still gold-adjacent white. */
-.lp-hero-free .lp-hero-callout-second {
-  font-family: "Cabinet Grotesk", sans-serif;
-  font-weight: 800;
-  font-size: 16.5px;
-  line-height: 1.35;
-  letter-spacing: -0.01em;
+/* Lines 2 and 3 — body size, SOLID WHITE, regular weight. Two near-equal bold
+   lines were what made this box read heavy; only line 1 carries weight now.
+   The even 12px margins give four statements, not a paragraph. */
+.lp-hero-free .lp-hero-callout-second,
+.lp-hero-free .lp-hero-callout-third {
+  font-family: "Inter", sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.5;
   color: #fff;
-  margin: 0 0 10px;
+  margin: 0 0 12px;
+  text-wrap: pretty;
 }
-/* TIER 2 — body. */
-/* TIER 3 — smallest, muted, the .55 footnote treatment. */
+/* Line 4 — a step smaller than 2 and 3, and STILL SOLID WHITE. It used to be
+   rgba(...,0.55); that greying is exactly what is being removed. There is no
+   muted text anywhere in this box now. */
 .lp-hero-free .lp-hero-callout-fine {
   font-family: "Inter", sans-serif;
-  font-size: 12.5px;
-  line-height: 1.55;
-  color: rgba(255, 255, 255, 0.55);
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #fff;
   margin: 0;
 }
 @media (prefers-reduced-motion: reduce) {
-  .lp-hero-free .lp-hero-callout-ring { animation: none; opacity: 0.5; transform: none; }
+  /* Holds at the resting end of the cycle, not mid-pulse. */
+  .lp-hero-free .lp-hero-callout { animation: none; }
 }
 @media (max-width: 640px) {
-  /* 375/390: 52px of icon column plus the text does not sit side by side
-     without the copy going ragged. Stack, text stays left-aligned. */
-  .lp-hero-free .lp-hero-callout {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    padding: 18px 18px;
-  }
+  .lp-hero-free .lp-hero-callout { padding: 18px; }
   .lp-hero-free .lp-hero-callout-main { font-size: 19px; }
-  .lp-hero-free .lp-hero-callout-second { font-size: 15px; }
 }
 .lp-callmodal-overlay {
   position: fixed;
@@ -6650,8 +6628,11 @@ body:has(.hub-page) {
   .lp-callmodal-end { margin-top: 18px; }
 }
 @media (max-width: 640px) {
-  .lp-hero-free .lp-hero-callout { padding: 14px 16px; }
-  .lp-hero-free .lp-hero-callout-main { font-size: 15px; }
+  /* The callout's own mobile block sits earlier in this file and sets
+     padding 18px and font-size 19px on the heading. The two lines that used to
+     be here — padding 14px 16px and a 15px heading — were from the box's first
+     version and, being later, silently won: the "largest line" was rendering
+     SMALLER than the body copy beneath it. Removed rather than reordered. */
   .lp-callmodal { padding: 22px 18px 18px; }
 }
 
@@ -7765,7 +7746,7 @@ body:has(.hub-page) {
    .lp-callmodal-foot dropped off the list because that element no longer
    exists. */
 .lp{--txt:#ffffff}
-.lp p:not(.tier-per):not(.tier-tag):not(.lp-free-hours):not(.lp-hero-callout-main):not(.lp-hero-callout-fine):not(.lp-callmodal-avg):not(.lp-callmodal-verdict):not(.lp-callmodal-trail):not(.lp-callmodal-end-sub):not(.lp-callmodal-note),
+.lp p:not(.tier-per):not(.tier-tag):not(.lp-free-hours):not(.lp-hero-callout-main):not(.lp-callmodal-avg):not(.lp-callmodal-verdict):not(.lp-callmodal-trail):not(.lp-callmodal-end-sub):not(.lp-callmodal-note),
 .lp .lp-trust,
 .lp .lp-tk-desc,
 .lp .lp-reviews-count,

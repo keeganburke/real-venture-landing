@@ -189,6 +189,18 @@ export default function LandingClient({ variant }: Props) {
   useEffect(() => {
     if (!callModalOpen) setCallGoal(null);
   }, [callModalOpen]);
+  // Lock the page while the modal is open, same as the pricing modal does.
+  // Without it the page scrolls freely behind a fixed overlay, which is how
+  // the sections below the hero were being scrolled up into view underneath
+  // it in the first place.
+  useEffect(() => {
+    if (!callModalOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [callModalOpen]);
   // "We call 6am-8pm Pacific" is only worth saying to someone who opted in
   // outside those hours. Resolved AFTER mount, never during render: the server
   // has no idea what time it is where the visitor is, and branching on a clock
@@ -477,26 +489,26 @@ export default function LandingClient({ variant }: Props) {
               {/* Callout FIRST, above the H1. The page's one job right after
                   opt-in is getting this call answered, so the notice leads and
                   the H1 drops down to sit directly on top of the video it
-                  titles. Icon column left, text left-aligned right, which
-                  deliberately breaks the centred rhythm of everything else. */}
+                  titles.
+
+                  No icon and no columns: one column of text. The pulse moved
+                  off the old phone glyph onto the BOX, and it animates border
+                  colour and glow only — never transform or opacity, because
+                  scale would shift the H1 below it on every cycle and opacity
+                  would make the text flicker while someone is reading it. */}
               <div className="lp-hero-callout">
-                <div className="lp-hero-callout-icon" aria-hidden="true">
-                  <span className="lp-hero-callout-ring" />
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
-                  </svg>
-                </div>
-                <div className="lp-hero-callout-body">
-                  <p className="lp-hero-callout-main">
-                    {"We're calling you in the next few minutes."}
-                  </p>
-                  <p className="lp-hero-callout-second">
-                    {"Unknown number, that's us. About 5 minutes."}
-                  </p>
-                  <p className="lp-hero-callout-fine">
-                    {"You don't need to know anything yet."}
-                  </p>
-                </div>
+                <p className="lp-hero-callout-main">
+                  {"We're calling you in the next few minutes."}
+                </p>
+                <p className="lp-hero-callout-second">
+                  {"Unknown number, that's us."}
+                </p>
+                <p className="lp-hero-callout-third">
+                  {"5 minute conversation and you'll know exactly the next step to take."}
+                </p>
+                <p className="lp-hero-callout-fine">
+                  {"You don't need to know anything yet."}
+                </p>
               </div>
               {/* Only shown OUTSIDE calling hours. Someone opting in at 2am
                   needs to know they were not ignored; someone opting in at 1pm
@@ -549,93 +561,6 @@ export default function LandingClient({ variant }: Props) {
                 </div>
               </div>
 
-              {/* Payoff modal — opens straight to the variant the page picker
-                  chose. No screen 1 and no "change" link: the picker is on the
-                  page behind this, so closing IS changing your answer. */}
-              {callModalOpen && callGoal && (
-                <div className="lp-callmodal-overlay" onClick={() => setCallModalOpen(false)}>
-                  <div
-                    className="lp-callmodal"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label="Your number"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button
-                      type="button"
-                      className="lp-callmodal-close"
-                      aria-label="Close"
-                      onClick={() => setCallModalOpen(false)}
-                    >
-                      {"×"}
-                    </button>
-
-                    <div className="lp-callmodal-screen" key={callGoal}>
-                      {/* ZONE 1 — the number. Largest thing on the screen,
-                          then the gold verdict, then muted support. */}
-                      <div className="lp-callmodal-num">
-                        {callGoal === "5k" && (
-                          <>
-                            <p className="lp-callmodal-fig">{"$5,000 a month"}</p>
-                            <p className="lp-callmodal-avg">{"Our average deal fee is $10,000."}</p>
-                            <p className="lp-callmodal-verdict">{"That's one deal every two months."}</p>
-                          </>
-                        )}
-                        {callGoal === "10k" && (
-                          <>
-                            <p className="lp-callmodal-fig">{"$10,000 a month"}</p>
-                            <p className="lp-callmodal-avg">{"Our average deal fee is $10,000."}</p>
-                            <p className="lp-callmodal-verdict">{"That's one deal."}</p>
-                            <p className="lp-callmodal-trail">{"Not a full business. One deal."}</p>
-                          </>
-                        )}
-                        {callGoal === "20k" && (
-                          <>
-                            <p className="lp-callmodal-fig">{"$20,000 a month"}</p>
-                            <p className="lp-callmodal-avg">{"Our average deal fee is $10,000."}</p>
-                            <p className="lp-callmodal-verdict">{"That's two deals a month."}</p>
-                            <p className="lp-callmodal-trail">{"That's it."}</p>
-                          </>
-                        )}
-                      </div>
-
-                      {/* ZONE 2 — what the call is. Emoji IS the bullet, in
-                          its own column, so the text keeps one left edge. */}
-                      <div className="lp-callmodal-pickup">
-                        <p className="lp-callmodal-pickup-h">
-                          <span className="lp-callmodal-bullet" aria-hidden="true">📞</span>
-                          <span>This is what happens when you pick up</span>
-                        </p>
-                        <ul className="lp-callmodal-pickup-list">
-                          <li>
-                            <span className="lp-callmodal-bullet" aria-hidden="true">📍</span>
-                            <span>{"We figure out where you're at. Knowing nothing is totally fine."}</span>
-                          </li>
-                          <li>
-                            <span className="lp-callmodal-bullet" aria-hidden="true">🎯</span>
-                            <span>{"The fastest path to your number, for your situation."}</span>
-                          </li>
-                          <li>
-                            <span className="lp-callmodal-bullet" aria-hidden="true">🔑</span>
-                            <span>{"What's actually working right now. The stuff that's not in the videos."}</span>
-                          </li>
-                          <li>
-                            <span className="lp-callmodal-bullet" aria-hidden="true">💰</span>
-                            <span>{"You hang up knowing your exact first move toward your first check."}</span>
-                          </li>
-                        </ul>
-                      </div>
-
-                      {/* ZONE 3 — the close, then the fee disclaimer. */}
-                      <div className="lp-callmodal-end">
-                        <p className="lp-callmodal-end-main">{"Calling you in the next few minutes."}</p>
-                        <p className="lp-callmodal-end-sub">{"5 minute conversation and you'll know exactly where to start 📞"}</p>
-                      </div>
-                      <p className="lp-callmodal-note">{"Average fee based on deals closed in our community. Results vary."}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </section>
         ) : (
@@ -922,6 +847,112 @@ export default function LandingClient({ variant }: Props) {
           <div className="lp-footer-legal">{"\u00a9"} 2026 Real Venture {"\u00b7"} Not financial advice. Not a license.</div>
         </footer>
       </div>
+
+      {/* RENDERED OUTSIDE .wrap.lp ON PURPOSE, exactly where the pricing
+          modal lives, and this is load-bearing rather than tidiness.
+          globals.css has
+
+              .wrap > :not(.lp-drawer):not(.lp-drawer-backdrop)
+                { position: relative; z-index: 1 }
+
+          so EVERY section is its own stacking context at the same z-index.
+          While this modal lived inside <section class="lp-hero">, its
+          z-index:1000 only ranked it against its siblings INSIDE the hero —
+          against .lp-payouts and everything after it, the hero itself was
+          just another z-index:1 box that happened to come earlier in the
+          DOM, so all of them painted straight over the modal. Invisible at
+          scroll 0 because those sections are below the fold; at scrollY 600
+          document.elementFromPoint at the modal's centre returned
+          SECTION.lp-payouts. Out here it ranks against the sections
+          directly and 1000 wins. Raising the number inside the hero would
+          have changed nothing. */}
+      {/* Payoff modal — opens straight to the variant the page picker
+          chose. No screen 1 and no "change" link: the picker is on the
+          page behind this, so closing IS changing your answer. */}
+      {callModalOpen && callGoal && (
+        <div className="lp-callmodal-overlay" onClick={() => setCallModalOpen(false)}>
+          <div
+            className="lp-callmodal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Your number"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="lp-callmodal-close"
+              aria-label="Close"
+              onClick={() => setCallModalOpen(false)}
+            >
+              {"×"}
+            </button>
+
+            <div className="lp-callmodal-screen" key={callGoal}>
+              {/* ZONE 1 — the number. Largest thing on the screen,
+                  then the gold verdict, then muted support. */}
+              <div className="lp-callmodal-num">
+                {callGoal === "5k" && (
+                  <>
+                    <p className="lp-callmodal-fig">{"$5,000 a month"}</p>
+                    <p className="lp-callmodal-avg">{"Our average deal fee is $10,000."}</p>
+                    <p className="lp-callmodal-verdict">{"That's one deal every two months."}</p>
+                  </>
+                )}
+                {callGoal === "10k" && (
+                  <>
+                    <p className="lp-callmodal-fig">{"$10,000 a month"}</p>
+                    <p className="lp-callmodal-avg">{"Our average deal fee is $10,000."}</p>
+                    <p className="lp-callmodal-verdict">{"That's one deal."}</p>
+                    <p className="lp-callmodal-trail">{"Not a full business. One deal."}</p>
+                  </>
+                )}
+                {callGoal === "20k" && (
+                  <>
+                    <p className="lp-callmodal-fig">{"$20,000 a month"}</p>
+                    <p className="lp-callmodal-avg">{"Our average deal fee is $10,000."}</p>
+                    <p className="lp-callmodal-verdict">{"That's two deals a month."}</p>
+                    <p className="lp-callmodal-trail">{"That's it."}</p>
+                  </>
+                )}
+              </div>
+
+              {/* ZONE 2 — what the call is. Emoji IS the bullet, in
+                  its own column, so the text keeps one left edge. */}
+              <div className="lp-callmodal-pickup">
+                <p className="lp-callmodal-pickup-h">
+                  <span className="lp-callmodal-bullet" aria-hidden="true">📞</span>
+                  <span>This is what happens when you pick up</span>
+                </p>
+                <ul className="lp-callmodal-pickup-list">
+                  <li>
+                    <span className="lp-callmodal-bullet" aria-hidden="true">📍</span>
+                    <span>{"We figure out where you're at. Knowing nothing is totally fine."}</span>
+                  </li>
+                  <li>
+                    <span className="lp-callmodal-bullet" aria-hidden="true">🎯</span>
+                    <span>{"The fastest path to your number, for your situation."}</span>
+                  </li>
+                  <li>
+                    <span className="lp-callmodal-bullet" aria-hidden="true">🔑</span>
+                    <span>{"What's actually working right now. The stuff that's not in the videos."}</span>
+                  </li>
+                  <li>
+                    <span className="lp-callmodal-bullet" aria-hidden="true">💰</span>
+                    <span>{"You hang up knowing your exact first move toward your first check."}</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* ZONE 3 — the close, then the fee disclaimer. */}
+              <div className="lp-callmodal-end">
+                <p className="lp-callmodal-end-main">{"Calling you in the next few minutes."}</p>
+                <p className="lp-callmodal-end-sub">{"5 minute conversation and you'll know exactly where to start 📞"}</p>
+              </div>
+              <p className="lp-callmodal-note">{"Average fee based on deals closed in our community. Results vary."}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div
         className={`modal-overlay${pricingOpen ? " active" : ""}`}
