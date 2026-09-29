@@ -1,5 +1,7 @@
 "use client";
 
+import { TRUST_COUNTS } from "@/app/lib/whop-reviews";
+
 // Repeating CTA + social proof strip (TRW pattern), rendered 4x per page.
 // Avatars live at /public/avatars/first..fourth.png; gradient circles render
 // as fallback if a file goes missing.
@@ -15,7 +17,7 @@ type Props = {
   label?: string;
 };
 
-export default function CtaStrip({ onJoin, label = "Join for $19.99/mo →" }: Props) {
+export default function CtaStrip({ onJoin, label = "Start for $19.99/mo →" }: Props) {
   return (
     <div className="lp-cta-strip">
       <button className="lp-cta-primary lp-cta-hero" onClick={onJoin}>
@@ -32,7 +34,7 @@ export default function CtaStrip({ onJoin, label = "Join for $19.99/mo →" }: P
           ))}
         </div>
         <div className="lp-social-lbl">
-          <b>350+</b> active students
+          <b>{TRUST_COUNTS.students}+</b> active students
         </div>
       </div>
     </div>

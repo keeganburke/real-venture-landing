@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { TRUST_COUNTS } from "@/app/lib/whop-reviews";
 import { WEEKLY_SCHEDULE } from "./hub-copy";
 import type { Destination, FeedbackAction } from "./hub-copy";
 import { getCallDurationMs, getLiveCall, getNextCalls } from "./lib/next-calls";
 import SprintCard from "./SprintCard";
+import SpotlightTour from "./SpotlightTour";
 
 const GREETINGS = [
   "Welcome back, {name}",
@@ -57,6 +59,7 @@ type Props = {
   nextLesson: NextLessonInfo | null;
   destinations: Destination[];
   feedback: FeedbackAction[];
+  showTour?: boolean;
 };
 
 // Schedule times are Pacific wall-clock; render everything in LA terms so
@@ -114,8 +117,34 @@ export default function HubClient({
   nextLesson,
   destinations,
   feedback,
+  showTour,
 }: Props) {
   const [discordStatus, setDiscordStatus] = useState<string | null>(null);
+  const [tourOpen, setTourOpen] = useState(showTour ?? false);
+
+  // The drawer's "Take the tour" button fires this so a replay works from any
+  // dashboard route without a navigation.
+  useEffect(() => {
+    const handler = () => setTourOpen(true);
+    window.addEventListener("rv:openTour", handler);
+    return () => window.removeEventListener("rv:openTour", handler);
+  }, []);
+
+  // Onboarding hands off via /dashboard?tour=1. tourOpen already captured that
+  // in its initializer, so drop the param on mount -- otherwise a refresh after
+  // finishing the tour reopens it. replaceState does not navigate, so the tour
+  // stays open. Preserves any other params and the hash.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has("tour")) return;
+
+    params.delete("tour");
+    const newSearch = params.toString();
+    const newUrl =
+      window.location.pathname + (newSearch ? "?" + newSearch : "") + window.location.hash;
+    window.history.replaceState({}, "", newUrl);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -134,6 +163,30 @@ export default function HubClient({
     // Auto-hide after 5 seconds
     const timer = setTimeout(() => setDiscordStatus(null), 5000);
     return () => clearTimeout(timer);
+  }, []);
+
+  // /api/discord/callback bounces 1:1 binding conflicts here as
+  // ?discord_error=<code>. Phase 1 uses a plain alert; swap for the toast
+  // component later. Param is stripped so a refresh does not re-alert.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const err = params.get("discord_error");
+    if (!err) return;
+
+    const messages: Record<string, string> = {
+      already_bound_different_discord:
+        "Your Whop account is already connected to a different Discord. Contact support to change it.",
+      discord_owned_by_another_whop:
+        "That Discord account is already connected to another Real Venture membership.",
+    };
+    const msg = messages[err] || "Discord connection failed. Try again or contact support.";
+    alert(msg);
+
+    params.delete("discord_error");
+    const newSearch = params.toString();
+    const newUrl = window.location.pathname + (newSearch ? "?" + newSearch : "") + window.location.hash;
+    window.history.replaceState({}, "", newUrl);
   }, []);
 
   const [discordDismissed, setDiscordDismissed] = useState(false);
@@ -262,7 +315,7 @@ export default function HubClient({
             </div>
             <div className="hub2-discord-title">Join the community</div>
             <p className="hub2-discord-sub">
-              350+ members closing deals every week. Ask questions, share wins, get help.
+              {TRUST_COUNTS.students}+ members closing deals every week. Ask questions, share wins, get help.
             </p>
             <Link href="/dashboard/discord-help" className="hub2-discord-cta">
               <span>Join Discord</span>
@@ -310,7 +363,7 @@ export default function HubClient({
         )}
 
         {/* Livestreams */}
-        <div className="hub2-section-head">
+        <div className="hub2-section-head" data-tour="livestreams">
           <div className="hub2-section-title">Livestreams</div>
           <Link href="/dashboard/livestreams" className="hub2-section-link">Full schedule →</Link>
         </div>
@@ -361,6 +414,7 @@ export default function HubClient({
               key={d.id}
               href={d.href}
               className="hub2-destination"
+              data-tour={`tile-${d.id}`}
               {...(d.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
             >
               <div className="hub2-destination-icon" aria-hidden="true">{d.emoji}</div>
@@ -393,6 +447,8 @@ export default function HubClient({
         </div>
 
       </div>
+
+      {tourOpen && <SpotlightTour onComplete={() => setTourOpen(false)} />}
     </div>
   );
 }

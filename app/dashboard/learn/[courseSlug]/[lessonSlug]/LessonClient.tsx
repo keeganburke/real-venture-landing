@@ -37,14 +37,6 @@ export default function LessonClient({
   const router = useRouter();
   const completedSet = useMemo(() => new Set(completedLessonIds), [completedLessonIds]);
 
-  const maxUnlockedIndex = useMemo(() => {
-    let highest = -1;
-    lessons.forEach((l, i) => {
-      if (completedSet.has(l.id)) highest = i;
-    });
-    return highest + 1;
-  }, [lessons, completedSet]);
-
   const blocks = (currentLesson.content as unknown as ContentBlock[]) ?? [];
   const nonQuizBlocks = blocks.filter((b) => b.type !== "quiz");
   const quizBlocks = blocks.filter((b): b is Extract<ContentBlock, { type: "quiz" }> => b.type === "quiz");
@@ -134,7 +126,8 @@ export default function LessonClient({
             {lessons.map((lesson, i) => {
               const isComplete = completedSet.has(lesson.id);
               const isCurrent = lesson.id === currentLesson.id;
-              const isLocked = !isComplete && i > maxUnlockedIndex;
+              // No sequence gate: every sidebar row is a link.
+              const isLocked = false;
               const num = String(i + 1).padStart(2, "0");
 
               const inner = (

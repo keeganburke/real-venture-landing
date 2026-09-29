@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import type { Course, Lesson } from "../learn-types";
 
@@ -27,35 +26,16 @@ function lessonTime(lesson: Lesson): string | null {
   return null;
 }
 
-export default function CourseClient({ course, lessons, completedLessonIds, userTier }: Props) {
+// userTier is still passed by the page for a future tier gate; it gates
+// nothing today, so it is not destructured.
+export default function CourseClient({ course, lessons, completedLessonIds }: Props) {
   const completed = new Set(completedLessonIds);
-  const [shakingId, setShakingId] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
 
-  // Sequential gate: everything up to (and one past) the highest completed
-  // sort position is unlocked. Nothing complete: only lesson 1 unlocks.
-  let highestCompletedIndex = -1;
-  lessons.forEach((lesson, index) => {
-    if (completed.has(lesson.id)) highestCompletedIndex = index;
-  });
-  const maxUnlockedIndex = highestCompletedIndex + 1;
+  // No sequence gate and no Pro gate: every lesson row is a plain link.
+  // The lock toast ("Complete the previous lesson first") is gone with it.
 
   const doneCount = lessons.filter((lesson) => completed.has(lesson.id)).length;
   const pct = lessons.length > 0 ? Math.round((doneCount / lessons.length) * 100) : 0;
-
-  const onRowClick = (lesson: Lesson, lockReason: "sequence" | "pro") => {
-    if (lockReason === "pro") {
-      setShakingId(lesson.id);
-      setToast("Pro membership required");
-      window.setTimeout(() => setShakingId(null), 500);
-      window.setTimeout(() => setToast(null), 2200);
-      return;
-    }
-    setShakingId(lesson.id);
-    setToast("Complete the previous lesson first");
-    window.setTimeout(() => setShakingId(null), 500);
-    window.setTimeout(() => setToast(null), 2200);
-  };
 
   return (
     <div className="hub-page learn-page">
@@ -86,10 +66,10 @@ export default function CourseClient({ course, lessons, completedLessonIds, user
         <div className="learn-lesson-list">
           {lessons.map((lesson, index) => {
             const isComplete = completed.has(lesson.id);
-            const proLocked = lesson.requires_pro && userTier === "base";
-            const sequenceLocked = !isComplete && index > maxUnlockedIndex;
-            const lockReason = proLocked ? "pro" : sequenceLocked ? "sequence" : null;
-            const rowClass = `learn-lesson-row${isComplete ? " complete" : ""}${lockReason ? " locked" : ""}${shakingId === lesson.id ? " shake" : ""}`;
+            const proLocked = false;
+            const sequenceLocked = false;
+            const lockReason = proLocked || sequenceLocked ? "locked" : null;
+            const rowClass = `learn-lesson-row${isComplete ? " complete" : ""}${lockReason ? " locked" : ""}`;
             const inner = (
               <>
                 <span className="learn-lesson-num">{isComplete ? "✓" : index + 1}</span>
@@ -109,17 +89,7 @@ export default function CourseClient({ course, lessons, completedLessonIds, user
                 <span className="learn-lesson-arw">{lockReason ? "🔒" : "→"}</span>
               </>
             );
-            return lockReason ? (
-              <button
-                type="button"
-                className={rowClass}
-                key={lesson.id}
-                onClick={() => onRowClick(lesson, lockReason)}
-                style={{ "--i": String(index) } as React.CSSProperties}
-              >
-                {inner}
-              </button>
-            ) : (
+            return (
               <Link
                 href={`/dashboard/learn/${course.slug}/${lesson.slug}`}
                 className={rowClass}
@@ -131,8 +101,6 @@ export default function CourseClient({ course, lessons, completedLessonIds, user
             );
           })}
         </div>
-
-        {toast && <div className="learn-toast">{toast}</div>}
       </div>
     </div>
   );

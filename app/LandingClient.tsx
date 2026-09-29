@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { WhopCheckoutEmbed } from "@whop/checkout/react";
+import { WhopCheckoutEmbed, useCheckoutEmbedControls } from "@whop/checkout/react";
 import NavDrawer from "./components/NavDrawer";
 import CtaStrip from "./components/CtaStrip";
 import TrustRow from "./components/TrustRow";
@@ -10,27 +10,7 @@ import SectionHead from "./components/SectionHead";
 import PayoutCarousel from "./components/PayoutCarousel";
 import VideoWalkthrough from "./components/VideoWalkthrough";
 import Reviews from "./components/Reviews";
-import Timeline from "./components/Timeline";
-import { REVIEW_STATS } from "./lib/whop-reviews";
-
-const LP_COMPARE_BAD = [
-  "Watch YouTube for hours without taking action",
-  "Trying to piece all the information together yourself",
-  "Getting stuck with nowhere to ask questions",
-  "No idea how to actually spot a deal",
-  "Never talked to a real cash buyer, no reliable path to finding buyers",
-  "Quit after one week because it seems hopeless",
-];
-
-const LP_COMPARE_GOOD = [
-  "Direct access to William + Keegan every day",
-  "Step-by-step 14-day sprint with clear checkpoints",
-  "Live Q&A calls 7x/week + Discord 24/7",
-  "Deal analyzer + contract templates ready",
-  "Proven strategies to find buyers from the founders",
-  "Countless testimonials and students actually getting paid",
-  "Starting at the same price as your DoorDash order",
-];
+import { REVIEW_STATS, TRUST_COUNTS } from "./lib/whop-reviews";
 
 const LP_STORIES = [
   {
@@ -39,7 +19,7 @@ const LP_STORIES = [
     age: 20,
     videoId: "1221681436",
     amount: "$42,000",
-    blurb: "Full-time college student with a part-time job.",
+    blurb: "Full-time college student in a fraternity with a part-time job. Kept closing deals without giving up.",
   },
   {
     id: "yves",
@@ -47,7 +27,7 @@ const LP_STORIES = [
     age: 21,
     videoId: "1197200708",
     amount: "$11,000",
-    blurb: "Was working 70 hours a week in fast food.",
+    blurb: "70 hours a week between two fast food jobs. Still made this a side hustle and closed every one.",
   },
   {
     id: "zach",
@@ -55,7 +35,7 @@ const LP_STORIES = [
     age: 23,
     videoId: "1197200691",
     amount: "$6,000",
-    blurb: "Doorman. Made his first $6K in 45 days.",
+    blurb: "Doorman when he closed $6K in 45 days. Used the money to move out of his parents' house.",
   },
 ];
 
@@ -85,7 +65,72 @@ const PLANS = {
 const PRO_TERMS = {
   monthly: { planId: "plan_J8vFpCWME75W3", amount: "49.99", price: "$49.99", cadence: "per month" },
   quarterly: { planId: "plan_9nyRNbuhQF0pk", amount: "130", price: "$130", cadence: "per 3 months" },
+  semiannual: { planId: "plan_tfYMBwmuOwuB0", amount: "250", price: "$250", cadence: "per 6 months" },
 } as const;
+
+// Checkout-header copy for the selected plan. Price lives in the name line, so
+// the tile is a single stacked block rather than an info/price split.
+// Same feature copy as the tier cards on the pricing step, so the two views
+// can never drift.
+const BASE_FEATURES = [
+  "Live coaching 7x/week",
+  "JV deals, keep 50%",
+  "Real Venture Studio (all-in-one software)",
+  "Buyer network access",
+  "Full course library",
+  "Contract templates",
+  "Proof of Funds letters",
+  "Deal Manager pipeline",
+  "Call recordings",
+  "LLC and Bank Playbook",
+];
+
+const PRO_FEATURES = [
+  "Everything in Base",
+  "JV deals, keep 60%",
+  "Real Venture Studio Pro (everything unlocked)",
+  "Contract generator (auto fill)",
+  "Advanced course modules",
+  "First look at incoming buyers",
+  "Priority DM + Deal support",
+];
+
+type PlanCopy = {
+  name: string;
+  tagline: string;
+  accent: "blue" | "gold";
+  features: string[];
+};
+
+const PLAN_COPY: Record<"base" | "pro" | "pro3" | "pro6", PlanCopy> = {
+  base: {
+    name: "Base - $19.99/mo",
+    tagline: "Everything you need to close your first $10K deal.",
+    accent: "blue",
+    features: BASE_FEATURES,
+  },
+  pro: {
+    name: "Pro - $49.99/mo",
+    tagline: "Everything you need to close your first $10K deal, with extra support included.",
+    accent: "gold",
+    features: PRO_FEATURES,
+  },
+  pro3: {
+    name: "Pro - $130 for 3 months",
+    tagline: "Everything you need to close your first $10K deal, with extra support included. Save $20 vs monthly.",
+    accent: "gold",
+    features: PRO_FEATURES,
+  },
+  pro6: {
+    name: "Pro - $250 for 6 months",
+    tagline: "Same Pro plan, paid every 6 months. Save $50 vs monthly.",
+    accent: "gold",
+    features: PRO_FEATURES,
+  },
+};
+
+// How many features show before the expander.
+const FEATURE_PREVIEW = 3;
 
 function CheckIcon() {
   return (
@@ -99,7 +144,7 @@ type Props = {
   // "free" switches the hero; "pro" keeps the default hero but hides every
   // tier except Pro in both pricing sites (phone-setter close-protection
   // page at /pro). Everything else is shared, so the routes cannot drift.
-  variant: "default" | "free" | "pro";
+  variant: "default" | "free" | "pro" | "pro6" | "pro3";
 };
 
 // Whop OAuth failure codes land the user back on "/" with ?auth=<code>.
@@ -114,7 +159,11 @@ const AUTH_MESSAGES: Record<string, string> = {
 };
 
 export default function LandingClient({ variant }: Props) {
-  const proOnly = variant === "pro";
+  // "pro6" / "pro3" are the Pro-only page pinned to the 6- or 3-month plan:
+  // no term toggle, one fixed price.
+  const sixMonth = variant === "pro6";
+  const threeMonth = variant === "pro3";
+  const proOnly = variant === "pro" || sixMonth || threeMonth;
   const router = useRouter();
   const [authNotice, setAuthNotice] = useState<string | null>(null);
   // Tracked separately from the message so "denied" (wrong email after
@@ -140,11 +189,33 @@ export default function LandingClient({ variant }: Props) {
   useEffect(() => {
     if (!callModalOpen) setCallGoal(null);
   }, [callModalOpen]);
+  // "We call 6am-8pm Pacific" is only worth saying to someone who opted in
+  // outside those hours. Resolved AFTER mount, never during render: the server
+  // has no idea what time it is where the visitor is, and branching on a clock
+  // during SSR is a hydration mismatch waiting to happen. Default false, so the
+  // line appears for the 2am opt-in and never flashes for the 1pm one.
+  const [outsideCallHours, setOutsideCallHours] = useState(false);
+  useEffect(() => {
+    const la = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Los_Angeles",
+      hour: "numeric",
+      hour12: false,
+    }).format(new Date());
+    // Some engines render midnight as "24"; % 24 normalises it to 0.
+    const hour = Number(la) % 24;
+    setOutsideCallHours(hour < 6 || hour >= 20);
+  }, []);
   const [drawerOpen, setDrawerOpen] = useState(false);
   // 2-step wizard inside the pricing modal: tiers -> embedded checkout.
   const [step, setStep] = useState<"pricing" | "checkout">("pricing");
   const [selectedPlan, setSelectedPlan] = useState<"base" | "pro" | null>(null);
-  const [proTerm, setProTerm] = useState<"monthly" | "quarterly">("monthly");
+  const [proTerm, setProTerm] = useState<"monthly" | "quarterly" | "semiannual">(
+    sixMonth ? "semiannual" : threeMonth ? "quarterly" : "monthly"
+  );
+  const [featuresOpen, setFeaturesOpen] = useState(false);
+  // Handle to the embedded checkout iframe so the buyer's email can be read
+  // back (getEmail) before the modal closes and the iframe unmounts.
+  const checkoutControls = useCheckoutEmbedControls();
 
   // Surface OAuth failures redirected here by /api/auth/whop/callback.
   useEffect(() => {
@@ -215,15 +286,53 @@ export default function LandingClient({ variant }: Props) {
     setStep("checkout");
   };
 
-  const handleCheckoutComplete = (planId: string, receiptId?: string) => {
-    // Fires once on payment success; close the modal and send the user to
-    // OAuth so they land in the dashboard.
-    console.log("Whop checkout complete", { planId, receiptId });
+  const handleCheckoutComplete = async (planId: string, receiptId?: string, result?: unknown) => {
+    // Fires once on payment success. Read the checkout email from the iframe
+    // BEFORE closing the modal (closing unmounts the iframe), stash it for
+    // /login, then send the user to OAuth so they land in the dashboard.
+    console.log("Whop checkout complete", { planId, receiptId, result });
+
+    let email: string | null = null;
+    try {
+      const raw = await checkoutControls.current?.getEmail(1000);
+      if (typeof raw === "string" && raw.includes("@")) email = raw.trim();
+    } catch {
+      // Timed out or iframe already gone: fall through to the result probe.
+    }
+    // Fallback: some SDK versions may carry the email on the complete result.
+    // The 0.6.0 types do not declare one, so this is a defensive runtime check.
+    if (!email && result && typeof result === "object") {
+      const maybe = (result as { email?: unknown }).email;
+      if (typeof maybe === "string" && maybe.includes("@")) email = maybe.trim();
+    }
+
+    // sessionStorage is the primary handoff to /login; the URL param is the
+    // fallback in case the flow crosses tabs.
+    if (email) {
+      try {
+        sessionStorage.setItem("rv_purchase_email", email);
+      } catch {}
+    }
+
     closePricing();
-    router.push("/login?justpurchased=1");
+    const params = new URLSearchParams({ justpurchased: "1" });
+    if (email) params.set("email", email);
+    router.push(`/login?${params.toString()}`);
   };
 
   // Checkout target: Base is monthly-only; Pro follows the selected term.
+  const modalTitle = selectedPlan === "pro" ? "Join Real Venture Pro" : "Join Real Venture";
+
+  // pro splits into monthly / quarterly / semiannual copy; base has one line.
+  const planCopy =
+    selectedPlan === "pro"
+      ? proTerm === "semiannual"
+        ? PLAN_COPY.pro6
+        : proTerm === "quarterly"
+          ? PLAN_COPY.pro3
+          : PLAN_COPY.pro
+      : PLAN_COPY.base;
+
   const activePlan = selectedPlan
     ? selectedPlan === "pro"
       ? { ...PLANS.pro, ...PRO_TERMS[proTerm] }
@@ -239,7 +348,7 @@ export default function LandingClient({ variant }: Props) {
 
   return (
     <>
-      <div className="wrap">
+      <div className="wrap lp">
         {authNotice && authCode === "denied" && (
           <div className="lp-auth-warning" role="alert">
             <div className="lp-auth-warning-icon" aria-hidden="true">{"\u{1F6D1}"}</div>
@@ -365,13 +474,11 @@ export default function LandingClient({ variant }: Props) {
                   Pure CSS lifecycle; stays in flow at opacity 0 afterwards so
                   nothing shifts. Hidden entirely under reduced motion. */}
               <div className="lp-hero-yourein" aria-hidden="true">{"🎉 You're in!"}</div>
-              <h1 className="lp-hero-h">
-                Your <span className="lp-hero-h-em">Secured Wholesaling</span> Blueprint
-              </h1>
-              {/* Call-expectation callout — the page's #1 job right after
-                  opt-in is getting this call ANSWERED, so this is built as a
-                  live notice: icon column left, text left-aligned right, which
-                  deliberately breaks the centred rhythm of the H1 and video. */}
+              {/* Callout FIRST, above the H1. The page's one job right after
+                  opt-in is getting this call answered, so the notice leads and
+                  the H1 drops down to sit directly on top of the video it
+                  titles. Icon column left, text left-aligned right, which
+                  deliberately breaks the centred rhythm of everything else. */}
               <div className="lp-hero-callout">
                 <div className="lp-hero-callout-icon" aria-hidden="true">
                   <span className="lp-hero-callout-ring" />
@@ -384,16 +491,28 @@ export default function LandingClient({ variant }: Props) {
                     {"We're calling you in the next few minutes."}
                   </p>
                   <p className="lp-hero-callout-second">
-                    {"It'll come up as an unknown number. That's us."}
-                  </p>
-                  <p className="lp-hero-callout-sub">
-                    {"The call's about 5 minutes. We'll figure out where you're at and tell you exactly what your next move is on your first deal."}
+                    {"Unknown number, that's us. About 5 minutes."}
                   </p>
                   <p className="lp-hero-callout-fine">
-                    {"You don't need to know anything yet. That's the point of the call."}
+                    {"You don't need to know anything yet."}
                   </p>
                 </div>
               </div>
+              {/* Only shown OUTSIDE calling hours. Someone opting in at 2am
+                  needs to know they were not ignored; someone opting in at 1pm
+                  does not need the line at all. Below the callout, not inside
+                  it, so the box stays three tiers. */}
+              {outsideCallHours && (
+                <p className="lp-free-hours">
+                  {"We call between 6am-8pm Pacific. If you opted in outside those hours, we'll reach out the next morning."}
+                </p>
+              )}
+              <h1 className="lp-hero-h">
+                Your <span className="lp-hero-h-em">Secured Wholesaling</span> Blueprint
+              </h1>
+              {/* White label bar sitting on the top edge of the player. Kept
+                  outside the frame so it never covers Vimeo's Unmute button. */}
+              <div className="lp-video-overlay">{"Video tutorial \u00b7 2 minute watch"}</div>
               <div className="lp-hero-video">
                 <iframe
                   src="https://player.vimeo.com/video/1193039444?badge=0&autopause=0&player_id=0&app_id=58479&autoplay=1&muted=1&playsinline=1"
@@ -404,10 +523,11 @@ export default function LandingClient({ variant }: Props) {
                   title="Secured Wholesaling Blueprint"
                 />
               </div>
-              {/* The picker lives on the PAGE now, not behind a button. Tapping
-                  a number opens the modal straight to that variant, so there is
-                  no screen 1 inside the modal any more and no way back to one —
-                  closing the modal is how someone changes their answer. */}
+              {/* The picker lives on the PAGE, not behind a button. Tapping a
+                  number opens the modal straight to that variant; closing the
+                  modal is how someone changes their answer. It also replaces
+                  main's lp-free-outro, which did the same "now go look around"
+                  job less directly. */}
               <div className="lp-hero-goals-wrap">
                 <p className="lp-hero-goals-h">What would actually change things for you?</p>
                 <div className="lp-hero-goals">
@@ -427,13 +547,6 @@ export default function LandingClient({ variant }: Props) {
                     ),
                   )}
                 </div>
-              </div>
-              <p className="lp-hero-cap">{"Watch this first. It's the same method behind every deal below."}</p>
-              <div className="lp-hero-scrollcue">
-                <span>Want the whole system? Keep scrolling.</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
               </div>
 
               {/* Payoff modal — opens straight to the variant the page picker
@@ -523,31 +636,19 @@ export default function LandingClient({ variant }: Props) {
                   </div>
                 </div>
               )}
-              <TrustRow />
-              <div className="lp-trust">
-                <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Cancel anytime</div>
-                <div className="lp-trust-dot" />
-                <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Secured by Whop</div>
-              </div>
             </div>
           </section>
         ) : (
           <section className="lp-hero">
             <div className="shell">
-              <div className="lp-hero-badge">Real Venture {"·"} Proven Path</div>
               <h1 className="lp-hero-h">
                 <span className="lp-hero-line-1">Your first</span>
                 <span className="lp-hero-line-2">real estate payday.</span>
                 <span className="lp-hero-line-3">{"We'll walk you there."}</span>
               </h1>
               <p className="lp-hero-sub">{"We teach you live, hand you the tools, and send real buyers to your deals. No license, no capital, no experience needed."}</p>
-              <CtaStrip onJoin={openPricing} label={proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
+              <CtaStrip onJoin={openPricing} label={threeMonth ? "Join Pro for $130 / 3 months \u2192" : sixMonth ? "Join Pro for $250 / 6 months \u2192" : proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
               <TrustRow />
-              <div className="lp-trust">
-                <div className="lp-trust-item"><span className="lp-trust-check">{"✓"}</span> Cancel anytime</div>
-                <div className="lp-trust-dot" />
-                <div className="lp-trust-item"><span className="lp-trust-check">{"✓"}</span> Secured by Whop</div>
-              </div>
             </div>
           </section>
         )}
@@ -562,7 +663,7 @@ export default function LandingClient({ variant }: Props) {
           <PayoutCarousel />
         </section>
 
-        <VideoWalkthrough onJoin={openPricing} ctaLabel={proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
+        <VideoWalkthrough onJoin={openPricing} ctaLabel={threeMonth ? "Join Pro for $130 / 3 months \u2192" : sixMonth ? "Join Pro for $250 / 6 months \u2192" : proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
 
         <section className="lp-success-stories">
           <div className="shell">
@@ -593,48 +694,6 @@ export default function LandingClient({ variant }: Props) {
                 </div>
               ))}
             </div>
-          </div>
-        </section>
-
-        <section className="lp-compare">
-          <div className="shell">
-            <SectionHead
-              heading={<>Their way <span className="lp-vs-red">vs</span> our way.</>}
-              sub={"Most people never make it. Here's why."}
-            />
-            <div className="lp-compare-grid">
-              <div className="lp-compare-col bad">
-                <div className="lp-compare-head">Their Way</div>
-                <ul className="lp-compare-list">
-                  {LP_COMPARE_BAD.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="lp-vs-box">VS</div>
-              <div className="lp-compare-col good">
-                <div className="lp-compare-head">Real Venture</div>
-                <ul className="lp-compare-list">
-                  {LP_COMPARE_GOOD.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-            <div className="lp-cta-after">
-              <CtaStrip onJoin={openPricing} label={"Join Real Venture \u2192"} />
-              <TrustRow />
-            </div>
-          </div>
-        </section>
-
-        <section className="lp-phases">
-          <div className="shell">
-            <SectionHead
-              heading={<>The simple 7-step path to success.</>}
-              sub="Each distinct phase to your first deal."
-            />
-            <Timeline />
           </div>
         </section>
 
@@ -676,6 +735,7 @@ export default function LandingClient({ variant }: Props) {
                 <div className="tier-name">Pro</div>
                 <div className="tier-price"><span className="cur">$</span><span className="amt">{PRO_TERMS[proTerm].amount}</span></div>
                 <div className="tier-per">/ {PRO_TERMS[proTerm].cadence}</div>
+                {!sixMonth && !threeMonth && (
                 <div className="tier-term-toggle" role="tablist">
                   <button
                     type="button"
@@ -697,6 +757,7 @@ export default function LandingClient({ variant }: Props) {
                   </button>
                   {proTerm === "quarterly" && <span className="tier-save-badge">Save $20</span>}
                 </div>
+                )}
                 <div className="tier-tag">Stop learning, start closing.</div>
                 <div className="tier-divider"></div>
                 <ul className="tier-feats">
@@ -733,6 +794,10 @@ export default function LandingClient({ variant }: Props) {
               )}
 
             </div>
+            <div className="pricing-risk-row">
+              <span><span className="lp-trust-check">{"\u2713"}</span> Cancel anytime</span>
+              <span><span className="lp-trust-check">{"\u2713"}</span> Instant access</span>
+            </div>
           </div>
         </section>
 
@@ -745,12 +810,26 @@ export default function LandingClient({ variant }: Props) {
             <div className="lp-review-summary">
               <div className="lp-reviews-score">{REVIEW_STATS.average.toFixed(1)}</div>
               <div>
-                <div className="lp-reviews-stars">{"\u2605\u2605\u2605\u2605\u2605"}</div>
+                <div className="lp-reviews-stars trust-rating-stars">{"\u2605\u2605\u2605\u2605\u2605"}</div>
                 <div className="lp-reviews-count">{REVIEW_STATS.total} verified reviews</div>
               </div>
               <img src="/whoplogo3.png" alt="Whop" className="lp-reviews-whop-logo" />
             </div>
             <Reviews />
+          </div>
+        </section>
+
+        <section className="lp-final">
+          <div className="shell">
+            <h2 className="lp-section-h2">Your first payday <span>starts today.</span></h2>
+            <p className="lp-section-sub lp-final-sub">Join {TRUST_COUNTS.students}+ students who stopped watching and started closing.</p>
+            <CtaStrip onJoin={openPricing} label={threeMonth ? "Join Pro for $130 / 3 months \u2192" : sixMonth ? "Join Pro for $250 / 6 months \u2192" : proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
+            <TrustRow />
+            <div className="lp-trust">
+              <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Cancel anytime</div>
+              <div className="lp-trust-dot" />
+              <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Instant access</div>
+            </div>
           </div>
         </section>
 
@@ -807,7 +886,7 @@ export default function LandingClient({ variant }: Props) {
                   <li>Live coaching 7x/week</li>
                   <li>Vetted buyer network on tap</li>
                   <li>Deal analyzer + contract templates</li>
-                  <li>350+ members closing deals with you</li>
+                  <li>{TRUST_COUNTS.students}+ members closing deals with you</li>
                   <li>Finally start your journey in entrepreneurship</li>
                 </ul>
                 <button
@@ -819,20 +898,6 @@ export default function LandingClient({ variant }: Props) {
                 </button>
               </div>
 
-            </div>
-          </div>
-        </section>
-
-        <section className="lp-final">
-          <div className="shell">
-            <h2 className="lp-section-h2">Your first payday <span>starts today.</span></h2>
-            <p className="lp-section-sub lp-final-sub">Join 350+ students who stopped watching and started closing.</p>
-            <CtaStrip onJoin={openPricing} label={proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
-            <TrustRow />
-            <div className="lp-trust">
-              <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Cancel anytime</div>
-              <div className="lp-trust-dot" />
-              <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Secured by Whop</div>
             </div>
           </div>
         </section>
@@ -865,7 +930,9 @@ export default function LandingClient({ variant }: Props) {
           if (e.target === e.currentTarget) closePricing();
         }}
       >
-        <div className="modal">
+        <div
+          className={`modal${step === "checkout" ? ` pm-theme-${planCopy.accent}` : ""}`}
+        >
           {step !== "checkout" && (
             <button className="modal-close" onClick={closePricing} aria-label="Close">{"×"}</button>
           )}
@@ -908,6 +975,7 @@ export default function LandingClient({ variant }: Props) {
                 <div className="tier-name">Pro</div>
                 <div className="tier-price"><span className="cur">$</span><span className="amt">{PRO_TERMS[proTerm].amount}</span></div>
                 <div className="tier-per">/ {PRO_TERMS[proTerm].cadence}</div>
+                {!sixMonth && !threeMonth && (
                 <div className="tier-term-toggle" role="tablist">
                   <button
                     type="button"
@@ -929,6 +997,7 @@ export default function LandingClient({ variant }: Props) {
                   </button>
                   {proTerm === "quarterly" && <span className="tier-save-badge">Save $20</span>}
                 </div>
+                )}
                 <div className="tier-tag">Stop learning, start closing.</div>
                 <div className="tier-divider"></div>
                 <ul className="tier-feats">
@@ -968,33 +1037,81 @@ export default function LandingClient({ variant }: Props) {
             <div className="modal-foot">
               <span><CheckIcon />Cancel anytime</span>
               <span>{"•"}</span>
-              <span><CheckIcon />Secured by Whop</span>
+              <span><CheckIcon />Instant access</span>
             </div>
             </div>
             )}
 
             {step === "checkout" && activePlan && (
               <div className="modal-step modal-step-narrow" key="step-checkout">
-                <div className={`checkout-summary tier-${activePlan.crownColor}`}>
-                  <div className="checkout-summary-info">
-                    <div className="checkout-summary-name">{activePlan.name}</div>
-                    <div className="checkout-summary-tagline">{activePlan.tagline}</div>
+                <div className="pm-header">
+                  <h2 className="pm-title">{modalTitle}</h2>
+                  {/* Two-column grid. DOM order fills it:
+                      row 1 = Cancel anytime + Whop rating
+                      row 2 = Instant access */}
+                  <div className="pm-trust">
+                    <div className="pm-trust-checks">
+                      <span className="pm-trust-item">
+                        <span className="pm-trust-icon pm-trust-check" aria-hidden="true">{"✓"}</span>
+                        Cancel anytime
+                      </span>
+                      <span className="pm-trust-item">
+                        <span className="pm-trust-icon pm-trust-check" aria-hidden="true">{"✓"}</span>
+                        Instant access
+                      </span>
+                    </div>
+                    <div className="pm-trust-rating">
+                      <span className="pm-trust-rating-row">
+                        <span aria-label="5 stars" className="trust-stars">★★★★★</span>
+                        <img src="/whoplogo3.png" alt="Whop" className="trust-whop-logo" width={18} height={18} />
+                      </span>
+                      <span className="pm-trust-count trust-reviews-count">{`(${TRUST_COUNTS.reviews} reviews)`}</span>
+                    </div>
                   </div>
-                  <div className="checkout-summary-price">
-                    <div className="checkout-summary-amount">{activePlan.price}</div>
-                    <div className="checkout-summary-cadence">{activePlan.cadence}</div>
+                  <span className="pm-accent-bar" aria-hidden="true" />
+                </div>
+
+                <div className="pm-planbar">
+                  <div className="pm-planbar-info">
+                    <div className="pm-plan-name">{planCopy.name}</div>
+                    <div className="pm-plan-tagline">{planCopy.tagline}</div>
                   </div>
                   <button
                     type="button"
-                    className="checkout-summary-back"
+                    className="pm-back"
                     onClick={() => setStep("pricing")}
                   >
-                    <span aria-hidden="true">{"←"}</span>
-                    <span>Back</span>
+                    {"← Back"}
                   </button>
                 </div>
+
+                <ul className="pm-feats">
+                  {(featuresOpen
+                    ? planCopy.features
+                    : planCopy.features.slice(0, FEATURE_PREVIEW)
+                  ).map((feat) => (
+                    <li className="pm-feat" key={feat}>
+                      <span className="pm-feat-check" aria-hidden="true">{"✓"}</span>
+                      {feat}
+                    </li>
+                  ))}
+                </ul>
+                {planCopy.features.length > FEATURE_PREVIEW && (
+                  <button
+                    type="button"
+                    className="pm-feats-toggle"
+                    onClick={() => setFeaturesOpen((open) => !open)}
+                    aria-expanded={featuresOpen}
+                  >
+                    {featuresOpen
+                      ? "Show less"
+                      : `+ ${planCopy.features.length - FEATURE_PREVIEW} more included`}
+                  </button>
+                )}
+
                 <div className="modal-checkout-wrap">
                   <WhopCheckoutEmbed
+                    ref={checkoutControls}
                     planId={activePlan.planId}
                     theme="dark"
                     themeOptions={{
@@ -1006,8 +1123,16 @@ export default function LandingClient({ variant }: Props) {
                     onComplete={handleCheckoutComplete}
                   />
                 </div>
+                <div className="pm-friction">
+                  <span className="pm-friction-check" aria-hidden="true">{"✓"}</span>
+                  <span>
+                    Cancel anytime, no lock-in. Not a fit? One click cancels. No emails, no
+                    calls, no hoops.
+                  </span>
+                </div>
+                <div className="pm-footer-note">Cancel anytime. One click, no hoops.</div>
                 <div className="checkout-trust-footer">
-                  Secured by Whop <span aria-hidden="true">·</span> Encrypted <span aria-hidden="true">·</span> Cancel anytime
+                  Instant access <span aria-hidden="true">·</span> Encrypted <span aria-hidden="true">·</span> Cancel anytime
                 </div>
               </div>
             )}

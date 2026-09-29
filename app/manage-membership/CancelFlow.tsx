@@ -11,6 +11,9 @@ type Props = {
   onClose: () => void;
   membershipId: string;
   plan: string;
+  // Whop plan id, for tier-aware gate copy. Optional so the existing
+  // ManageMembershipClient call site keeps compiling; null = unknown tier.
+  planId?: string | null;
 };
 
 // Fire and forget tracking. No await, no error handling; keepalive so events
@@ -49,7 +52,7 @@ const GATE_OPEN_EVENTS = [
   "loss_screen_viewed",
 ];
 
-export default function CancelFlow({ open, onClose, membershipId, plan }: Props) {
+export default function CancelFlow({ open, onClose, membershipId, plan, planId = null }: Props) {
   const [currentGate, setCurrentGate] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [, setSavedAt] = useState<number | null>(null);
@@ -142,7 +145,7 @@ export default function CancelFlow({ open, onClose, membershipId, plan }: Props)
           <Gate1Reason onReason={handleReason} onNeverMind={onClose} />
         )}
         {currentGate === 1 && (
-          <Gate2Pause onAccept={handlePauseAccept} onDecline={handlePauseDecline} />
+          <Gate2Pause planId={planId} onAccept={handlePauseAccept} onDecline={handlePauseDecline} />
         )}
         {currentGate === 2 && (
           <Gate3FreeDays onAccept={handleFreeDaysAccept} onDecline={handleFreeDaysDecline} />

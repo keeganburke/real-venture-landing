@@ -59,21 +59,17 @@ export default async function LearnPage() {
   const courseOrder = new Map(courses.map((c) => [c.id, c.sort_order]));
 
   // Flat sequence in curriculum order: course order, then lesson order.
-  // Mirrors the sequential gate the lesson player enforces server-side.
+  // Used only for numbering now; there is no sequential gate anymore.
   const ordered = [...lessonRows].sort(
     (a, b) =>
       (courseOrder.get(a.course_id) ?? 0) - (courseOrder.get(b.course_id) ?? 0) ||
       a.sort_order - b.sort_order
   );
 
-  let maxCompletedIndex = -1;
-  ordered.forEach((lesson, index) => {
-    if (completedLessonIds.has(lesson.id)) maxCompletedIndex = Math.max(maxCompletedIndex, index);
-  });
-  const maxUnlockedIndex = maxCompletedIndex + 1;
-
-  // Unknown tier gates like Base: safer to over-lock than leak Pro content.
-  const isPro = whopMember.tier === "Pro";
+  // Every lesson is open to every member: no sequence gate, no Pro gate.
+  // The Whop lookup stays so tier-based gating can be revived later; it
+  // gates nothing today. whopMember.tier is intentionally unused.
+  void whopMember;
 
   const lessons: CatalogLesson[] = ordered.map((lesson, index) => {
     const course = courseById.get(lesson.course_id);
@@ -85,9 +81,11 @@ export default async function LearnPage() {
           : "intermediate";
     const difficulty = (course && DIFFICULTY_BY_COURSE_SLUG[course.slug]) ?? fallback;
     const completed = completedLessonIds.has(lesson.id);
-    const proGated = difficulty === "advanced" && !isPro;
-    const proLocked = lesson.requires_pro && !isPro;
-    const sequenceLocked = !completed && index > maxUnlockedIndex;
+    // All gates off (see above). Kept as named constants so LearnClient's
+    // badge / modal code stays wired and can be re-enabled by flipping these.
+    const proGated = false;
+    const proLocked = false;
+    const sequenceLocked = false;
     return {
       id: lesson.id,
       slug: lesson.slug,

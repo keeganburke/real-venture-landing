@@ -21,18 +21,30 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
 
   if (!session) redirect("/api/auth/whop/start");
 
-  const intake = await getIntakeCookie();
-  if (!intake?.completedAt) redirect("/onboarding");
-
+  // One profile read serves both the intake gate and the nav identity.
   // Nav identity: saved profile wins, Whop's embedded user record fills gaps.
   const [profileRes, whopMember] = await Promise.all([
     createAdminClient()
       .from("member_profiles")
-      .select("display_name, photo_url")
+      .select("display_name, photo_url, intake_completed_at")
       .eq("whop_user_id", session.whopUserId)
       .maybeSingle(),
     getWhopMemberSummary(session.whopUserId),
   ]);
+  if (profileRes.error) {
+    console.error("[dashboard/layout] member_profiles read failed", profileRes.error.message);
+  }
+
+  // Intake gate: Supabase first, cookie second. intake_completed_at is set
+  // once by /api/intake/save and never expires, so a member who finished on
+  // any device is never forced back through onboarding by a missing or
+  // expired rv_intake cookie. A failed read leaves it null and the cookie
+  // decides, exactly as before.
+  const completedInDb = Boolean(profileRes.data?.intake_completed_at);
+  if (!completedInDb) {
+    const intake = await getIntakeCookie();
+    if (!intake?.completedAt) redirect("/onboarding");
+  }
   const profileName = profileRes.data?.display_name;
   const displayName =
     typeof profileName === "string" && profileName.trim().length > 0

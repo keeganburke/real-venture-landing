@@ -5,11 +5,24 @@ export const INTAKE_COOKIE_NAME = "rv_intake";
 const INTAKE_TTL_SECONDS = 60 * 60 * 24 * 7;
 
 export type IntakeAnswers = {
-  experience?: "never" | "1-5" | "6+" | null;
-  bottleneck?: "deals" | "buyers" | "funding" | "contracts" | "all" | null;
-  hours?: "<5" | "5-15" | "15+" | null;
-  goal?: "10k" | "10-30k" | "30k+" | null;
-  need?: "community" | "tools" | "access" | null;
+  dream?: string | null;
+  // Q2: minutes per day, kept as the option string in the cookie and cast to
+  // an integer (member_profiles.whop_commitment_min) on completion.
+  commitment_min?: "15" | "30" | "60" | "120" | null;
+  tried?: Array<
+    "drop_shipping" | "trading" | "reselling" | "freelance" | "content" | "nothing" | "other"
+  > | null;
+  tried_failure?: string | null;
+  situation?: "full_time" | "part_time" | "not_working" | "in_school" | null;
+  // Q5: 1-10 (member_profiles.intake_seriousness_scale).
+  seriousness_scale?: number | null;
+  // Q5 branch answer, one free-text field for all three branches
+  // (member_profiles.intake_seriousness_followup). Wired in a later prompt.
+  seriousness_followup?: string | null;
+  // Q6: any non-negative integer (member_profiles.intake_age, no range).
+  age?: number | null;
+  // Q8: optional; null when skipped. Saved to member_profiles.whop_phone.
+  phone?: string | null;
   completedAt?: string | null;
   tourCompletedAt?: string | null;
 };
