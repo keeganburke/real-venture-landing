@@ -6549,6 +6549,12 @@ a.trust-badge-trustpilot:hover {
   align-items: center;
   justify-content: center;
   padding: 24px;
+  /* Screen 2 is three zones tall and will not fit a short phone. Scroll the
+     OVERLAY, same as .modal-overlay already does for the pricing modal, so the
+     whole card travels and the close copy is always reachable. `margin: auto`
+     on the card keeps it centred while it still fits. */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .lp-callmodal {
   position: relative;
@@ -6560,6 +6566,7 @@ a.trust-badge-trustpilot:hover {
   padding: 32px 28px 26px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(229, 181, 71, 0.12);
   text-align: left;
+  margin: auto;
 }
 .lp-callmodal-close {
   position: absolute;
@@ -6687,6 +6694,228 @@ a.trust-badge-trustpilot:hover {
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   padding-top: 16px;
   text-align: center;
+}
+
+/* ===== /free commitment modal: goal picker -> your-number screen ==========
+   Every value below is already in this stylesheet: the gold ramp from :root
+   (--gold / --gold-bright), #131313 and the rgba(229,181,71,*) border and glow
+   from .lp-callmodal, the rgba(255,255,255,0.08) hairline from
+   .lp-callmodal-foot, 20px radius, Cabinet Grotesk for figures and Inter for
+   body. Nothing here introduces a colour or a type size. */
+
+/* Both screens mount with the same short, deliberate entrance, so swapping
+   one for the other reads as a move rather than a flicker. 240ms. */
+.lp-callmodal-screen {
+  animation: lp-callmodal-screen-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes lp-callmodal-screen-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ── Screen 1 ─────────────────────────────────────────────────────────────
+   The heading wraps to two lines at 420px and that is fine; the balance keeps
+   it from breaking one word onto its own line. */
+.lp-callmodal-screen .lp-callmodal-h {
+  text-wrap: balance;
+  margin: 0 0 20px;
+  /* Clear of the close button, which sits at top:14px right:14px + 32px wide */
+  padding-right: 34px;
+}
+.lp-callmodal-goals {
+  display: grid;
+  /* Three across. Measured: "$20K/mo" at 17px Cabinet Grotesk plus its padding
+     needs ~96px a button, so the row needs 3x96 + 2x10 = 308px of inner width.
+     The card gives 364px on desktop, so three fit. */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.lp-callmodal-goal {
+  /* 44px floor is the tap target; the padding lands it at 52px. */
+  min-height: 52px;
+  padding: 14px 10px;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  color: var(--gold-bright);
+  background: rgba(229, 181, 71, 0.08);
+  border: 1px solid rgba(229, 181, 71, 0.35);
+  border-radius: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.16s ease, border-color 0.16s ease,
+              transform 0.16s ease, box-shadow 0.16s ease;
+}
+.lp-callmodal-goal:hover {
+  background: rgba(229, 181, 71, 0.16);
+  border-color: var(--gold);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(229, 181, 71, 0.22);
+}
+/* Pressing one should feel like a decision, so the active state goes solid
+   gold on the existing --cta ramp rather than just darkening. */
+.lp-callmodal-goal:active {
+  transform: translateY(0) scale(0.98);
+  background: linear-gradient(135deg, #FFE89A 0%, #E5B547 55%, #B8881F 100%);
+  border-color: #FFE89A;
+  color: #1a1208;
+  box-shadow: 0 2px 10px rgba(229, 181, 71, 0.4);
+}
+.lp-callmodal-goal:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* ── Screen 2, zone 1: the number ─────────────────────────────────────────
+   Hierarchy is figure, then verdict, then support. */
+.lp-callmodal-num { padding-right: 34px; }
+.lp-callmodal-fig {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 900;
+  font-size: 34px;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: #fff;
+  margin: 0 0 10px;
+}
+.lp-callmodal-avg {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 14px;
+}
+.lp-callmodal-verdict {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  color: var(--gold-bright);
+  margin: 0 0 8px;
+  text-wrap: balance;
+}
+.lp-callmodal-trail {
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  text-wrap: pretty;
+}
+/* Quiet on purpose: available, never competing with the number above it. */
+.lp-callmodal-change {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 4px 0;
+  background: none;
+  border: none;
+  font-family: "Inter", sans-serif;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  transition: color 0.16s ease;
+}
+.lp-callmodal-change:hover { color: rgba(255, 255, 255, 0.75); }
+.lp-callmodal-change:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Screen 2, zone 2: what happens on the call ───────────────────────────
+   Three zones, three beats: the 26px gap plus the hairline is what keeps this
+   from reading as one wall of text. Hairline matches .lp-callmodal-foot. */
+.lp-callmodal-pickup {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+/* The emoji sits in its own fixed column so all five text blocks share one
+   left edge. No bullet characters: the emoji IS the bullet. */
+.lp-callmodal-pickup-h,
+.lp-callmodal-pickup-list li {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: 0 10px;
+  align-items: start;
+}
+.lp-callmodal-pickup-h {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  color: #fff;
+  margin: 0 0 16px;
+}
+/* Balanced, so this breaks as "...when you / pick up" rather than orphaning
+   "up" on a line of its own, which is what it does at 375px unbalanced. */
+.lp-callmodal-pickup-h > span:last-child { text-wrap: balance; }
+.lp-callmodal-pickup-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 13px;
+}
+.lp-callmodal-pickup-list li {
+  font-family: "Inter", sans-serif;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.82);
+}
+.lp-callmodal-bullet {
+  font-size: 15px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+/* ── Screen 2, zone 3: the close ──────────────────────────────────────────── */
+.lp-callmodal-end {
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+.lp-callmodal-end-main {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  color: #fff;
+  margin: 0 0 6px;
+}
+.lp-callmodal-end-sub {
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0;
+  text-wrap: pretty;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-callmodal-screen { animation: none; }
+  .lp-callmodal-goal:hover { transform: none; }
+}
+
+/* Below ~420px the card has 287-302px of inner width, short of the 308px a
+   three-across row needs. auto-fit would fall to a ragged 2 + 1; the copy says
+   stacked OR in a row, never shrink the text, so it stacks cleanly instead. */
+@media (max-width: 419px) {
+  .lp-callmodal-goals { grid-template-columns: 1fr; gap: 9px; }
+}
+
+@media (max-width: 640px) {
+  /* 390px and 375px: the figure drops a notch so "$20,000 a month" stays on
+     one line, and the zone gaps tighten so the close copy stays reachable. */
+  .lp-callmodal-fig { font-size: 30px; }
+  .lp-callmodal-verdict { font-size: 18px; }
+  .lp-callmodal-pickup { margin-top: 22px; padding-top: 18px; }
+  .lp-callmodal-end { margin-top: 22px; }
 }
 @media (max-width: 640px) {
   .lp-hero-free .lp-hero-callout { padding: 14px 16px; }
