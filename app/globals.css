@@ -6464,9 +6464,11 @@ a.trust-badge-trustpilot:hover {
 
 /* ================= /free HERO: CALL CALLOUT + COMMITMENT MODAL ============
    LIVE CSS — do NOT treat as orphaned. Referenced by app/LandingClient.tsx's
-   variant="free" hero (lp-hero-callout*, lp-hero-commit) and its commitment
-   modal (lp-callmodal*), rendered conditionally so a static orphan grep can
-   miss them. See the restored FREE TRAINING HERO block above for precedent
+   variant="free" hero (lp-hero-callout*, lp-hero-goal*) and its payoff modal
+   (lp-callmodal*), rendered conditionally so a static orphan grep can miss
+   them. lp-hero-commit and lp-callmodal-h were removed here on purpose when
+   the trigger button and the modal's screen 1 were replaced by the inline
+   picker — those two ARE dead, the rest is not. See the restored FREE TRAINING HERO block above for precedent
    (311a430 deleted live scoped rules once already). */
 /* "You're in" load-flash: in flow (no layout shift), fades in, holds ~1.7s,
    fades out and stays invisible. Skipped entirely under reduced motion. */
@@ -6497,47 +6499,110 @@ a.trust-badge-trustpilot:hover {
   .lp-hero-free .lp-hero-yourein { display: none; }
 }
 .lp-hero-free .lp-hero-callout {
-  max-width: 640px;
+  /* 860px, the SAME max-width as .lp-hero-video below it, so the two boxes
+     share a left and right edge. It was 640 and read as a narrower, lesser
+     thing floating above the video. */
+  max-width: 860px;
   margin: 0 auto 18px;
-  padding: 16px 20px;
+  padding: 20px 24px;
   text-align: left;
-  background: rgba(229, 181, 71, 0.07);
-  border: 1px solid rgba(229, 181, 71, 0.45);
+  /* A wash rather than a tint: the flat 7% fill plus a 1px border read as a
+     disabled control next to the glowing H1. Same --gold ramp, more of it. */
+  background:
+    linear-gradient(135deg, rgba(229, 181, 71, 0.16) 0%, rgba(229, 181, 71, 0.05) 55%, rgba(229, 181, 71, 0.10) 100%),
+    rgba(229, 181, 71, 0.04);
+  border: 1.5px solid rgba(229, 181, 71, 0.55);
   border-radius: 14px;
+  box-shadow: 0 0 28px rgba(229, 181, 71, 0.10), inset 0 1px 0 rgba(255, 232, 154, 0.12);
+  /* Icon column, then text. Left-aligned inside, which is what makes this
+     read as a live notice rather than another centred content block. */
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 18px;
+  align-items: start;
 }
+/* The anchor the box had none of. Ring expands and fades on a 2s loop. */
+.lp-hero-free .lp-hero-callout-icon {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold);
+}
+.lp-hero-free .lp-hero-callout-icon svg {
+  width: 30px;
+  height: 30px;
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 0 8px rgba(229, 181, 71, 0.45));
+}
+.lp-hero-free .lp-hero-callout-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(229, 181, 71, 0.55);
+  background: rgba(229, 181, 71, 0.08);
+  animation: lp-callout-ring 2s ease-out infinite;
+}
+@keyframes lp-callout-ring {
+  0%   { transform: scale(0.78); opacity: 0.9; }
+  70%  { transform: scale(1.12); opacity: 0; }
+  100% { transform: scale(1.12); opacity: 0; }
+}
+.lp-hero-free .lp-hero-callout-body { min-width: 0; }
+/* TIER 1 — unmissable. Both old lines carried the same weight, which is why
+   the whole box read as fine print. */
 .lp-hero-free .lp-hero-callout-main {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 900;
+  font-size: 22px;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: #ffe89a;
+  margin: 0 0 6px;
+  text-wrap: balance;
+}
+/* TIER 1b — one step down, still gold-adjacent white. */
+.lp-hero-free .lp-hero-callout-second {
   font-family: "Cabinet Grotesk", sans-serif;
   font-weight: 800;
   font-size: 16.5px;
-  line-height: 1.45;
-  color: #ffe89a;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: #fff;
   margin: 0 0 10px;
 }
+/* TIER 2 — body. */
 .lp-hero-free .lp-hero-callout-sub {
   font-family: "Inter", sans-serif;
   font-size: 13.5px;
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.72);
+  margin: 0 0 8px;
+}
+/* TIER 3 — smallest, muted, the .55 footnote treatment. */
+.lp-hero-free .lp-hero-callout-fine {
+  font-family: "Inter", sans-serif;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.55);
   margin: 0;
 }
-.lp-hero-free .lp-hero-commit {
-  display: inline-block;
-  margin: 16px auto 26px;
-  padding: 13px 26px;
-  font-family: "Cabinet Grotesk", sans-serif;
-  font-weight: 800;
-  font-size: 15px;
-  color: #1a1208;
-  background: linear-gradient(135deg, #FFE89A 0%, #E5B547 55%, #B8881F 100%);
-  border: none;
-  border-radius: 999px;
-  cursor: pointer;
-  box-shadow: 0 4px 20px rgba(229, 181, 71, 0.35);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+@media (prefers-reduced-motion: reduce) {
+  .lp-hero-free .lp-hero-callout-ring { animation: none; opacity: 0.5; transform: none; }
 }
-.lp-hero-free .lp-hero-commit:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 26px rgba(229, 181, 71, 0.5);
+@media (max-width: 640px) {
+  /* 375/390: 52px of icon column plus the text does not sit side by side
+     without the copy going ragged. Stack, text stays left-aligned. */
+  .lp-hero-free .lp-hero-callout {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 18px 18px;
+  }
+  .lp-hero-free .lp-hero-callout-main { font-size: 19px; }
+  .lp-hero-free .lp-hero-callout-second { font-size: 15px; }
 }
 .lp-callmodal-overlay {
   position: fixed;
@@ -6586,125 +6651,16 @@ a.trust-badge-trustpilot:hover {
   justify-content: center;
 }
 .lp-callmodal-close:hover { color: #fff; }
-.lp-callmodal-h {
-  font-family: "Cabinet Grotesk", sans-serif;
-  font-weight: 900;
-  font-size: 24px;
-  letter-spacing: -0.02em;
-  color: #fff;
-  margin: 0 0 6px;
-}
-.lp-callmodal-sub {
-  font-family: "Inter", sans-serif;
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
-  margin: 0 0 22px;
-}
-.lp-callmodal-steps {
-  list-style: none;
-  margin: 0 0 20px;
-  padding: 0;
-}
-.lp-callmodal-steps li {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 0 0 26px 0;
-  /* Staggered reveal: the path draws itself node by node on open. The modal
-     is conditionally rendered, so every open remounts and replays this. */
-  animation: lp-callmodal-step-in 0.35s ease-out both;
-}
-.lp-callmodal-steps li:nth-child(2) { animation-delay: 0.15s; }
-.lp-callmodal-steps li:nth-child(3) { animation-delay: 0.3s; }
-.lp-callmodal-steps li:nth-child(4) { animation-delay: 0.45s; }
-@keyframes lp-callmodal-step-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.lp-callmodal-steps li:last-child { padding-bottom: 0; }
-/* Vertical connector, brightening segment by segment toward the payoff so
-   the eye travels down to the money node. */
-.lp-callmodal-steps li:not(:last-child)::before {
-  content: "";
-  position: absolute;
-  left: 15px;
-  top: 32px;
-  bottom: -2px;
-  width: 2px;
-}
-.lp-callmodal-steps li:nth-child(1)::before {
-  background: linear-gradient(180deg, rgba(229, 181, 71, 0.2), rgba(229, 181, 71, 0.4));
-}
-.lp-callmodal-steps li:nth-child(2)::before {
-  background: linear-gradient(180deg, rgba(229, 181, 71, 0.4), rgba(229, 181, 71, 0.65));
-}
-.lp-callmodal-steps li:nth-child(3)::before {
-  background: linear-gradient(180deg, rgba(229, 181, 71, 0.65), rgba(229, 181, 71, 0.95));
-}
-.lp-callmodal-node {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  border: 2px solid rgba(229, 181, 71, 0.7);
-  background: #131313;
-  font-size: 15px;
-  line-height: 1;
-  /* Lift off the flat card */
-  box-shadow: 0 0 10px rgba(229, 181, 71, 0.25), 0 2px 8px rgba(0, 0, 0, 0.5);
-}
-.lp-callmodal-step-txt {
-  font-family: "Inter", sans-serif;
-  font-size: 15px;
-  color: rgba(255, 255, 255, 0.82);
-}
-/* The payoff node glows brighter than the path to it */
-.lp-callmodal-steps li.is-payoff .lp-callmodal-node {
-  background: linear-gradient(135deg, #FFE89A 0%, #E5B547 100%);
-  border-color: #FFE89A;
-  box-shadow: 0 0 16px rgba(229, 181, 71, 0.55);
-  /* Gentle pulse: the payoff keeps drawing the eye */
-  animation: lp-callmodal-payoff-pulse 2.2s ease-in-out infinite;
-}
-@keyframes lp-callmodal-payoff-pulse {
-  0%, 100% { transform: scale(1); }
-  50%      { transform: scale(1.06); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .lp-callmodal-steps li,
-  .lp-callmodal-steps li.is-payoff .lp-callmodal-node {
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
-}
-.lp-callmodal-steps li.is-payoff .lp-callmodal-step-txt {
-  color: #ffe89a;
-  font-weight: 600;
-}
-.lp-callmodal-foot {
-  font-family: "Inter", sans-serif;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.55);
-  margin: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  padding-top: 16px;
-  text-align: center;
-}
 
 /* ===== /free commitment modal: goal picker -> your-number screen ==========
    Every value below is already in this stylesheet: the gold ramp from :root
    (--gold / --gold-bright), #131313 and the rgba(229,181,71,*) border and glow
-   from .lp-callmodal, the rgba(255,255,255,0.08) hairline from
-   .lp-callmodal-foot, 20px radius, Cabinet Grotesk for figures and Inter for
-   body. Nothing here introduces a colour or a type size. */
+   from .lp-callmodal, the 20px radius, Cabinet Grotesk for figures and Inter
+   for body. Nothing here introduces a colour or a type size. */
 
-/* Both screens mount with the same short, deliberate entrance, so swapping
-   one for the other reads as a move rather than a flicker. 240ms. */
+/* The modal mounts with a short, deliberate entrance rather than appearing
+   instantly. 240ms. Keyed on the goal, so tapping a different number on the
+   page re-runs it. */
 .lp-callmodal-screen {
   animation: lp-callmodal-screen-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -6713,24 +6669,33 @@ a.trust-badge-trustpilot:hover {
   to   { opacity: 1; transform: none; }
 }
 
-/* ── Screen 1 ─────────────────────────────────────────────────────────────
-   The heading wraps to two lines at 420px and that is fine; the balance keeps
-   it from breaking one word onto its own line. */
-.lp-callmodal-screen .lp-callmodal-h {
-  text-wrap: balance;
-  margin: 0 0 20px;
-  /* Clear of the close button, which sits at top:14px right:14px + 32px wide */
-  padding-right: 34px;
+/* ── The goal picker — ON THE PAGE, not in the modal ──────────────────────
+   These rules moved out of the modal when screen 1 did. Same look, same
+   measurements, new home: the picker sits where the "I'll pick up" button used
+   to, and tapping one opens the modal straight to that variant. */
+.lp-hero-free .lp-hero-goals-wrap {
+  max-width: 420px;
+  margin: 18px auto 26px;
 }
-.lp-callmodal-goals {
+.lp-hero-free .lp-hero-goals-h {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 900;
+  font-size: 20px;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: #fff;
+  text-wrap: balance;
+  margin: 0 0 14px;
+}
+.lp-hero-goals {
   display: grid;
   /* Three across. Measured: "$20K/mo" at 17px Cabinet Grotesk plus its padding
      needs ~96px a button, so the row needs 3x96 + 2x10 = 308px of inner width.
-     The card gives 364px on desktop, so three fit. */
+     The 420px wrap gives that, so three fit. */
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
 }
-.lp-callmodal-goal {
+.lp-hero-goal {
   /* 44px floor is the tap target; the padding lands it at 52px. */
   min-height: 52px;
   padding: 14px 10px;
@@ -6747,7 +6712,7 @@ a.trust-badge-trustpilot:hover {
   transition: background 0.16s ease, border-color 0.16s ease,
               transform 0.16s ease, box-shadow 0.16s ease;
 }
-.lp-callmodal-goal:hover {
+.lp-hero-goal:hover {
   background: rgba(229, 181, 71, 0.16);
   border-color: var(--gold);
   transform: translateY(-1px);
@@ -6755,19 +6720,19 @@ a.trust-badge-trustpilot:hover {
 }
 /* Pressing one should feel like a decision, so the active state goes solid
    gold on the existing --cta ramp rather than just darkening. */
-.lp-callmodal-goal:active {
+.lp-hero-goal:active {
   transform: translateY(0) scale(0.98);
   background: linear-gradient(135deg, #FFE89A 0%, #E5B547 55%, #B8881F 100%);
   border-color: #FFE89A;
   color: #1a1208;
   box-shadow: 0 2px 10px rgba(229, 181, 71, 0.4);
 }
-.lp-callmodal-goal:focus-visible {
+.lp-hero-goal:focus-visible {
   outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
 
-/* ── Screen 2, zone 1: the number ─────────────────────────────────────────
+/* ── Zone 1: the number ───────────────────────────────────────────────────
    Hierarchy is figure, then verdict, then support. */
 .lp-callmodal-num { padding-right: 34px; }
 .lp-callmodal-fig {
@@ -6804,31 +6769,9 @@ a.trust-badge-trustpilot:hover {
   margin: 0;
   text-wrap: pretty;
 }
-/* Quiet on purpose: available, never competing with the number above it. */
-.lp-callmodal-change {
-  display: inline-block;
-  margin-top: 14px;
-  padding: 4px 0;
-  background: none;
-  border: none;
-  font-family: "Inter", sans-serif;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  cursor: pointer;
-  transition: color 0.16s ease;
-}
-.lp-callmodal-change:hover { color: rgba(255, 255, 255, 0.75); }
-.lp-callmodal-change:focus-visible {
-  outline: 2px solid var(--gold);
-  outline-offset: 2px;
-  border-radius: 4px;
-}
-
-/* ── Screen 2, zone 2: what happens on the call ───────────────────────────
+/* ── Zone 2: what happens on the call ─────────────────────────────────────
    Three zones, three beats: the 26px gap plus the hairline is what keeps this
-   from reading as one wall of text. Hairline matches .lp-callmodal-foot. */
+   from reading as one wall of text. */
 .lp-callmodal-pickup {
   margin-top: 26px;
   padding-top: 22px;
@@ -6873,7 +6816,7 @@ a.trust-badge-trustpilot:hover {
   text-align: center;
 }
 
-/* ── Screen 2, zone 3: the close ──────────────────────────────────────────── */
+/* ── Zone 3: the close, then the fee disclaimer ──────────────────────────── */
 .lp-callmodal-end {
   margin-top: 26px;
   padding-top: 18px;
@@ -6896,17 +6839,27 @@ a.trust-badge-trustpilot:hover {
   margin: 0;
   text-wrap: pretty;
 }
+/* Fee disclaimer. Smallest muted style in the modal — the same 0.55 footnote
+   treatment as .lp-callmodal-end-sub, a step smaller. */
+.lp-callmodal-note {
+  font-family: "Inter", sans-serif;
+  font-size: 11px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 14px 0 0;
+  text-align: center;
+  text-wrap: pretty;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .lp-callmodal-screen { animation: none; }
-  .lp-callmodal-goal:hover { transform: none; }
+  .lp-hero-goal:hover { transform: none; }
 }
 
-/* Below ~420px the card has 287-302px of inner width, short of the 308px a
-   three-across row needs. auto-fit would fall to a ragged 2 + 1; the copy says
-   stacked OR in a row, never shrink the text, so it stacks cleanly instead. */
-@media (max-width: 419px) {
-  .lp-callmodal-goals { grid-template-columns: 1fr; gap: 9px; }
+/* Below ~460px the wrap has less than the 308px a three-across row needs.
+   Stacked OR in a row is allowed; shrinking the text is not, so it stacks. */
+@media (max-width: 460px) {
+  .lp-hero-goals { grid-template-columns: 1fr; gap: 9px; }
 }
 
 @media (max-width: 640px) {
