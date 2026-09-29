@@ -894,14 +894,14 @@ export default function LandingClient({ variant }: Props) {
                 {callGoal === "5k" && (
                   <>
                     <p className="lp-callmodal-fig">{"$5,000 a month"}</p>
-                    <p className="lp-callmodal-avg">{"Our average deal fee is $10,000."}</p>
+                    <p className="lp-callmodal-avg">{"Our average deal is $10,000."}</p>
                     <p className="lp-callmodal-verdict">{"That's one deal every two months."}</p>
                   </>
                 )}
                 {callGoal === "10k" && (
                   <>
                     <p className="lp-callmodal-fig">{"$10,000 a month"}</p>
-                    <p className="lp-callmodal-avg">{"Our average deal fee is $10,000."}</p>
+                    <p className="lp-callmodal-avg">{"Our average deal is $10,000."}</p>
                     <p className="lp-callmodal-verdict">{"That's one deal."}</p>
                     <p className="lp-callmodal-trail">{"Not a full business. One deal."}</p>
                   </>
@@ -909,7 +909,7 @@ export default function LandingClient({ variant }: Props) {
                 {callGoal === "20k" && (
                   <>
                     <p className="lp-callmodal-fig">{"$20,000 a month"}</p>
-                    <p className="lp-callmodal-avg">{"Our average deal fee is $10,000."}</p>
+                    <p className="lp-callmodal-avg">{"Our average deal is $10,000."}</p>
                     <p className="lp-callmodal-verdict">{"That's two deals a month."}</p>
                     <p className="lp-callmodal-trail">{"That's it."}</p>
                   </>
@@ -919,28 +919,36 @@ export default function LandingClient({ variant }: Props) {
               {/* ZONE 2 — what the call is. Emoji IS the bullet, in
                   its own column, so the text keeps one left edge. */}
               <div className="lp-callmodal-pickup">
-                <p className="lp-callmodal-pickup-h">
-                  <span className="lp-callmodal-bullet" aria-hidden="true">📞</span>
-                  <span>This is what happens when you pick up</span>
-                </p>
-                <ul className="lp-callmodal-pickup-list">
-                  <li>
-                    <span className="lp-callmodal-bullet" aria-hidden="true">📍</span>
-                    <span>{"We figure out where you're at. Knowing nothing is totally fine."}</span>
-                  </li>
-                  <li>
-                    <span className="lp-callmodal-bullet" aria-hidden="true">🎯</span>
-                    <span>{"The fastest path to your number, for your situation."}</span>
-                  </li>
-                  <li>
-                    <span className="lp-callmodal-bullet" aria-hidden="true">🔑</span>
-                    <span>{"What's actually working right now. The stuff that's not in the videos."}</span>
-                  </li>
-                  <li>
-                    <span className="lp-callmodal-bullet" aria-hidden="true">💰</span>
-                    <span>{"You hang up knowing your exact first move toward your first check."}</span>
-                  </li>
-                </ul>
+                {/* Centring wrapper. The hairline separator lives on
+                    .lp-callmodal-pickup and has to stay full-bleed, so the
+                    block cannot be shrunk there. This inner box is
+                    width:fit-content + margin-inline:auto, which centres the
+                    WHOLE five-item block while every line inside it keeps the
+                    single left edge the emoji grid columns give it. */}
+                <div className="lp-callmodal-pickup-inner">
+                  <p className="lp-callmodal-pickup-h">
+                    <span className="lp-callmodal-bullet" aria-hidden="true">📞</span>
+                    <span>This is what happens when you pick up</span>
+                  </p>
+                  <ul className="lp-callmodal-pickup-list">
+                    <li>
+                      <span className="lp-callmodal-bullet" aria-hidden="true">📍</span>
+                      <span>{"We figure out where you're at. Knowing nothing is totally fine."}</span>
+                    </li>
+                    <li>
+                      <span className="lp-callmodal-bullet" aria-hidden="true">🎯</span>
+                      <span>{"The fastest path to your number, for your situation."}</span>
+                    </li>
+                    <li>
+                      <span className="lp-callmodal-bullet" aria-hidden="true">🔑</span>
+                      <span>{"What's actually working right now. The stuff that's not in the videos."}</span>
+                    </li>
+                    <li>
+                      <span className="lp-callmodal-bullet" aria-hidden="true">💰</span>
+                      <span>{"You hang up knowing your exact first move toward your first check."}</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
 
               {/* ZONE 3 — the close, then the fee disclaimer. */}

@@ -6289,7 +6289,10 @@ body:has(.hub-page) {
   max-width: 860px;
   margin: 0 auto 18px;
   padding: 16px 24px;
-  text-align: left;
+  /* Centred, like every other block on the site. Left-aligned, the box read as
+     misaligned against the centred H1 and video card directly beneath it —
+     three stacked elements sharing a max-width, one of them ragged. */
+  text-align: center;
   /* A wash rather than a tint: the flat 7% fill plus a 1px border read as a
      disabled control next to the glowing H1. Same --gold ramp, more of it. */
   background:
@@ -6543,7 +6546,21 @@ body:has(.hub-page) {
 
 /* ── Zone 1: the number ───────────────────────────────────────────────────
    Hierarchy is figure, then verdict, then support. */
-.lp-callmodal-num { padding-right: 34px; }
+/* Centred to match the close section at the bottom of the same card; the two
+   were inconsistent inside one modal.
+   The 34px padding-right this replaces is GONE, not mirrored. It existed to
+   keep LEFT-aligned text from sliding under the absolutely-positioned close
+   button in the top-right — a hazard centring removes by itself, because
+   centred text pulls away from both edges symmetrically instead of running to
+   the right one. Mirroring it to `0 34px` was measurably wrong: it cut the
+   wrap width to 221.0px at 375, and "$20,000 a month" needs 221.9px, so the
+   figure broke to two lines against the explicit intent of the 29px mobile
+   size below. At padding 0 the figure keeps its single line with 67px to
+   spare, and lands 5.5px clear of the close button anyway. */
+.lp-callmodal-num {
+  padding: 0;
+  text-align: center;
+}
 .lp-callmodal-fig {
   font-family: "Cabinet Grotesk", sans-serif;
   font-weight: 900;
@@ -6585,6 +6602,19 @@ body:has(.hub-page) {
   margin-top: 20px;
   padding-top: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+/* Centres the five-item block AS A UNIT without touching the alignment of the
+   text inside it. fit-content shrinks to the block's natural width and the auto
+   inline margins centre what is left over; max-width keeps it from overflowing
+   once the items are wide enough to fill the card, at which point it simply
+   spans the full width and the left edge lands where it always did.
+   Deliberately NOT text-align:center: centring a bulleted list destroys the
+   left edge that makes it scannable. */
+.lp-callmodal-pickup-inner {
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  text-align: left;
 }
 /* The emoji sits in its own fixed column so all five text blocks share one
    left edge. No bullet characters: the emoji IS the bullet. */
@@ -8174,7 +8204,8 @@ body:has(.hub-page) {
   font-family: "Inter", sans-serif;
   font-size: 12.5px;
   line-height: 1.55;
-  text-align: left;
+  /* Follows the callout it hangs off. */
+  text-align: center;
   color: rgba(255, 255, 255, 0.55);
 }
 
