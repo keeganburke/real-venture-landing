@@ -59,6 +59,15 @@ const PLANS = {
     planId: "plan_J8vFpCWME75W3",
     crownColor: "gold" as const,
   },
+  ultra: {
+    key: "ultra" as const,
+    name: "Ultra",
+    price: "$249",
+    cadence: "per month",
+    tagline: "Direct access. Always first.",
+    planId: "plan_mjpuBNS3KJqmw",
+    crownColor: "gold" as const,
+  },
 };
 
 // Pro billing terms: monthly, or 3 months at $130 (saves $20 vs 3 x $49.99).
@@ -67,6 +76,16 @@ const PRO_TERMS = {
   quarterly: { planId: "plan_9nyRNbuhQF0pk", amount: "130", price: "$130", cadence: "per 3 months" },
   semiannual: { planId: "plan_tfYMBwmuOwuB0", amount: "250", price: "$250", cadence: "per 6 months" },
 } as const;
+
+// Ultra billing terms: monthly, 3 months at $600, or 6 months at $1,000.
+// Same shape as PRO_TERMS so the cards and activePlan treat both alike.
+const ULTRA_TERMS = {
+  monthly: { planId: "plan_mjpuBNS3KJqmw", amount: "249", price: "$249", cadence: "per month" },
+  quarterly: { planId: "plan_MVEXluUMjBlxL", amount: "600", price: "$600", cadence: "per 3 months" },
+  semiannual: { planId: "plan_8CGnZkflAnXOe", amount: "1,000", price: "$1,000", cadence: "per 6 months" },
+} as const;
+
+type Term = keyof typeof PRO_TERMS;
 
 // Checkout-header copy for the selected plan. Price lives in the name line, so
 // the tile is a single stacked block rather than an info/price split.
@@ -95,14 +114,23 @@ const PRO_FEATURES = [
   "Priority DM + Deal support",
 ];
 
+const ULTRA_FEATURES = [
+  "Everything in Pro",
+  "JV deals, keep 70%",
+  "Direct DM to William",
+  "1-on-1 deal reviews",
+  "First look at every new buyer",
+  "Priority support from every coach",
+];
+
 type PlanCopy = {
   name: string;
   tagline: string;
-  accent: "blue" | "gold";
+  accent: "blue" | "gold" | "purple";
   features: string[];
 };
 
-const PLAN_COPY: Record<"base" | "pro" | "pro3" | "pro6", PlanCopy> = {
+const PLAN_COPY: Record<"base" | "pro" | "pro3" | "pro6" | "ultra" | "ultra3" | "ultra6", PlanCopy> = {
   base: {
     name: "Base - $19.99/mo",
     tagline: "Everything you need to close your first $10K deal.",
@@ -127,6 +155,24 @@ const PLAN_COPY: Record<"base" | "pro" | "pro3" | "pro6", PlanCopy> = {
     accent: "gold",
     features: PRO_FEATURES,
   },
+  ultra: {
+    name: "Ultra - $249/mo",
+    tagline: "Direct access. Always first.",
+    accent: "purple",
+    features: ULTRA_FEATURES,
+  },
+  ultra3: {
+    name: "Ultra - $600 for 3 months",
+    tagline: "Direct access. Always first. Paid every 3 months.",
+    accent: "purple",
+    features: ULTRA_FEATURES,
+  },
+  ultra6: {
+    name: "Ultra - $1,000 for 6 months",
+    tagline: "Direct access. Always first. Paid every 6 months.",
+    accent: "purple",
+    features: ULTRA_FEATURES,
+  },
 };
 
 // How many features show before the expander.
@@ -144,7 +190,9 @@ type Props = {
   // "free" switches the hero; "pro" keeps the default hero but hides every
   // tier except Pro in both pricing sites (phone-setter close-protection
   // page at /pro). Everything else is shared, so the routes cannot drift.
-  variant: "default" | "free" | "pro" | "pro6" | "pro3";
+  // "ultra" / "ultra3" / "ultra6" do the same for the Ultra tier, each pinned
+  // to one billing term with no toggle.
+  variant: "default" | "free" | "pro" | "pro6" | "pro3" | "ultra" | "ultra3" | "ultra6";
 };
 
 // Whop OAuth failure codes land the user back on "/" with ?auth=<code>.
@@ -164,6 +212,25 @@ export default function LandingClient({ variant }: Props) {
   const sixMonth = variant === "pro6";
   const threeMonth = variant === "pro3";
   const proOnly = variant === "pro" || sixMonth || threeMonth;
+  // Ultra-only pages: one card, one fixed term, no toggle.
+  const ultraSix = variant === "ultra6";
+  const ultraThree = variant === "ultra3";
+  const ultraOnly = variant === "ultra" || ultraSix || ultraThree;
+  const singleTier = proOnly || ultraOnly;
+  // Hero / video / final CTA label. undefined = the default copy.
+  const joinLabel = ultraSix
+    ? "Join Ultra for $1,000 / 6 months \u2192"
+    : ultraThree
+      ? "Join Ultra for $600 / 3 months \u2192"
+      : ultraOnly
+        ? "Join Ultra for $249/mo \u2192"
+        : threeMonth
+          ? "Join Pro for $130 / 3 months \u2192"
+          : sixMonth
+            ? "Join Pro for $250 / 6 months \u2192"
+            : proOnly
+              ? "Join Pro for $49.99/mo \u2192"
+              : undefined;
   const router = useRouter();
   const [authNotice, setAuthNotice] = useState<string | null>(null);
   // Tracked separately from the message so "denied" (wrong email after
@@ -220,9 +287,12 @@ export default function LandingClient({ variant }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   // 2-step wizard inside the pricing modal: tiers -> embedded checkout.
   const [step, setStep] = useState<"pricing" | "checkout">("pricing");
-  const [selectedPlan, setSelectedPlan] = useState<"base" | "pro" | null>(null);
-  const [proTerm, setProTerm] = useState<"monthly" | "quarterly" | "semiannual">(
+  const [selectedPlan, setSelectedPlan] = useState<"base" | "pro" | "ultra" | null>(null);
+  const [proTerm, setProTerm] = useState<Term>(
     sixMonth ? "semiannual" : threeMonth ? "quarterly" : "monthly"
+  );
+  const [ultraTerm, setUltraTerm] = useState<Term>(
+    ultraSix ? "semiannual" : ultraThree ? "quarterly" : "monthly"
   );
   const [featuresOpen, setFeaturesOpen] = useState(false);
   // Handle to the embedded checkout iframe so the buyer's email can be read
@@ -253,7 +323,7 @@ export default function LandingClient({ variant }: Props) {
     if (params.get("pricing") === "1") {
       setPricingOpen(true);
       const planParam = params.get("plan");
-      if (planParam === "base" || planParam === "pro") {
+      if (planParam === "base" || planParam === "pro" || planParam === "ultra") {
         setSelectedPlan(planParam);
         setStep("checkout");
       }
@@ -287,13 +357,13 @@ export default function LandingClient({ variant }: Props) {
   };
 
   // Inline pricing-section CTAs: open the modal directly at checkout.
-  const openPricingAt = (plan: "base" | "pro") => {
+  const openPricingAt = (plan: "base" | "pro" | "ultra") => {
     setSelectedPlan(plan);
     setStep("checkout");
     setPricingOpen(true);
   };
 
-  const choosePlan = (plan: "base" | "pro") => {
+  const choosePlan = (plan: "base" | "pro" | "ultra") => {
     setSelectedPlan(plan);
     setStep("checkout");
   };
@@ -333,22 +403,35 @@ export default function LandingClient({ variant }: Props) {
   };
 
   // Checkout target: Base is monthly-only; Pro follows the selected term.
-  const modalTitle = selectedPlan === "pro" ? "Join Real Venture Pro" : "Join Real Venture";
+  const modalTitle =
+    selectedPlan === "ultra"
+      ? "Join Real Venture Ultra"
+      : selectedPlan === "pro"
+        ? "Join Real Venture Pro"
+        : "Join Real Venture";
 
-  // pro splits into monthly / quarterly / semiannual copy; base has one line.
+  // pro and ultra split into monthly / quarterly / semiannual copy; base has one line.
   const planCopy =
-    selectedPlan === "pro"
-      ? proTerm === "semiannual"
-        ? PLAN_COPY.pro6
-        : proTerm === "quarterly"
-          ? PLAN_COPY.pro3
-          : PLAN_COPY.pro
-      : PLAN_COPY.base;
+    selectedPlan === "ultra"
+      ? ultraTerm === "semiannual"
+        ? PLAN_COPY.ultra6
+        : ultraTerm === "quarterly"
+          ? PLAN_COPY.ultra3
+          : PLAN_COPY.ultra
+      : selectedPlan === "pro"
+        ? proTerm === "semiannual"
+          ? PLAN_COPY.pro6
+          : proTerm === "quarterly"
+            ? PLAN_COPY.pro3
+            : PLAN_COPY.pro
+        : PLAN_COPY.base;
 
   const activePlan = selectedPlan
-    ? selectedPlan === "pro"
-      ? { ...PLANS.pro, ...PRO_TERMS[proTerm] }
-      : PLANS.base
+    ? selectedPlan === "ultra"
+      ? { ...PLANS.ultra, ...ULTRA_TERMS[ultraTerm] }
+      : selectedPlan === "pro"
+        ? { ...PLANS.pro, ...PRO_TERMS[proTerm] }
+        : PLANS.base
     : null;
 
   const toggleDrawer = () => setDrawerOpen((open) => !open);
@@ -572,7 +655,7 @@ export default function LandingClient({ variant }: Props) {
                 <span className="lp-hero-line-3">{"We'll walk you there."}</span>
               </h1>
               <p className="lp-hero-sub">{"We teach you live, hand you the tools, and send real buyers to your deals. No license, no capital, no experience needed."}</p>
-              <CtaStrip onJoin={openPricing} label={threeMonth ? "Join Pro for $130 / 3 months \u2192" : sixMonth ? "Join Pro for $250 / 6 months \u2192" : proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
+              <CtaStrip onJoin={openPricing} label={joinLabel} />
               <TrustRow />
             </div>
           </section>
@@ -588,7 +671,7 @@ export default function LandingClient({ variant }: Props) {
           <PayoutCarousel />
         </section>
 
-        <VideoWalkthrough onJoin={openPricing} ctaLabel={threeMonth ? "Join Pro for $130 / 3 months \u2192" : sixMonth ? "Join Pro for $250 / 6 months \u2192" : proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
+        <VideoWalkthrough onJoin={openPricing} ctaLabel={joinLabel} />
 
         <section className="lp-success-stories">
           <div className="shell">
@@ -628,9 +711,9 @@ export default function LandingClient({ variant }: Props) {
               heading={<>Choose your <span>path.</span></>}
               sub="Cancel anytime. Upgrade anytime."
             />
-            <div className={`modal-tiers lp-pricing-tiers${proOnly ? " pro-only" : ""}`}>
+            <div className={`modal-tiers lp-pricing-tiers${singleTier ? " pro-only" : ""}`}>
 
-              {!proOnly && (
+              {!singleTier && (
               <div className="tier base">
                 <div className="tier-icon"><img src="/crowns/base.png" alt="Base" width={62} height={54} /></div>
                 <div className="tier-name">Base</div>
@@ -654,6 +737,7 @@ export default function LandingClient({ variant }: Props) {
               </div>
               )}
 
+              {!ultraOnly && (
               <div className="tier pro">
                 <div className="ribbon">Most Popular</div>
                 <div className="tier-icon"><img src="/crowns/pro.png" alt="Pro" width={62} height={54} /></div>
@@ -696,25 +780,57 @@ export default function LandingClient({ variant }: Props) {
                 </ul>
                 <button type="button" className="tier-cta" onClick={() => openPricingAt("pro")}>Choose Pro {"→"}</button>
               </div>
+              )}
 
               {!proOnly && (
               <div className="tier ultra">
-                <div className="ribbon coming">Coming Soon {"\u00b7"} 25 seats</div>
+                <div className="ribbon coming">25 seats</div>
                 <div className="tier-icon"><img src="/crowns/ultra.png" alt="Ultra" width={62} height={54} /></div>
                 <div className="tier-name">Ultra</div>
-                <div className="tier-price"><span className="cur">$</span><span className="amt">249</span></div>
-                <div className="tier-per">/ per month</div>
-                <div className="tier-tag">Closing deals? Time to scale.</div>
+                <div className="tier-price"><span className="cur">$</span><span className="amt">{ULTRA_TERMS[ultraTerm].amount}</span></div>
+                <div className="tier-per">/ {ULTRA_TERMS[ultraTerm].cadence}</div>
+                {!ultraOnly && (
+                <div className="tier-term-toggle" role="tablist">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={ultraTerm === "monthly"}
+                    className={`tier-term${ultraTerm === "monthly" ? " on" : ""}`}
+                    onClick={() => setUltraTerm("monthly")}
+                  >
+                    Monthly
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={ultraTerm === "quarterly"}
+                    className={`tier-term${ultraTerm === "quarterly" ? " on" : ""}`}
+                    onClick={() => setUltraTerm("quarterly")}
+                  >
+                    3 months
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={ultraTerm === "semiannual"}
+                    className={`tier-term${ultraTerm === "semiannual" ? " on" : ""}`}
+                    onClick={() => setUltraTerm("semiannual")}
+                  >
+                    6 months
+                  </button>
+                </div>
+                )}
+                <div className="tier-tag">Direct access. Always first.</div>
                 <div className="tier-divider"></div>
                 <ul className="tier-feats">
                   <li><span className="chk">{"✓"}</span>Everything in Pro</li>
+                  <li><span className="chk">{"✓"}</span>JV deals, keep 70%</li>
                   <li><span className="chk">{"✓"}</span>Direct DM to William</li>
-                  <li><span className="chk">{"✓"}</span>Private inner-circle channel</li>
-                  <li><span className="chk">{"✓"}</span>Monthly mastermind call</li>
-                  <li><span className="chk">{"✓"}</span>1-1 Deal Reviews</li>
-                  <li><span className="chk">{"✓"}</span>First in line</li>
+                  <li><span className="chk">{"✓"}</span>1-on-1 deal reviews</li>
+                  <li><span className="chk">{"✓"}</span>First look at every new buyer</li>
+                  <li><span className="chk">{"✓"}</span>Priority support from every coach</li>
                 </ul>
-                <button className="tier-cta">Coming Soon</button>
+                <button type="button" className="tier-cta" onClick={() => openPricingAt("ultra")}>Choose Ultra {"→"}</button>
               </div>
               )}
 
@@ -748,7 +864,7 @@ export default function LandingClient({ variant }: Props) {
           <div className="shell">
             <h2 className="lp-section-h2">Your first payday <span>starts today.</span></h2>
             <p className="lp-section-sub lp-final-sub">Join {TRUST_COUNTS.students}+ students who stopped watching and started closing.</p>
-            <CtaStrip onJoin={openPricing} label={threeMonth ? "Join Pro for $130 / 3 months \u2192" : sixMonth ? "Join Pro for $250 / 6 months \u2192" : proOnly ? "Join Pro for $49.99/mo \u2192" : undefined} />
+            <CtaStrip onJoin={openPricing} label={joinLabel} />
             <TrustRow />
             <div className="lp-trust">
               <div className="lp-trust-item"><span className="lp-trust-check">{"\u2713"}</span> Cancel anytime</div>
@@ -982,9 +1098,9 @@ export default function LandingClient({ variant }: Props) {
               <div className="modal-title">Join <em>Real Venture</em></div>
               <p className="modal-tag">One membership. Cancel anytime.</p>
             </div>
-            <div className={`modal-tiers${proOnly ? " pro-only" : ""}`}>
+            <div className={`modal-tiers${singleTier ? " pro-only" : ""}`}>
 
-              {!proOnly && (
+              {!singleTier && (
               <div className="tier base">
                 <div className="tier-icon"><img src="/crowns/base.png" alt="Base" width={62} height={54} /></div>
                 <div className="tier-name">Base</div>
@@ -1008,6 +1124,7 @@ export default function LandingClient({ variant }: Props) {
               </div>
               )}
 
+              {!ultraOnly && (
               <div className="tier pro">
                 <div className="ribbon">Most Popular</div>
                 <div className="tier-icon"><img src="/crowns/pro.png" alt="Pro" width={62} height={54} /></div>
@@ -1050,25 +1167,57 @@ export default function LandingClient({ variant }: Props) {
                 </ul>
                 <button type="button" className="tier-cta" onClick={() => choosePlan("pro")}>Choose Pro {"→"}</button>
               </div>
+              )}
 
               {!proOnly && (
               <div className="tier ultra">
-                <div className="ribbon coming">Coming Soon {"\u00b7"} 25 seats</div>
+                <div className="ribbon coming">25 seats</div>
                 <div className="tier-icon"><img src="/crowns/ultra.png" alt="Ultra" width={62} height={54} /></div>
                 <div className="tier-name">Ultra</div>
-                <div className="tier-price"><span className="cur">$</span><span className="amt">249</span></div>
-                <div className="tier-per">/ per month</div>
-                <div className="tier-tag">Closing deals? Time to scale.</div>
+                <div className="tier-price"><span className="cur">$</span><span className="amt">{ULTRA_TERMS[ultraTerm].amount}</span></div>
+                <div className="tier-per">/ {ULTRA_TERMS[ultraTerm].cadence}</div>
+                {!ultraOnly && (
+                <div className="tier-term-toggle" role="tablist">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={ultraTerm === "monthly"}
+                    className={`tier-term${ultraTerm === "monthly" ? " on" : ""}`}
+                    onClick={() => setUltraTerm("monthly")}
+                  >
+                    Monthly
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={ultraTerm === "quarterly"}
+                    className={`tier-term${ultraTerm === "quarterly" ? " on" : ""}`}
+                    onClick={() => setUltraTerm("quarterly")}
+                  >
+                    3 months
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={ultraTerm === "semiannual"}
+                    className={`tier-term${ultraTerm === "semiannual" ? " on" : ""}`}
+                    onClick={() => setUltraTerm("semiannual")}
+                  >
+                    6 months
+                  </button>
+                </div>
+                )}
+                <div className="tier-tag">Direct access. Always first.</div>
                 <div className="tier-divider"></div>
                 <ul className="tier-feats">
                   <li><span className="chk">{"✓"}</span>Everything in Pro</li>
+                  <li><span className="chk">{"✓"}</span>JV deals, keep 70%</li>
                   <li><span className="chk">{"✓"}</span>Direct DM to William</li>
-                  <li><span className="chk">{"✓"}</span>Private inner-circle channel</li>
-                  <li><span className="chk">{"✓"}</span>Monthly mastermind call</li>
-                  <li><span className="chk">{"✓"}</span>1-1 Deal Reviews</li>
-                  <li><span className="chk">{"✓"}</span>First in line</li>
+                  <li><span className="chk">{"✓"}</span>1-on-1 deal reviews</li>
+                  <li><span className="chk">{"✓"}</span>First look at every new buyer</li>
+                  <li><span className="chk">{"✓"}</span>Priority support from every coach</li>
                 </ul>
-                <button className="tier-cta">Coming Soon</button>
+                <button type="button" className="tier-cta" onClick={() => choosePlan("ultra")}>Choose Ultra {"→"}</button>
               </div>
               )}
 
@@ -1155,7 +1304,8 @@ export default function LandingClient({ variant }: Props) {
                     theme="dark"
                     themeOptions={{
                       backgroundColor: "#0f0f12",
-                      accentColor: "#E5A544",
+                      // Ultra checkout takes the tier purple; Base and Pro keep gold.
+                      accentColor: selectedPlan === "ultra" ? "#c4bbff" : "#E5A544",
                       borderRadius: 12,
                     }}
                     skipRedirect

@@ -90,8 +90,8 @@ body.modal-open{overflow:hidden}
 .tier.base .tier-cta:hover{box-shadow:0 10px 24px -6px rgba(95,179,224,.55);transform:translateY(-2px)}
 .tier.pro .tier-cta{background:var(--cta);color:var(--cta-text);box-shadow:0 8px 22px -6px rgba(229,181,71,.5)}
 .tier.pro .tier-cta:hover{box-shadow:0 12px 30px -6px rgba(229,181,71,.65);transform:translateY(-2px)}
-.tier.ultra .tier-cta{background:transparent;border:1.5px dashed rgba(196,187,255,.32);color:var(--purple-bright);cursor:not-allowed}
-.tier.ultra .tier-cta:hover{background:rgba(196,187,255,.06)}
+.tier.ultra .tier-cta{background:linear-gradient(135deg,var(--purple-bright),var(--purple));color:#141026;box-shadow:0 8px 22px -6px rgba(196,187,255,.5)}
+.tier.ultra .tier-cta:hover{box-shadow:0 12px 30px -6px rgba(196,187,255,.65);transform:translateY(-2px)}
 .modal-foot{text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--line-dark);font-size:11px;color:var(--mut-dark);display:flex;justify-content:center;gap:14px;align-items:center;flex-wrap:wrap}
 .modal-foot svg{width:11px;height:11px;color:var(--green)}
 .modal-foot span{display:inline-flex;align-items:center;gap:6px}
@@ -8425,4 +8425,46 @@ body:has(.hub-page) {
 .intake-scale-anchor-green {
   color: var(--green, #4ade80);
   font-weight: 600;
+}
+
+/* ── Ultra tier: purple checkout theme. Mirrors .pm-theme-blue selector for
+   selector, using the Ultra card purple (--purple #c4bbff, --purple-bright
+   #d8d0ff, tint rgb(196,187,255)); the deep stop is the same purple over the
+   dark modal via alpha, the light stop is a lighter tint of it. ─────────── */
+.modal.pm-theme-purple {
+  border-color: rgba(196, 187, 255, 0.45);
+  box-shadow:
+    0 40px 100px -20px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(196, 187, 255, 0.45),
+    0 0 60px rgba(196, 187, 255, 0.22);
+}
+.pm-theme-purple .pm-header {
+  background:
+    radial-gradient(130% 110% at 0% 0%, rgba(216, 208, 255, 0.32) 0%, transparent 60%),
+    linear-gradient(158deg, rgba(196, 187, 255, 0.30) 0%, rgba(196, 187, 255, 0.10) 55%, rgba(196, 187, 255, 0) 100%);
+}
+.pm-theme-purple .pm-accent-bar {
+  background: linear-gradient(135deg, #d8d0ff, #c4bbff 55%, rgba(196, 187, 255, 0.6));
+  box-shadow: 0 0 18px rgba(196, 187, 255, 0.55);
+}
+.pm-theme-purple .pm-plan-name {
+  background: linear-gradient(180deg, #ede9ff 0%, #d8d0ff 30%, #c4bbff 62%, rgba(196, 187, 255, 0.6) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.pm-theme-purple .pm-back { color: var(--purple); }
+.pm-theme-purple .pm-back:hover { color: var(--purple-bright); }
+.pm-theme-purple .pm-feat-check {
+  background: rgba(196, 187, 255, 0.16);
+  color: var(--purple);
+}
+.pm-theme-purple .pm-feats-toggle { color: var(--purple); }
+.pm-theme-purple .pm-feats-toggle:hover { color: var(--purple-bright); }
+/* Keyboard focus: the browser default ring is blue; keep it purple here. */
+.pm-theme-purple .pm-feats-toggle:focus-visible,
+.pm-theme-purple .pm-back:focus-visible {
+  outline: 2px solid var(--purple);
+  outline-offset: 2px;
 }
