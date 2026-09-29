@@ -6328,6 +6328,10 @@ body:has(.hub-page) {
   line-height: 1.18;
   letter-spacing: -0.04em;
   color: #ffe89a;
+  /* Read off .lp-hero-h-em, the "Secured Wholesaling" span, not off the H1's
+     base text: that glow is white and this line is gold. Verbatim, both stops,
+     so the two gold display lines in the hero glow identically. */
+  text-shadow: rgba(229, 181, 71, 0.4) 0 0 20px, rgba(229, 181, 71, 0.2) 0 0 40px;
   margin: 0 0 7px;
   text-wrap: balance;
 }
@@ -6475,6 +6479,13 @@ body:has(.hub-page) {
   border-radius: 10px;
   cursor: pointer;
   white-space: nowrap;
+  /* The callout box's RESTING glow, same colour and same alpha — 0.10 outer,
+     0.12 inset highlight — so this is not brighter, only smaller. The blur
+     scales 28px -> 14px because the callout is 327x179 and a button is
+     104x47; an unscaled 28px blur on a 104px box is a halo, not a glow. Sits
+     clearly under the 0.22 hover state below. */
+  box-shadow: 0 0 14px rgba(229, 181, 71, 0.10),
+              inset 0 1px 0 rgba(255, 232, 154, 0.12);
   transition: background 0.16s ease, border-color 0.16s ease,
               transform 0.16s ease, box-shadow 0.16s ease;
 }
