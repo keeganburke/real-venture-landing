@@ -6335,13 +6335,24 @@ body:has(.hub-page) {
   margin: 0 0 7px;
   text-wrap: balance;
 }
-/* Lines 2 and 3 — body size, SOLID WHITE, regular weight. Two near-equal bold
-   lines were what made this box read heavy; only line 1 carries weight now.
-   The even 12px margins give four statements, not a paragraph. */
+/* Lines 2 and 3 — body size, SOLID WHITE. Line 1 stays the loudest by SIZE and
+   colour (19px gold vs 15px white), not by weight, now that the whole box sits
+   at the hero's Cabinet Grotesk 800. The even margins give four statements,
+   not a paragraph. */
+/* Family, weight and tracking copied off .lp-video-overlay, the hero's
+   established treatment for supporting text that is not a headline. These
+   three were the ONLY Inter and the ONLY weight-400 text in a hero that is
+   otherwise entirely Cabinet Grotesk at 800/900, and that compound difference
+   is what read as wrong. Sizes deliberately unchanged: 15/15/14 against the
+   19px headline, so the hierarchy survives.
+   Weight 800 is loaded — Fontshare serves 500, 700, 800 and 900 for this
+   family, and NOT 400, so the old 400 would have been synthesised had these
+   ever been Cabinet Grotesk. */
 .lp-hero-free .lp-hero-callout-second,
 .lp-hero-free .lp-hero-callout-third {
-  font-family: "Inter", sans-serif;
-  font-weight: 400;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  letter-spacing: normal;
   font-size: 15px;
   /* 1.4 leading and a 7px gap, down from 1.5 and 12px. Four lines spaced like
      paragraphs is what made this box 211px tall at 375. The height came out of
@@ -6355,8 +6366,9 @@ body:has(.hub-page) {
    rgba(...,0.55); that greying is exactly what is being removed. There is no
    muted text anywhere in this box now. */
 .lp-hero-free .lp-hero-callout-fine {
-  font-family: "Inter", sans-serif;
-  font-weight: 400;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  letter-spacing: normal;
   font-size: 14px;
   line-height: 1.4;
   color: #fff;
