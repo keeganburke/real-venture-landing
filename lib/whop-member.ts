@@ -3,7 +3,7 @@
 // profile (name, username, email, photo). Never import in client components.
 
 export type WhopMemberSummary = {
-  tier: "Base" | "Pro" | null;
+  tier: "Base" | "Pro" | "Ultra" | null;
   planId: string | null;
   name: string | null;
   username: string | null;
@@ -17,15 +17,21 @@ export type WhopMemberSummary = {
 //   plan_SIYHeHyFp1dbR  legacy membership (WHOP_PLAN_ID), $75.24 renewal -> Pro
 //   plan_SGscR3JhdTtKh  $1 one-time entry plan -> Base
 //   plan_9nyRNbuhQF0pk  hosted Pro 3-month, $130
-const PLAN_TIERS: Record<string, "Base" | "Pro"> = {
+//   Pro 6-month $250, Ultra monthly $249 / 3-month $600 / 6-month $1,000 (ids below)
+const PLAN_TIERS: Record<string, "Base" | "Pro" | "Ultra"> = {
   plan_2NqC2WJzV87QY: "Base",
   plan_J8vFpCWME75W3: "Pro",
   plan_SIYHeHyFp1dbR: "Pro",
   plan_SGscR3JhdTtKh: "Base",
   plan_9nyRNbuhQF0pk: "Pro",
-  plan_mjpuBNS3KJqmw: "Pro",
+  plan_mjpuBNS3KJqmw: "Ultra",
+  plan_MVEXluUMjBlxL: "Ultra",
+  plan_8CGnZkflAnXOe: "Ultra",
   plan_tfYMBwmuOwuB0: "Pro",
 };
+
+// Multi-membership priority: Ultra > Pro > Base.
+const TIER_RANK: Record<string, number> = { Ultra: 3, Pro: 2, Base: 1 };
 
 const EMPTY: WhopMemberSummary = {
   tier: null,
@@ -104,8 +110,8 @@ export async function getWhopMemberSummary(whopUserId: string): Promise<WhopMemb
       const plan = row.plan as Record<string, unknown> | undefined;
       const planId = typeof row.plan_id === "string" ? row.plan_id : str(plan?.id);
       const rowTier = planId ? PLAN_TIERS[planId] : undefined;
-      // Pro wins when a user holds multiple memberships.
-      if (rowTier === "Pro" || (rowTier === "Base" && summary.tier !== "Pro")) {
+      // Highest tier wins when a user holds multiple memberships (Ultra > Pro > Base).
+      if (rowTier && (TIER_RANK[rowTier] ?? 0) > (summary.tier ? TIER_RANK[summary.tier] ?? 0 : 0)) {
         summary.tier = rowTier;
         summary.planId = planId;
       }

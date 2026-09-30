@@ -26,9 +26,18 @@ const PLAN_TIERS = {
   plan_SIYHeHyFp1dbR: "Pro",   // legacy $75/mo
   plan_SGscR3JhdTtKh: "Base",  // legacy $1 entry
   plan_9nyRNbuhQF0pk: "Pro",   // Pro 3-month
-  plan_mjpuBNS3KJqmw: "Pro",   // Ultra ($249, mapped to Pro internally)
+  plan_mjpuBNS3KJqmw: "Ultra", // Ultra monthly, $249
+  plan_MVEXluUMjBlxL: "Ultra", // Ultra 3-month, $600
+  plan_8CGnZkflAnXOe: "Ultra", // Ultra 6-month, $1,000
   plan_tfYMBwmuOwuB0: "Pro",   // Pro 6-month
 };
+
+// Multi-membership priority at equal status rank: Ultra > Pro > Base > unknown.
+const TIER_RANK = { Ultra: 3, Pro: 2, Base: 1 };
+function tierRank(m) {
+  const planId = m.plan?.id ?? null;
+  return planId && PLAN_TIERS[planId] ? TIER_RANK[PLAN_TIERS[planId]] : 0;
+}
 
 // ---------------------------------------------------------------------------
 // Args
@@ -138,6 +147,10 @@ function collapseByUser(memberships) {
     const cmpStatus = statusRank(m.status) - statusRank(prev.status);
     if (cmpStatus < 0) { byUser.set(userId, m); continue; }
     if (cmpStatus === 0) {
+      // Same status: higher tier wins, then the newer membership.
+      const cmpTier = tierRank(m) - tierRank(prev);
+      if (cmpTier > 0) { byUser.set(userId, m); continue; }
+      if (cmpTier < 0) continue;
       const a = new Date(m.joined_at ?? m.created_at ?? 0).getTime();
       const b = new Date(prev.joined_at ?? prev.created_at ?? 0).getTime();
       if (a > b) byUser.set(userId, m);

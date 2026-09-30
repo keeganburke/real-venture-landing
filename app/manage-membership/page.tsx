@@ -29,6 +29,8 @@ const PLAN_NAMES: Record<string, string> = {
   plan_SIYHeHyFp1dbR: "Pro (legacy)",
   plan_SGscR3JhdTtKh: "Base (legacy)",
   plan_mjpuBNS3KJqmw: "Ultra",
+  plan_MVEXluUMjBlxL: "Ultra (3 months)",
+  plan_8CGnZkflAnXOe: "Ultra (6 months)",
   plan_tfYMBwmuOwuB0: "Pro (6 months)",
 };
 

@@ -8,15 +8,28 @@
 
 const WHOP_API_BASE = "https://api.whop.com/api/v1";
 
-const PLAN_TIERS: Record<string, "Base" | "Pro"> = {
+export type WhopTier = "Base" | "Pro" | "Ultra";
+
+const PLAN_TIERS: Record<string, WhopTier> = {
   plan_2NqC2WJzV87QY: "Base",
   plan_J8vFpCWME75W3: "Pro",
   plan_9nyRNbuhQF0pk: "Pro",
   plan_tfYMBwmuOwuB0: "Pro",
-  plan_mjpuBNS3KJqmw: "Pro",
+  plan_mjpuBNS3KJqmw: "Ultra", // Ultra monthly, $249
+  plan_MVEXluUMjBlxL: "Ultra", // Ultra 3-month, $600
+  plan_8CGnZkflAnXOe: "Ultra", // Ultra 6-month, $1,000
   plan_SIYHeHyFp1dbR: "Pro",
   plan_SGscR3JhdTtKh: "Base",
 };
+
+// Higher wins when a member holds several memberships of equal status rank:
+// Ultra > Pro > Base > unknown plan.
+const TIER_RANK: Record<string, number> = { Ultra: 3, Pro: 2, Base: 1 };
+function tierRankOf(row: Record<string, unknown>): number {
+  const plan = row.plan && typeof row.plan === "object" ? (row.plan as Record<string, unknown>) : null;
+  const planId = str(plan?.id) ?? str(row.plan_id);
+  return planId && PLAN_TIERS[planId] ? TIER_RANK[PLAN_TIERS[planId]] : 0;
+}
 
 const STATUS_RANK: Record<string, number> = {
   active: 0,
@@ -28,7 +41,7 @@ const STATUS_RANK: Record<string, number> = {
 export type WhopMemberDetail = {
   whopDisplayName: string | null;
   whopUsername: string | null;
-  whopTier: "Base" | "Pro" | null;
+  whopTier: WhopTier | null;
   whopPlanId: string | null;
   whopJoinedAt: string | null;
 };
@@ -85,10 +98,11 @@ export async function getWhopMemberDetail(
   const rows = Array.isArray(body?.data) ? body.data : [];
   if (rows.length === 0) return null;
 
-  // Pick winner: lowest STATUS_RANK, tie-break by newest
-  // joined_at ?? created_at. Matches backfill script.
+  // Pick winner: lowest STATUS_RANK, then highest tier (Ultra > Pro > Base),
+  // then newest joined_at ?? created_at. Matches backfill script.
   let winner: Record<string, unknown> | null = null;
   let winnerRank = Number.POSITIVE_INFINITY;
+  let winnerTier = -1;
   let winnerTs = -1;
 
   for (const raw of rows) {
@@ -97,13 +111,16 @@ export async function getWhopMemberDetail(
     const status = typeof row.status === "string" ? row.status : "";
     const rank = STATUS_RANK[status];
     if (rank === undefined) continue;
+    const tierRank = tierRankOf(row);
     const ts = toMs(row.joined_at) || toMs(row.created_at);
     if (
       rank < winnerRank ||
-      (rank === winnerRank && ts > winnerTs)
+      (rank === winnerRank && tierRank > winnerTier) ||
+      (rank === winnerRank && tierRank === winnerTier && ts > winnerTs)
     ) {
       winner = row;
       winnerRank = rank;
+      winnerTier = tierRank;
       winnerTs = ts;
     }
   }

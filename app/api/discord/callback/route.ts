@@ -14,28 +14,36 @@ function redirectWithStatus(status: string) {
 const ROLE_IDS = {
   BASE: process.env.DISCORD_BASE_ROLE_ID,
   PRO: process.env.DISCORD_PRO_ROLE_ID,
+  ULTRA: process.env.DISCORD_ULTRA_ROLE_ID,
   FALLBACK: process.env.DISCORD_ROLE_ID,
 };
+
+type Tier = "Base" | "Pro" | "Ultra";
 
 // Same hosted plan ids as the landing PLANS config and the profile tier
 // check (app/api/profile/get); duplicated here on purpose, that module
 // keeps its logic private.
-const PLAN_TIERS: Record<string, "Base" | "Pro"> = {
+const PLAN_TIERS: Record<string, Tier> = {
   plan_2NqC2WJzV87QY: "Base",
   plan_J8vFpCWME75W3: "Pro",
   plan_SIYHeHyFp1dbR: "Pro",   // legacy $75/mo plan
   plan_SGscR3JhdTtKh: "Base",  // legacy $1 entry plan
   plan_9nyRNbuhQF0pk: "Pro",   // Pro 3-month, $130
-  plan_mjpuBNS3KJqmw: "Pro",   // Ultra monthly, $249.99 (Pro role until an Ultra role exists)
+  plan_mjpuBNS3KJqmw: "Ultra", // Ultra monthly, $249
+  plan_MVEXluUMjBlxL: "Ultra", // Ultra 3-month, $600
+  plan_8CGnZkflAnXOe: "Ultra", // Ultra 6-month, $1,000
   plan_tfYMBwmuOwuB0: "Pro",   // Pro 6-month, $250
 };
+
+// Multi-membership priority: Ultra > Pro > Base.
+const TIER_RANK: Record<Tier, number> = { Ultra: 3, Pro: 2, Base: 1 };
 
 // Best-effort tier from the caller's Whop memberships. Any failure returns
 // nulls so the caller falls back to the original single role: no one is
 // ever left roleless because tier detection hiccuped.
 async function getWhopTier(
   whopUserId: string
-): Promise<{ tier: "Base" | "Pro" | null; planId: string | null }> {
+): Promise<{ tier: Tier | null; planId: string | null }> {
   const productId = process.env.WHOP_PRODUCT_ID;
   const companyId = process.env.WHOP_COMPANY_ID;
   if (!productId || !companyId) return { tier: null, planId: null };
@@ -59,7 +67,7 @@ async function getWhopTier(
 
     const page = await res.json();
     const rows: Record<string, unknown>[] = Array.isArray(page?.data) ? page.data : [];
-    let tier: "Base" | "Pro" | null = null;
+    let tier: Tier | null = null;
     let planId: string | null = null;
     for (const row of rows) {
       const rowPlanId =
@@ -69,12 +77,9 @@ async function getWhopTier(
             ? ((row.plan as Record<string, unknown>).id as string)
             : null;
       const rowTier = rowPlanId ? PLAN_TIERS[rowPlanId] : undefined;
-      // Pro wins when both memberships exist.
-      if (rowTier === "Pro") {
-        tier = "Pro";
-        planId = rowPlanId;
-      } else if (rowTier === "Base" && tier !== "Pro") {
-        tier = "Base";
+      // Highest tier wins when several memberships exist (Ultra > Pro > Base).
+      if (rowTier && TIER_RANK[rowTier] > (tier ? TIER_RANK[tier] : 0)) {
+        tier = rowTier;
         planId = rowPlanId;
       }
     }
@@ -94,7 +99,7 @@ async function recordConnection(args: {
   // Discord username (the unique handle, not global_name) for the admin
   // table (migration 019). Null if Discord did not return one.
   discordUsername: string | null;
-  tier: "Base" | "Pro" | null;
+  tier: Tier | null;
   roleId: string;
 }) {
   try {
@@ -198,23 +203,44 @@ export async function GET(request: NextRequest) {
     return redirectWithStatus("misconfigured");
   }
 
-  // Tier-split role: Pro and Base get their own role when configured;
+  // Tier-split roles: Ultra gets Ultra Member AND Pro Member (Ultra includes
+  // everything in Pro); Pro and Base get their own role when configured;
   // unknown plan, missing membership, Whop API error, or missing tier env
-  // all fall back to the original single role.
+  // all fall back to the original single role. roleId is the primary role
+  // recorded in discord_connections; roleIds is everything granted.
+  // Roles are only ever ADDED here; removal happens elsewhere (upcoming sweep).
   const { tier, planId } = await getWhopTier(session.whopUserId);
   let roleId = ROLE_IDS.FALLBACK;
+  let roleIds: string[] = [ROLE_IDS.FALLBACK];
   let resolvedTier = "fallback";
-  if (tier === "Pro" && ROLE_IDS.PRO) {
+  if (tier === "Ultra" && ROLE_IDS.PRO) {
+    if (ROLE_IDS.ULTRA) {
+      roleId = ROLE_IDS.ULTRA;
+      roleIds = [ROLE_IDS.ULTRA, ROLE_IDS.PRO];
+      resolvedTier = "Ultra";
+    } else {
+      console.warn("[discord/callback] DISCORD_ULTRA_ROLE_ID unset; Ultra member gets Pro role only", {
+        whopUserId: session.whopUserId,
+        planId,
+      });
+      roleId = ROLE_IDS.PRO;
+      roleIds = [ROLE_IDS.PRO];
+      resolvedTier = "Ultra";
+    }
+  } else if (tier === "Pro" && ROLE_IDS.PRO) {
     roleId = ROLE_IDS.PRO;
+    roleIds = [ROLE_IDS.PRO];
     resolvedTier = "Pro";
   } else if (tier === "Base" && ROLE_IDS.BASE) {
     roleId = ROLE_IDS.BASE;
+    roleIds = [ROLE_IDS.BASE];
     resolvedTier = "Base";
   }
-  console.log("[discord/callback] Assigning role", {
+  console.log("[discord/callback] Assigning roles", {
     whopUserId: session.whopUserId,
     planId,
     roleId,
+    roleIds,
     tier: resolvedTier,
   });
 
@@ -288,7 +314,7 @@ export async function GET(request: NextRequest) {
         },
         body: JSON.stringify({
           access_token: userAccessToken,
-          roles: [roleId],
+          roles: roleIds,
         }),
       }
     );
@@ -303,20 +329,26 @@ export async function GET(request: NextRequest) {
     }
 
     if (addRes.status === 204) {
-      // User is already in the server. Assign the role separately.
-      const roleRes = await fetch(
-        `https://discord.com/api/guilds/${guildId}/members/${discordUserId}/roles/${roleId}`,
-        {
-          method: "PUT",
-          headers: { Authorization: `Bot ${botToken}` },
-        }
-      );
+      // User is already in the server. Assign each role separately; a failure
+      // on one role is logged and the rest are still attempted. The primary
+      // role failing is the only outcome reported as role_failed.
+      let primaryFailed = false;
+      for (const id of roleIds) {
+        const roleRes = await fetch(
+          `https://discord.com/api/guilds/${guildId}/members/${discordUserId}/roles/${id}`,
+          {
+            method: "PUT",
+            headers: { Authorization: `Bot ${botToken}` },
+          }
+        );
 
-      if (!roleRes.ok && roleRes.status !== 204) {
-        const errText = await roleRes.text();
-        console.error("Role assignment failed:", roleRes.status, errText);
-        return redirectWithStatus("role_failed");
+        if (!roleRes.ok && roleRes.status !== 204) {
+          const errText = await roleRes.text();
+          console.error("Role assignment failed:", id, roleRes.status, errText);
+          if (id === roleId) primaryFailed = true;
+        }
       }
+      if (primaryFailed) return redirectWithStatus("role_failed");
 
       await recordConnection({ whopUserId: session.whopUserId, discordUserId, discordUsername, tier, roleId });
       return redirectWithStatus("already_in_server");
