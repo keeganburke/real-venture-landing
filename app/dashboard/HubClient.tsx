@@ -358,7 +358,7 @@ export default function HubClient({
               className="hub2-studio-cta"
             >
               <span>Enter the Studio</span>
-              <span aria-hidden="true">↗</span>
+              <span aria-hidden="true">→</span>
             </a>
           </section>
         )}

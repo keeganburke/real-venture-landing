@@ -5,9 +5,9 @@ import Link from "next/link";
 // Purely static: the affiliate setup only runs on the refer page itself.
 export default function ReferHubCard() {
   return (
-    <section className="hub2-studio" aria-label="Refer and earn">
+    <section className="hub2-studio refer-hubcard--green" aria-label="Refer and earn">
       <div className="hub2-studio-icon" aria-hidden="true">
-        <img src="/crowns/pro.png" alt="" className="refer-hubcard-crown" width={30} height={26} />
+        <span className="refer-hubcard-dollar">$</span>
       </div>
       <div className="hub2-studio-title">Refer &amp; Earn</div>
       <p className="hub2-studio-sub">Earn $10 to $125 for every friend who joins.</p>
