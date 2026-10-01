@@ -8468,3 +8468,244 @@ body:has(.hub-page) {
   outline: 2px solid var(--purple);
   outline-offset: 2px;
 }
+
+/* ============================================================================
+   REFER & EARN (/dashboard/refer). Scoped .refer-* only. Reuses hub2-page,
+   hub2-shell, hub2-nav, hub2-menu, hub2-greeting*, hub2-section-*.
+   Tier colours mirror the landing pricing cards (.tier.base/.pro/.ultra).
+   ============================================================================ */
+.refer .hub2-greeting { margin-bottom: 20px; }
+.refer-title { font-size: 32px; }
+.refer-sub {
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.7);
+  max-width: 420px;
+  margin: 8px auto 0;
+}
+.refer-card {
+  background: linear-gradient(135deg, rgba(245, 197, 96, 0.08) 0%, rgba(20, 20, 24, 1) 65%);
+  border: 1px solid rgba(245, 197, 96, 0.22);
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 12px;
+}
+.refer-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 50px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: none;
+  font-family: "Cabinet Grotesk", "Inter", sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.refer-btn-primary {
+  background: linear-gradient(135deg, #FFE89A 0%, #F5C560 40%, #E5A544 80%, #C97D2E 100%);
+  color: #0a0a0a;
+  box-shadow: 0 0 0 1px rgba(255, 232, 154, 0.4), 0 10px 28px rgba(197, 125, 46, 0.28);
+}
+.refer-btn-primary:hover { transform: translateY(-1px); }
+.refer-btn-primary.is-copied {
+  background: var(--green);
+  color: #06210f;
+  box-shadow: none;
+}
+.refer-btn-ghost {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 700;
+}
+.refer-btn-ghost:hover { background: rgba(255, 255, 255, 0.1); }
+.refer-btn:focus-visible {
+  outline: 2px solid #F5C560;
+  outline-offset: 2px;
+}
+.refer-btn + .refer-btn { margin-top: 10px; }
+
+/* Link box */
+.refer-link-box {
+  display: flex;
+  align-items: center;
+  min-height: 50px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.refer-link-text {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 15px;
+  color: #F5C560;
+  word-break: break-all;
+  user-select: all;
+}
+
+/* What you earn: one card per tier */
+.refer-tiers {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.refer-tier {
+  margin-bottom: 0;
+  text-align: center;
+  padding: 22px 16px 20px;
+}
+.refer-tier-crown {
+  display: block;
+  width: 62px;
+  height: 54px;
+  margin: 0 auto 10px;
+  object-fit: contain;
+}
+.refer-tier-name {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+}
+.refer-tier-price {
+  margin-top: 2px;
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.refer-tier-earn {
+  margin-top: 12px;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+  color: var(--green);
+}
+/* Tier tints: Base = ice blue, Pro = gold, Ultra = purple, same rgba as the landing cards. */
+.refer-tier-base {
+  background: linear-gradient(135deg, rgba(95, 179, 224, 0.14) 0%, rgba(20, 20, 24, 1) 70%);
+  border-color: rgba(95, 179, 224, 0.28);
+}
+.refer-tier-base .refer-tier-crown { filter: drop-shadow(0 0 18px rgba(95, 179, 224, 0.5)); }
+.refer-tier-pro {
+  background: linear-gradient(135deg, rgba(229, 181, 71, 0.16) 0%, rgba(20, 20, 24, 1) 70%);
+  border-color: rgba(229, 181, 71, 0.38);
+}
+.refer-tier-pro .refer-tier-crown { filter: drop-shadow(0 0 22px rgba(229, 181, 71, 0.55)); }
+.refer-tier-ultra {
+  background: linear-gradient(135deg, rgba(196, 187, 255, 0.14) 0%, rgba(20, 20, 24, 1) 70%);
+  border-color: rgba(196, 187, 255, 0.28);
+}
+.refer-tier-ultra .refer-tier-crown { filter: drop-shadow(0 0 18px rgba(196, 187, 255, 0.5)); }
+
+/* Stats row + Whop link */
+.refer-statsrow { margin-top: 16px; }
+.refer-statsrow-items {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 24px;
+  margin-bottom: 14px;
+}
+.refer-statsrow-item { font-size: 15px; color: rgba(255, 255, 255, 0.7); }
+.refer-statsrow-value {
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+/* How it works + fine print */
+.refer-steps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.refer-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.85);
+}
+.refer-step-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(245, 197, 96, 0.12);
+  border: 1px solid rgba(245, 197, 96, 0.3);
+  color: #F5C560;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 13px;
+}
+.refer-fineprint {
+  margin-top: 16px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* Notices (under 18, no username, error) */
+.refer-notice {
+  text-align: center;
+  padding: 26px 18px;
+}
+.refer-notice-icon { font-size: 30px; margin-bottom: 8px; }
+.refer-notice-text {
+  font-size: 15px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 14px;
+}
+
+/* Skeleton */
+.refer-skel-block {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+.refer-skel-block::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  animation: refer-shimmer 1.4s infinite;
+}
+@keyframes refer-shimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .refer-skel-block::after { animation: none; }
+  .refer-btn { transition: none; }
+  .refer-btn-primary:hover { transform: none; }
+}
+
+@media (min-width: 640px) {
+  .refer-tiers { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) {
+  .refer-title { font-size: 27px; }
+  .refer-tier-earn { font-size: 24px; }
+}
+
+/* Hub card (/dashboard): mirrors .hub2-studio; only the crown inside the icon tile is ours. */
+.refer-hubcard-crown {
+  display: block;
+  width: 30px;
+  height: 26px;
+  object-fit: contain;
+}

@@ -8,6 +8,7 @@ import type { Destination, FeedbackAction } from "./hub-copy";
 import { getCallDurationMs, getLiveCall, getNextCalls } from "./lib/next-calls";
 import SprintCard from "./SprintCard";
 import SpotlightTour from "./SpotlightTour";
+import ReferHubCard from "./refer/ReferHubCard";
 
 const GREETINGS = [
   "Welcome back, {name}",
@@ -362,6 +363,7 @@ export default function HubClient({
           </section>
         )}
 
+        <ReferHubCard />
         {/* Livestreams */}
         <div className="hub2-section-head" data-tour="livestreams">
           <div className="hub2-section-title">Livestreams</div>

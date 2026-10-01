@@ -11,6 +11,7 @@ import PayoutCarousel from "./components/PayoutCarousel";
 import VideoWalkthrough from "./components/VideoWalkthrough";
 import Reviews from "./components/Reviews";
 import { REVIEW_STATS, TRUST_COUNTS } from "./lib/whop-reviews";
+import { getReferralCode, sanitizeReferralCode, setReferralCode as storeReferralCode } from "../lib/referral";
 
 const LP_STORIES = [
   {
@@ -236,6 +237,8 @@ export default function LandingClient({ variant }: Props) {
   // Tracked separately from the message so "denied" (wrong email after
   // checkout) can render the loud red variant instead of the subtle banner.
   const [authCode, setAuthCode] = useState<string | null>(null);
+  // Referral code (?a=<whop_username>) captured on this visit or an earlier one.
+  const [referralCode, setReferralCode] = useState<string | null>(null);
   const [pricingOpen, setPricingOpen] = useState(false);
   // /free hero: "I'll pick up" commitment modal. Two screens in one shell —
   // pick a monthly number, then see that number against the average deal size.
@@ -315,6 +318,21 @@ export default function LandingClient({ variant }: Props) {
     const rest = params.toString();
     window.history.replaceState({}, "", window.location.pathname + (rest ? "?" + rest : ""));
   };
+
+  // Referral: /?a=<whop_username> (members share this). Store it for 30 days,
+  // last click wins, then drop only the a param from the address bar so the
+  // pricing/plan deep-link params below still work.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = sanitizeReferralCode(params.get("a"));
+    if (fromUrl) storeReferralCode(fromUrl);
+    setReferralCode(fromUrl ?? getReferralCode());
+    if (params.has("a")) {
+      params.delete("a");
+      const rest = params.toString();
+      window.history.replaceState({}, "", window.location.pathname + (rest ? "?" + rest : ""));
+    }
+  }, []);
 
   // Deep link: /?pricing=1 opens the modal; &plan=base|pro (the old /checkout
   // routes redirect here) jumps straight to checkout.
@@ -1310,6 +1328,7 @@ export default function LandingClient({ variant }: Props) {
                     }}
                     skipRedirect
                     onComplete={handleCheckoutComplete}
+                    {...(referralCode ? { affiliateCode: referralCode } : {})}
                   />
                 </div>
                 <div className="pm-friction">

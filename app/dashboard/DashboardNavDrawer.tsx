@@ -59,6 +59,10 @@ export default function DashboardNavDrawer({ open, onClose }: Props) {
             <span className="lp-drawer-num">04</span>
             Tools
           </Link>
+          <Link className="lp-drawer-item" href="/dashboard/refer" onClick={onClose}>
+            <span className="lp-drawer-num">05</span>
+            Refer &amp; Earn
+          </Link>
           <button
             className="lp-drawer-item"
             onClick={() => {
@@ -66,12 +70,12 @@ export default function DashboardNavDrawer({ open, onClose }: Props) {
               onClose();
             }}
           >
-            <span className="lp-drawer-num">05</span>
+            <span className="lp-drawer-num">06</span>
             Take the tour
           </button>
           <div className="dash-drawer-sep" aria-hidden="true"></div>
           <button className="lp-drawer-item dash-drawer-signout" onClick={signOut}>
-            <span className="lp-drawer-num">06</span>
+            <span className="lp-drawer-num">07</span>
             Sign Out
           </button>
         </nav>
