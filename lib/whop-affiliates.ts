@@ -51,9 +51,12 @@ export class WhopAffiliateError extends Error {
   }
 }
 
+// Referrals use their own key (affiliate:create scope). Falls back to the
+// general key so local dev keeps working; the general key must stay as is
+// because the login gate and tier stamps depend on its current behaviour.
 function apiKey(): string {
-  const key = process.env.WHOP_API_KEY;
-  if (!key) throw new WhopAffiliateError("config", 0, "WHOP_API_KEY unset");
+  const key = process.env.WHOP_AFFILIATE_API_KEY || process.env.WHOP_API_KEY;
+  if (!key) throw new WhopAffiliateError("config", 0, "WHOP_AFFILIATE_API_KEY / WHOP_API_KEY unset");
   return key;
 }
 
