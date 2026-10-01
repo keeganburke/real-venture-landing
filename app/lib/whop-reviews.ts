@@ -1,7 +1,7 @@
 // Social-proof counts shown across the landing pages and the hub. Change
-// them here only; every "450+" / "127 reviews" reads from this object.
+// them here only; every "650+" / "127 reviews" reads from this object.
 export const TRUST_COUNTS = {
-  students: 450,
+  students: 650,
   reviews: 127,
 } as const;
 
