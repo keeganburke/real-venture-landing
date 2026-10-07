@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WhopCheckoutEmbed, useCheckoutEmbedControls } from "@whop/checkout/react";
 import NavDrawer from "./components/NavDrawer";
@@ -12,6 +12,12 @@ import VideoWalkthrough from "./components/VideoWalkthrough";
 import Reviews from "./components/Reviews";
 import { REVIEW_STATS, TRUST_COUNTS } from "./lib/whop-reviews";
 import { getReferralCode, sanitizeReferralCode, setReferralCode as storeReferralCode } from "../lib/referral";
+
+// /free hero: "members online" line under the Discord button. One place to
+// change it; no Discord API call.
+const FREE_ONLINE_COUNT = 237;
+// /free hero: the guest Discord door (no Whop login; Guest role only).
+const FREE_DISCORD_START = "/api/discord/guest/start";
 
 const LP_STORIES = [
   {
@@ -194,6 +200,9 @@ type Props = {
   // "ultra" / "ultra3" / "ultra6" do the same for the Ultra tier, each pinned
   // to one billing term with no toggle.
   variant: "default" | "free" | "pro" | "pro6" | "pro3" | "ultra" | "ultra3" | "ultra6";
+  // "free" only: where the joined card's "Open Discord" button goes. Built
+  // server-side in app/free/page.tsx from DISCORD_GUILD_ID.
+  discordUrl?: string;
 };
 
 // Whop OAuth failure codes land the user back on "/" with ?auth=<code>.
@@ -207,7 +216,7 @@ const AUTH_MESSAGES: Record<string, string> = {
   missing_code: "Sign-in got interrupted. Please try again.",
 };
 
-export default function LandingClient({ variant }: Props) {
+export default function LandingClient({ variant, discordUrl = "https://discord.com/app" }: Props) {
   // "pro6" / "pro3" are the Pro-only page pinned to the 6- or 3-month plan:
   // no term toggle, one fixed price.
   const sixMonth = variant === "pro6";
@@ -240,37 +249,36 @@ export default function LandingClient({ variant }: Props) {
   // Referral code (?a=<whop_username>) captured on this visit or an earlier one.
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [pricingOpen, setPricingOpen] = useState(false);
-  // /free hero: "I'll pick up" commitment modal. Two screens in one shell —
-  // pick a monthly number, then see that number against the average deal size.
-  // Presentational only: the choice is never posted anywhere and nothing is
-  // tracked. It exists to make the call feel specific before the phone rings.
-  const [callModalOpen, setCallModalOpen] = useState(false);
-  const [callGoal, setCallGoal] = useState<"5k" | "10k" | "20k" | null>(null);
+  // /free Discord door. "joined" swaps the button for the green card; "error"
+  // adds one line under the button. Resolved AFTER mount from ?discord= and
+  // the rv_guest cookie so the server and client first paint match.
+  const [freeDiscord, setFreeDiscord] = useState<"none" | "joined" | "error">("none");
   useEffect(() => {
-    if (!callModalOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setCallModalOpen(false);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [callModalOpen]);
-  // Every open starts on screen 1. Without this a reopen would land on
-  // whatever was tapped last, which reads as a stuck modal.
+    if (variant !== "free") return;
+    const status = new URLSearchParams(window.location.search).get("discord");
+    const hasGuestCookie = document.cookie.split("; ").some((c) => c.startsWith("rv_guest="));
+    if (status === "joined" || status === "already" || hasGuestCookie) setFreeDiscord("joined");
+    else if (status === "error") setFreeDiscord("error");
+  }, [variant]);
+  // /free sticky button (phones): shows ONLY once the hero button has
+  // scrolled completely off the TOP of the screen (its bottom edge above the
+  // viewport). "Not intersecting" alone is not enough: a button still below
+  // the fold is also not intersecting, which is what put two buttons on
+  // screen at once. Starts false so nothing shows on first paint.
+  const freeCtaRef = useRef<HTMLDivElement | null>(null);
+  const [freeCtaAbove, setFreeCtaAbove] = useState(false);
   useEffect(() => {
-    if (!callModalOpen) setCallGoal(null);
-  }, [callModalOpen]);
-  // Lock the page while the modal is open, same as the pricing modal does.
-  // Without it the page scrolls freely behind a fixed overlay, which is how
-  // the sections below the hero were being scrolled up into view underneath
-  // it in the first place.
-  useEffect(() => {
-    if (!callModalOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [callModalOpen]);
+    if (variant !== "free" || freeDiscord === "joined") return;
+    const el = freeCtaRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      ([entry]) => setFreeCtaAbove(!entry.isIntersecting && entry.boundingClientRect.bottom <= 0),
+      { threshold: 0 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [variant, freeDiscord]);
+  const showFreeSticky = variant === "free" && freeDiscord !== "joined" && freeCtaAbove && !pricingOpen;
   // "We call 6am-8pm Pacific" is only worth saying to someone who opted in
   // outside those hours. Resolved AFTER mount, never during render: the server
   // has no idea what time it is where the visitor is, and branching on a clock
@@ -531,6 +539,9 @@ export default function LandingClient({ variant }: Props) {
             </button>
           </div>
         )}
+        {/* /free has no top bar at all: no MENU, no LOG IN, no logo. Every
+            other variant renders the nav exactly as before. */}
+        {variant !== "free" && (
         <nav className="lp-nav">
           <div className="lp-nav-inner">
             <div className="lp-nav-pill">
@@ -566,6 +577,7 @@ export default function LandingClient({ variant }: Props) {
             </div>
           </div>
         </nav>
+        )}
 
         <NavDrawer
           open={drawerOpen}
@@ -581,48 +593,72 @@ export default function LandingClient({ variant }: Props) {
         />
 
         {variant === "free" ? (
-          <section className="lp-hero lp-hero-free">
+          <section className="lp-hero lp-hero-free lp-free-hero">
             <div className="shell">
-              {/* "You're in" confirmation flash — fades in, holds, fades out.
-                  Pure CSS lifecycle; stays in flow at opacity 0 afterwards so
-                  nothing shifts. Hidden entirely under reduced motion. */}
-              <div className="lp-hero-yourein" aria-hidden="true">{"🎉 You're in!"}</div>
-              {/* Callout FIRST, above the H1. The page's one job right after
-                  opt-in is getting this call answered, so the notice leads and
-                  the H1 drops down to sit directly on top of the video it
-                  titles.
-
-                  No icon and no columns: one column of text. The pulse moved
-                  off the old phone glyph onto the BOX, and it animates border
-                  colour and glow only — never transform or opacity, because
-                  scale would shift the H1 below it on every cycle and opacity
-                  would make the text flicker while someone is reading it. */}
-              <div className="lp-hero-callout">
+              {/* v5: the call notice leads and is the biggest thing on the
+                  page, then the free Discord door, then the video and what the
+                  call covers. Only this section is "free" copy; everything
+                  below it is the homepage. The pulse on the box animates
+                  border colour and glow only (see the lp-hero-callout rules). */}
+              <div className="lp-hero-callout lp-free-callout-xl">
                 <p className="lp-hero-callout-main">
                   {"We're calling you in the next few minutes."}
                 </p>
-                <p className="lp-hero-callout-second">
-                  {"Unknown number, that's us."}
-                </p>
-                <p className="lp-hero-callout-third">
-                  {"5 minute conversation and you'll know exactly the next step to take."}
-                </p>
-                <p className="lp-hero-callout-fine">
-                  {"You don't need to know anything yet."}
+                <p className="lp-hero-callout-second lp-free-callout-last">
+                  {"Unknown number. That's us. Pick up."}
                 </p>
               </div>
               {/* Only shown OUTSIDE calling hours. Someone opting in at 2am
                   needs to know they were not ignored; someone opting in at 1pm
-                  does not need the line at all. Below the callout, not inside
-                  it, so the box stays three tiers. */}
+                  does not need the line at all. */}
               {outsideCallHours && (
                 <p className="lp-free-hours">
                   {"We call between 6am-8pm Pacific. If you opted in outside those hours, we'll reach out the next morning."}
                 </p>
               )}
-              <h1 className="lp-hero-h">
-                Your <span className="lp-hero-h-em">Secured Wholesaling</span> Blueprint
-              </h1>
+              <h1 className="lp-hero-h lp-free-h">{"Here's what you get, free"}</h1>
+              <ul className="lp-free-list">
+                <li>
+                  <span className="lp-free-list-emoji" aria-hidden="true">{"\u{1F4B0}"}</span>
+                  <span><b className="lp-free-list-gold">3 real contracts</b> our members use</span>
+                </li>
+                <li>
+                  <span className="lp-free-list-emoji" aria-hidden="true">{"\u{1F525}"}</span>
+                  <span><b className="lp-free-list-gold">2 scripts</b> to find buyers and talk to sellers</span>
+                </li>
+                <li>
+                  <span className="lp-free-list-emoji" aria-hidden="true">{"\u{1F440}"}</span>
+                  <span>A free look inside the community</span>
+                </li>
+              </ul>
+              {freeDiscord === "joined" ? (
+                <div className="lp-free-joined">
+                  <div className="lp-free-joined-h">{"You're in the Discord."}</div>
+                  <div className="lp-free-joined-sub">Your free tools are waiting inside.</div>
+                  <a
+                    className="lp-cta-primary lp-cta-hero"
+                    href={discordUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-cta="free-discord"
+                  >
+                    {"Open Discord \u2192"}
+                  </a>
+                </div>
+              ) : (
+                <div className="lp-free-door" ref={freeCtaRef}>
+                  <a className="lp-cta-primary lp-cta-hero" href={FREE_DISCORD_START} data-cta="free-discord">
+                    {"Access your free tools \u2192"}
+                  </a>
+                  <div className="lp-free-online">
+                    <span className="lp-free-online-dot" aria-hidden="true" />
+                    {FREE_ONLINE_COUNT} members online right now
+                  </div>
+                  {freeDiscord === "error" && (
+                    <div className="lp-free-error">That did not work. Tap the button to try again.</div>
+                  )}
+                </div>
+              )}
               {/* White label bar sitting on the top edge of the player. Kept
                   outside the frame so it never covers Vimeo's Unmute button. */}
               <div className="lp-video-overlay">{"Video tutorial \u00b7 2 minute watch"}</div>
@@ -636,32 +672,31 @@ export default function LandingClient({ variant }: Props) {
                   title="Secured Wholesaling Blueprint"
                 />
               </div>
-              {/* The picker lives on the PAGE, not behind a button. Tapping a
-                  number opens the modal straight to that variant; closing the
-                  modal is how someone changes their answer. It also replaces
-                  main's lp-free-outro, which did the same "now go look around"
-                  job less directly. */}
-              <div className="lp-hero-goals-wrap">
-                <p className="lp-hero-goals-h">What would actually change things for you?</p>
-                <div className="lp-hero-goals">
-                  {([["5k", "$5K/mo"], ["10k", "$10K/mo"], ["20k", "$20K/mo"]] as const).map(
-                    ([id, label]) => (
-                      <button
-                        key={id}
-                        type="button"
-                        className="lp-hero-goal"
-                        onClick={() => {
-                          setCallGoal(id);
-                          setCallModalOpen(true);
-                        }}
-                      >
-                        <span className="lp-hero-goal-amt">{label}</span>
-                      </button>
-                    ),
-                  )}
+              {/* What the call covers. Static list, no modal. */}
+              <div className="lp-free-call">
+                <h2 className="lp-free-call-h">What happens on the call</h2>
+                <ol className="lp-free-call-list">
+                  <li>
+                    <span className="lp-free-call-num" aria-hidden="true">1</span>
+                    <span>{"We figure out where you're at. Knowing nothing is totally fine."}</span>
+                  </li>
+                  <li>
+                    <span className="lp-free-call-num" aria-hidden="true">2</span>
+                    <span>{"The fastest path to your income goal, for your situation."}</span>
+                  </li>
+                  <li>
+                    <span className="lp-free-call-num" aria-hidden="true">3</span>
+                    <span>{"The strategy that's getting our students results so fast."}</span>
+                  </li>
+                  <li>
+                    <span className="lp-free-call-num" aria-hidden="true">4</span>
+                    <span>{"You hang up knowing the exact next step to your first deal."}</span>
+                  </li>
+                </ol>
+                <div className="lp-free-call-line">
+                  {"5-minute conversation. No pressure. We're here to help you."}
                 </div>
               </div>
-
             </div>
           </section>
         ) : (
@@ -677,6 +712,22 @@ export default function LandingClient({ variant }: Props) {
               <TrustRow />
             </div>
           </section>
+        )}
+
+        {/* /free only, phones only (CSS): fixed bottom bar with the same
+            Discord button once the hero button has scrolled away. Sits under
+            every modal (z-index 90 vs 1000). */}
+        {variant === "free" && (
+          <div className={`lp-free-sticky${showFreeSticky ? " is-on" : ""}`} aria-hidden={!showFreeSticky}>
+            <a
+              className="lp-cta-primary lp-cta-hero"
+              href={FREE_DISCORD_START}
+              data-cta="free-discord"
+              tabIndex={showFreeSticky ? 0 : -1}
+            >
+              {"Access your free tools \u2192"}
+            </a>
+          </div>
         )}
 
         <section className="lp-payouts">
@@ -981,120 +1032,6 @@ export default function LandingClient({ variant }: Props) {
           <div className="lp-footer-legal">{"\u00a9"} 2026 Real Venture {"\u00b7"} Not financial advice. Not a license.</div>
         </footer>
       </div>
-
-      {/* RENDERED OUTSIDE .wrap.lp ON PURPOSE, exactly where the pricing
-          modal lives, and this is load-bearing rather than tidiness.
-          globals.css has
-
-              .wrap > :not(.lp-drawer):not(.lp-drawer-backdrop)
-                { position: relative; z-index: 1 }
-
-          so EVERY section is its own stacking context at the same z-index.
-          While this modal lived inside <section class="lp-hero">, its
-          z-index:1000 only ranked it against its siblings INSIDE the hero —
-          against .lp-payouts and everything after it, the hero itself was
-          just another z-index:1 box that happened to come earlier in the
-          DOM, so all of them painted straight over the modal. Invisible at
-          scroll 0 because those sections are below the fold; at scrollY 600
-          document.elementFromPoint at the modal's centre returned
-          SECTION.lp-payouts. Out here it ranks against the sections
-          directly and 1000 wins. Raising the number inside the hero would
-          have changed nothing. */}
-      {/* Payoff modal — opens straight to the variant the page picker
-          chose. No screen 1 and no "change" link: the picker is on the
-          page behind this, so closing IS changing your answer. */}
-      {callModalOpen && callGoal && (
-        <div className="lp-callmodal-overlay" onClick={() => setCallModalOpen(false)}>
-          <div
-            className="lp-callmodal"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Your number"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              className="lp-callmodal-close"
-              aria-label="Close"
-              onClick={() => setCallModalOpen(false)}
-            >
-              {"×"}
-            </button>
-
-            <div className="lp-callmodal-screen" key={callGoal}>
-              {/* ZONE 1 — the number. Largest thing on the screen,
-                  then the gold verdict, then muted support. */}
-              <div className="lp-callmodal-num">
-                {callGoal === "5k" && (
-                  <>
-                    <p className="lp-callmodal-fig">{"$5,000 a month"}</p>
-                    <p className="lp-callmodal-avg">{"Our average deal is $10,000."}</p>
-                    <p className="lp-callmodal-verdict">{"That's one deal every two months."}</p>
-                  </>
-                )}
-                {callGoal === "10k" && (
-                  <>
-                    <p className="lp-callmodal-fig">{"$10,000 a month"}</p>
-                    <p className="lp-callmodal-avg">{"Our average deal is $10,000."}</p>
-                    <p className="lp-callmodal-verdict">{"That's one deal."}</p>
-                    <p className="lp-callmodal-trail">{"Not a full business. One deal."}</p>
-                  </>
-                )}
-                {callGoal === "20k" && (
-                  <>
-                    <p className="lp-callmodal-fig">{"$20,000 a month"}</p>
-                    <p className="lp-callmodal-avg">{"Our average deal is $10,000."}</p>
-                    <p className="lp-callmodal-verdict">{"That's two deals a month."}</p>
-                    <p className="lp-callmodal-trail">{"That's it."}</p>
-                  </>
-                )}
-              </div>
-
-              {/* ZONE 2 — what the call is. Emoji IS the bullet, in
-                  its own column, so the text keeps one left edge. */}
-              <div className="lp-callmodal-pickup">
-                {/* Centring wrapper. The hairline separator lives on
-                    .lp-callmodal-pickup and has to stay full-bleed, so the
-                    block cannot be shrunk there. This inner box is
-                    width:fit-content + margin-inline:auto, which centres the
-                    WHOLE five-item block while every line inside it keeps the
-                    single left edge the emoji grid columns give it. */}
-                <div className="lp-callmodal-pickup-inner">
-                  <p className="lp-callmodal-pickup-h">
-                    <span className="lp-callmodal-bullet" aria-hidden="true">📞</span>
-                    <span>This is what happens when you pick up</span>
-                  </p>
-                  <ul className="lp-callmodal-pickup-list">
-                    <li>
-                      <span className="lp-callmodal-bullet" aria-hidden="true">📍</span>
-                      <span>{"We figure out where you're at. Knowing nothing is totally fine."}</span>
-                    </li>
-                    <li>
-                      <span className="lp-callmodal-bullet" aria-hidden="true">🎯</span>
-                      <span>{"The fastest path to your number, for your situation."}</span>
-                    </li>
-                    <li>
-                      <span className="lp-callmodal-bullet" aria-hidden="true">🔑</span>
-                      <span>{"What's actually working right now. The stuff that's not in the videos."}</span>
-                    </li>
-                    <li>
-                      <span className="lp-callmodal-bullet" aria-hidden="true">💰</span>
-                      <span>{"You hang up knowing your exact first move toward your first check."}</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* ZONE 3 — the close, then the fee disclaimer. */}
-              <div className="lp-callmodal-end">
-                <p className="lp-callmodal-end-main">{"Calling you in the next few minutes."}</p>
-                <p className="lp-callmodal-end-sub">{"5 minute conversation and you'll know exactly where to start 📞"}</p>
-              </div>
-              <p className="lp-callmodal-note">{"Average fee based on deals closed in our community. Results vary."}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div
         className={`modal-overlay${pricingOpen ? " active" : ""}`}
