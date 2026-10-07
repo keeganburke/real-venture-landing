@@ -38,23 +38,37 @@ const PLAN_TIERS: Record<string, Tier> = {
 // Multi-membership priority: Ultra > Pro > Base.
 const TIER_RANK: Record<Tier, number> = { Ultra: 3, Pro: 2, Base: 1 };
 
-// Best-effort tier from the caller's Whop memberships. Any failure returns
-// nulls so the caller falls back to the original single role: no one is
-// ever left roleless because tier detection hiccuped.
+// Why the tier came back the way it did. The handler refuses only
+// "no_membership"; the other three keep today's fallback behaviour.
+//   ok             tier is Base, Pro or Ultra
+//   unknown_plan   Whop answered 2xx with at least one qualifying membership,
+//                  but no plan id is in PLAN_TIERS
+//   no_membership  Whop answered 2xx and the user has zero qualifying memberships
+//   error          missing config, non-2xx, or a throw
+type TierReason = "ok" | "unknown_plan" | "no_membership" | "error";
+
+// Statuses that count as "has a membership" for the existence check. past_due
+// is included here on purpose (a failed renewal in its grace window), but it
+// is NOT used to pick a tier below.
+const EXISTENCE_STATUSES = ["active", "trialing", "completed", "past_due"] as const;
+const TIER_STATUSES: ReadonlySet<string> = new Set(["active", "trialing", "completed"]);
+
+// Best-effort tier from the caller's Whop memberships, plus the reason. A
+// Whop hiccup ("error") or a plan we do not map ("unknown_plan") still falls
+// back to the original single role so a real member is never left roleless;
+// only a confirmed "no_membership" is refused by the handler.
 async function getWhopTier(
   whopUserId: string
-): Promise<{ tier: Tier | null; planId: string | null }> {
+): Promise<{ tier: Tier | null; planId: string | null; reason: TierReason }> {
   const productId = process.env.WHOP_PRODUCT_ID;
   const companyId = process.env.WHOP_COMPANY_ID;
-  if (!productId || !companyId) return { tier: null, planId: null };
+  if (!productId || !companyId) return { tier: null, planId: null, reason: "error" };
 
   try {
     const params = new URLSearchParams({ company_id: companyId });
     params.append("user_ids", whopUserId);
     params.append("product_ids", productId);
-    params.append("statuses", "active");
-    params.append("statuses", "trialing");
-    params.append("statuses", "completed");
+    for (const status of EXISTENCE_STATUSES) params.append("statuses", status);
 
     const res = await fetch(`https://api.whop.com/api/v1/memberships?${params.toString()}`, {
       headers: {
@@ -63,13 +77,18 @@ async function getWhopTier(
       },
       cache: "no-store",
     });
-    if (!res.ok) return { tier: null, planId: null };
+    if (!res.ok) return { tier: null, planId: null, reason: "error" };
 
     const page = await res.json();
     const rows: Record<string, unknown>[] = Array.isArray(page?.data) ? page.data : [];
+    if (rows.length === 0) return { tier: null, planId: null, reason: "no_membership" };
+
     let tier: Tier | null = null;
     let planId: string | null = null;
     for (const row of rows) {
+      // Tier comes only from active, trialing or completed rows; a past_due row
+      // proves the membership exists but does not choose the role.
+      if (typeof row.status !== "string" || !TIER_STATUSES.has(row.status)) continue;
       const rowPlanId =
         typeof row.plan_id === "string"
           ? row.plan_id
@@ -83,9 +102,9 @@ async function getWhopTier(
         planId = rowPlanId;
       }
     }
-    return { tier, planId };
+    return { tier, planId, reason: tier ? "ok" : "unknown_plan" };
   } catch {
-    return { tier: null, planId: null };
+    return { tier: null, planId: null, reason: "error" };
   }
 }
 
@@ -205,11 +224,20 @@ export async function GET(request: NextRequest) {
 
   // Tier-split roles: Ultra gets Ultra Member AND Pro Member (Ultra includes
   // everything in Pro); Pro and Base get their own role when configured;
-  // unknown plan, missing membership, Whop API error, or missing tier env
-  // all fall back to the original single role. roleId is the primary role
-  // recorded in discord_connections; roleIds is everything granted.
+  // unknown plan, Whop API error, or missing tier env all fall back to the
+  // original single role. roleId is the primary role recorded in
+  // discord_connections; roleIds is everything granted.
   // Roles are only ever ADDED here; removal happens elsewhere (upcoming sweep).
-  const { tier, planId } = await getWhopTier(session.whopUserId);
+  const { tier, planId, reason } = await getWhopTier(session.whopUserId);
+
+  // A valid session with no membership on the product is refused outright:
+  // no Discord token exchange, no guild add, no role, no discord_connections
+  // row. Whop errors and unmapped plans are NOT refused (see getWhopTier).
+  if (reason === "no_membership") {
+    console.log(`[discord/callback] refused: no membership, whop user ${session.whopUserId}`);
+    return redirectWithStatus("no_membership");
+  }
+
   let roleId = ROLE_IDS.FALLBACK;
   let roleIds: string[] = [ROLE_IDS.FALLBACK];
   let resolvedTier = "fallback";
