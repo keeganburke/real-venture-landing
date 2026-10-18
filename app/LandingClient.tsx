@@ -1287,7 +1287,7 @@ export default function LandingClient({ variant, discordUrl = "https://discord.c
                           theme: {
                             appearance: "dark",
                             // Ultra checkout takes the tier purple; Base and Pro keep gold.
-                            accentColor: selectedPlan === "ultra" ? "violet" : "yellow",
+                            accentColor: selectedPlan === "ultra" ? "violet" : "gold",
                           },
                         }}
                         onComplete={handleCheckoutComplete}
