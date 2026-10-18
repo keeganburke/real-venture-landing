@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { WhopCheckoutEmbed, useCheckoutEmbedControls } from "@whop/checkout/react";
+import { WhopElements, Checkout, CheckoutElement, type CheckoutOptions } from "@whop/elements-react";
+import { loadWhop } from "@whop/elements";
 import NavDrawer from "./components/NavDrawer";
 import CtaStrip from "./components/CtaStrip";
 import TrustRow from "./components/TrustRow";
@@ -12,6 +12,21 @@ import VideoWalkthrough from "./components/VideoWalkthrough";
 import Reviews from "./components/Reviews";
 import { REVIEW_STATS, TRUST_COUNTS } from "./lib/whop-reviews";
 import { getReferralCode, sanitizeReferralCode, setReferralCode as storeReferralCode } from "../lib/referral";
+
+// Whop Elements SDK loader, created once per page load (loadWhop injects one
+// script tag and shares one promise). Only ever called in the browser: the
+// checkout step cannot render during SSR. A failed load is held by the SDK, so
+// retryWhop() swaps in a fresh attempt before the checkout remounts.
+let whopLoad: ReturnType<typeof loadWhop> | null = null;
+function getWhop() {
+  if (!whopLoad) whopLoad = loadWhop();
+  return whopLoad;
+}
+function retryWhop() {
+  whopLoad = whopLoad ? whopLoad.retry() : loadWhop();
+  return whopLoad;
+}
+type CheckoutCompletion = Parameters<NonNullable<CheckoutOptions["onComplete"]>>[0];
 
 // /free hero: "members online" line under the Discord button. One place to
 // change it; no Discord API call.
@@ -241,7 +256,6 @@ export default function LandingClient({ variant, discordUrl = "https://discord.c
             : proOnly
               ? "Join Pro for $49.99/mo \u2192"
               : undefined;
-  const router = useRouter();
   const [authNotice, setAuthNotice] = useState<string | null>(null);
   // Tracked separately from the message so "denied" (wrong email after
   // checkout) can render the loud red variant instead of the subtle banner.
@@ -306,9 +320,20 @@ export default function LandingClient({ variant, discordUrl = "https://discord.c
     ultraSix ? "semiannual" : ultraThree ? "quarterly" : "monthly"
   );
   const [featuresOpen, setFeaturesOpen] = useState(false);
-  // Handle to the embedded checkout iframe so the buyer's email can be read
-  // back (getEmail) before the modal closes and the iframe unmounts.
-  const checkoutControls = useCheckoutEmbedControls();
+  // Whop Elements checkout state. returnUrl needs window.location.origin, so
+  // the element only renders after mount (isClient). checkoutAttempt is part
+  // of the <Checkout> key: bumping it remounts a fresh checkout after an error.
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutAttempt, setCheckoutAttempt] = useState(0);
+  const retryCheckout = () => {
+    retryWhop();
+    setCheckoutError(null);
+    setCheckoutAttempt((n) => n + 1);
+  };
 
   // Surface OAuth failures redirected here by /api/auth/whop/callback.
   useEffect(() => {
@@ -394,38 +419,22 @@ export default function LandingClient({ variant, discordUrl = "https://discord.c
     setStep("checkout");
   };
 
-  const handleCheckoutComplete = async (planId: string, receiptId?: string, result?: unknown) => {
-    // Fires once on payment success. Read the checkout email from the iframe
-    // BEFORE closing the modal (closing unmounts the iframe), stash it for
-    // /login, then send the user to OAuth so they land in the dashboard.
-    console.log("Whop checkout complete", { planId, receiptId, result });
-
-    let email: string | null = null;
+  // Elements 1.9: after payment the element redirects this tab to returnUrl
+  // on its own (/login?justpurchased=1, arriving with payment= and status=).
+  // onComplete fires first, with the payment id only (no email: /login looks
+  // that up server-side via /api/whop/lookup-purchase). Stash the id for the
+  // banner, then a 4 second fallback in case the redirect never comes.
+  const handleCheckoutComplete = (payload: CheckoutCompletion) => {
+    if (payload.result !== "payment") return;
+    const paymentId = payload.paymentId;
     try {
-      const raw = await checkoutControls.current?.getEmail(1000);
-      if (typeof raw === "string" && raw.includes("@")) email = raw.trim();
-    } catch {
-      // Timed out or iframe already gone: fall through to the result probe.
-    }
-    // Fallback: some SDK versions may carry the email on the complete result.
-    // The 0.6.0 types do not declare one, so this is a defensive runtime check.
-    if (!email && result && typeof result === "object") {
-      const maybe = (result as { email?: unknown }).email;
-      if (typeof maybe === "string" && maybe.includes("@")) email = maybe.trim();
-    }
-
-    // sessionStorage is the primary handoff to /login; the URL param is the
-    // fallback in case the flow crosses tabs.
-    if (email) {
-      try {
-        sessionStorage.setItem("rv_purchase_email", email);
-      } catch {}
-    }
-
-    closePricing();
-    const params = new URLSearchParams({ justpurchased: "1" });
-    if (email) params.set("email", email);
-    router.push(`/login?${params.toString()}`);
+      sessionStorage.setItem("rv_purchase_payment", paymentId);
+    } catch {}
+    window.setTimeout(() => {
+      window.location.assign(
+        `/login?justpurchased=1&payment=${encodeURIComponent(paymentId)}&status=succeeded`,
+      );
+    }, 4000);
   };
 
   // Checkout target: Base is monthly-only; Pro follows the selected term.
@@ -1253,20 +1262,43 @@ export default function LandingClient({ variant, discordUrl = "https://discord.c
                 )}
 
                 <div className="modal-checkout-wrap">
-                  <WhopCheckoutEmbed
-                    ref={checkoutControls}
-                    planId={activePlan.planId}
-                    theme="dark"
-                    themeOptions={{
-                      backgroundColor: "#0f0f12",
-                      // Ultra checkout takes the tier purple; Base and Pro keep gold.
-                      accentColor: selectedPlan === "ultra" ? "#c4bbff" : "#E5A544",
-                      borderRadius: 12,
-                    }}
-                    skipRedirect
-                    onComplete={handleCheckoutComplete}
-                    {...(referralCode ? { affiliateCode: referralCode } : {})}
-                  />
+                  {/* Whop Elements 1.9. Every option is create-only, so the
+                      key carries the plan id: switching a Pro or Ultra term
+                      remounts a fresh checkout for the new plan. The element
+                      redirects the tab to returnUrl after payment. */}
+                  {checkoutError ? (
+                    <div className="pm-checkout-error" role="alert">
+                      <p>Checkout could not load. Check your connection and try again.</p>
+                      <button type="button" className="pm-checkout-retry" onClick={retryCheckout}>
+                        Try again
+                      </button>
+                    </div>
+                  ) : isClient ? (
+                    <WhopElements
+                      elements={getWhop()}
+                      onLoadError={() => setCheckoutError("sdk_load_failed")}
+                    >
+                      <Checkout
+                        key={`${activePlan.planId}:${checkoutAttempt}`}
+                        plan={activePlan.planId}
+                        returnUrl={`${window.location.origin}/login?justpurchased=1`}
+                        {...(referralCode ? { affiliateCode: referralCode } : {})}
+                        appearance={{
+                          theme: {
+                            appearance: "dark",
+                            // Ultra checkout takes the tier purple; Base and Pro keep gold.
+                            accentColor: selectedPlan === "ultra" ? "violet" : "yellow",
+                          },
+                        }}
+                        onComplete={handleCheckoutComplete}
+                        fallback={<div className="pm-checkout-loading">Loading secure checkout...</div>}
+                      >
+                        <CheckoutElement onError={(e) => setCheckoutError(e.code ?? e.message ?? "element_error")} />
+                      </Checkout>
+                    </WhopElements>
+                  ) : (
+                    <div className="pm-checkout-loading">Loading secure checkout...</div>
+                  )}
                 </div>
                 <div className="pm-friction">
                   <span className="pm-friction-check" aria-hidden="true">{"✓"}</span>

@@ -3525,6 +3525,34 @@ a.tier-cta {
 
 .modal-checkout-wrap {
   padding: 12px 0 4px;
+  /* Never a blank box while the Elements checkout boots or after an error. */
+  min-height: 240px;
+}
+.modal-checkout-wrap .pm-checkout-loading,
+.modal-checkout-wrap .pm-checkout-error {
+  min-height: 216px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  color: #fff;
+  font-size: 14px;
+}
+.modal-checkout-wrap .pm-checkout-error p {
+  margin: 0;
+}
+.modal-checkout-wrap .pm-checkout-retry {
+  background: var(--cta);
+  color: var(--cta-text);
+  border: none;
+  padding: 10px 20px;
+  border-radius: 100px;
+  font-family: "Cabinet Grotesk", sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
 }
 
 @media (prefers-reduced-motion: reduce) {
