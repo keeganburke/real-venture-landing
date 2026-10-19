@@ -1,8 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getActiveMembershipId, whopAuthHeaders } from "../whop-membership";
+import { getActiveMembershipId, WHOP_API_VERSION_DATE } from "../whop-membership";
 
 /** Length of the pause offered by Gate 2. Must match the gate's copy. */
 const PAUSE_DAYS = 14;
+
+/**
+ * The key for the outbound pause call — NOT the general WHOP_API_KEY.
+ *
+ * WHOP_API_KEY is provisioned on Whop API version 2026-09-22, whose permission
+ * vocabulary is membership:cancel / membership:transfer. There is no
+ * member:manage scope in that model, so the v1 pause endpoint rejected it with
+ * a 403 that no amount of granting could fix. WHOP_MANAGE_API_KEY is a separate
+ * company key on 2026-10-15-1 with the Owner role.
+ *
+ * Local and non-exported, following lib/whop-affiliates.ts, so nothing else in
+ * the codebase can reach for the manage key by accident. It deliberately does
+ * NOT fall back to WHOP_API_KEY the way the affiliates helper does: falling
+ * back would silently reproduce the exact 403 this exists to avoid, and a
+ * loud config error is far easier to read than a permissions one.
+ */
+function requireWhopManageApiKey(): string {
+  const key = process.env.WHOP_MANAGE_API_KEY;
+  if (!key || key.trim() === "") {
+    throw new Error("WHOP_MANAGE_API_KEY is unset or empty");
+  }
+  return key;
+}
+
+/**
+ * Headers for the pause call only. Same shape as whopAuthHeaders() in
+ * whop-membership.ts, which is left untouched and still serves every other
+ * caller — including the membership lookup that runs first inside this route,
+ * which keeps using WHOP_API_KEY.
+ */
+function manageAuthHeaders(): Record<string, string> {
+  return {
+    Authorization: `Bearer ${requireWhopManageApiKey()}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    "Api-Version-Date": WHOP_API_VERSION_DATE,
+  };
+}
 
 // Pauses the caller's membership via Whop.
 //
@@ -34,26 +72,17 @@ export async function POST(request: NextRequest) {
     // 14 days from now, as an ISO 8601 date-time.
     const resumesAtIso = new Date(Date.now() + PAUSE_DAYS * 86_400_000).toISOString();
 
-    // Api-Version-Date is stripped on THIS request only, so Whop evaluates it
-    // against whatever version the key itself is provisioned for.
-    // whop-membership.ts still sets the header for every other caller.
-    const pauseHeaders: Record<string, string> = { ...whopAuthHeaders() };
-    delete pauseHeaders["Api-Version-Date"];
-
-    // Retries are safe: Whop collapses repeats of the same key instead of
-    // stacking a second pause onto the membership.
-    pauseHeaders["Idempotency-Key"] = crypto.randomUUID();
-
     const res = await fetch(
       `https://api.whop.com/api/v1/memberships/${lookup.membershipId}/pause`,
       {
         method: "POST",
-        headers: pauseHeaders,
-        // Both field names, same timestamp. Older versions of the endpoint
-        // take `until`, newer take `resumes_at`; sending both means whichever
-        // the key's version expects lands and the other is ignored.
+        headers: {
+          ...manageAuthHeaders(),
+          // Retries are safe: Whop collapses repeats of the same key instead
+          // of stacking a second pause onto the membership.
+          "Idempotency-Key": crypto.randomUUID(),
+        },
         body: JSON.stringify({
-          until: resumesAtIso,
           resumes_at: resumesAtIso,
           void_payments: true,
         }),
