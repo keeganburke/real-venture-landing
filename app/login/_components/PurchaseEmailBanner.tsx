@@ -33,9 +33,13 @@ export default function PurchaseEmailBanner({ initialEmail, justPurchased, onSho
   const params = useSearchParams();
   const urlEmail = initialEmail ?? params.get("email");
   const jp = justPurchased || params.get("justpurchased") === "1";
-  const status = params.get("status");
-  const failed = status !== null && status !== "succeeded";
-  const rawPaymentId = params.get("payment") ?? params.get("payment_id");
+  // Two URL formats land here: the Elements returnUrl (payment=, status=
+  // succeeded|failed|canceled) and Whop's dashboard "Checkout redirect"
+  // (payment_id=, receipt_id=, checkout_status=success, status=success).
+  // Only an explicit failed / canceled is a failure; anything else is a sale.
+  const status = params.get("status") ?? params.get("checkout_status");
+  const failed = status === "failed" || status === "canceled" || status === "cancelled";
+  const rawPaymentId = params.get("payment") ?? params.get("payment_id") ?? params.get("receipt_id");
   const urlPaymentId = rawPaymentId && PAYMENT_ID_RE.test(rawPaymentId) ? rawPaymentId : null;
 
   const [email, setEmail] = useState<string | null>(
@@ -104,11 +108,11 @@ export default function PurchaseEmailBanner({ initialEmail, justPurchased, onSho
 
   if (failed) {
     return (
-      <div className="login-purchase-banner" role="status">
+      <div className="login-purchase-banner login-purchase-banner--failed" role="alert">
         <div className="login-purchase-banner-eyebrow">Payment not completed</div>
         <p className="login-purchase-banner-body">
           {"Your payment didn't go through. No charge was made. "}
-          <a href="/?pricing=1">Try again</a>
+          <a className="login-purchase-banner-retry" href="/?pricing=1">Try again</a>
         </p>
       </div>
     );

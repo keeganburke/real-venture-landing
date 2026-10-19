@@ -37,7 +37,8 @@ function toMs(value: unknown): number | null {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const paymentId = searchParams.get("payment") ?? searchParams.get("payment_id");
+  const paymentId =
+    searchParams.get("payment") ?? searchParams.get("payment_id") ?? searchParams.get("receipt_id");
   if (!paymentId || !PAYMENT_ID_RE.test(paymentId)) {
     return nothing(400);
   }

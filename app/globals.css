@@ -7852,6 +7852,11 @@ body:has(.hub-page) {
 .login-purchase-banner-eyebrow{color:var(--green);font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:11px;letter-spacing:.10em;text-transform:uppercase}
 .login-purchase-banner-body{color:var(--txt);font-size:15px;line-height:1.5;font-family:"Inter",sans-serif}
 .login-purchase-banner-body b{color:var(--gold);font-weight:800}
+/* Failed / canceled payment: red tint instead of the green success styling. */
+.login-purchase-banner.login-purchase-banner--failed{background:linear-gradient(135deg,rgba(248,113,113,.14),rgba(248,113,113,.05));border-color:rgba(248,113,113,.55)}
+.login-purchase-banner--failed .login-purchase-banner-eyebrow{color:#f87171}
+.login-purchase-banner--failed .login-purchase-banner-retry{color:#fff;font-weight:700;text-decoration:underline;text-underline-offset:3px;text-decoration-color:#f87171}
+.login-purchase-banner--failed .login-purchase-banner-retry:hover{color:#fca5a5}
 
 /* Login page - louder warning above button */
 .login-warn{background:rgba(229,181,71,.08);border:1px solid rgba(229,181,71,.30);border-left:3px solid var(--gold);border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start}
