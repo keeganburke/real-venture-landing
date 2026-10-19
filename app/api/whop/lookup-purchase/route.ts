@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 // /login banner helper for the Whop Elements checkout. The element redirects
 // the buyer to /login?justpurchased=1&payment=pay_...&status=succeeded, and
 // the page asks here for the email that payment was made with so the banner
-// can say "sign in with this exact email". Server side only: WHOP_API_KEY
+// can say "sign in with this exact email". Server side only: the key
 // never reaches the browser, and nothing here logs the key or the email.
 export const dynamic = "force-dynamic";
 
@@ -43,10 +43,11 @@ export async function GET(request: Request) {
     return nothing(400);
   }
 
-  const apiKey = process.env.WHOP_API_KEY;
+  // Dedicated read key for this lookup; falls back to the general key.
+  const apiKey = process.env.WHOP_LOOKUP_API_KEY || process.env.WHOP_API_KEY;
   const productId = process.env.WHOP_PRODUCT_ID;
   if (!apiKey || !productId) {
-    console.error("[whop/lookup-purchase] WHOP_API_KEY or WHOP_PRODUCT_ID unset");
+    console.error("[whop/lookup-purchase] WHOP_LOOKUP_API_KEY / WHOP_API_KEY or WHOP_PRODUCT_ID unset");
     return nothing(500);
   }
 
