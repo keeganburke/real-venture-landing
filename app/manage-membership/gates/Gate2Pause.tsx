@@ -1,25 +1,19 @@
 "use client";
 
-const PRO_PLAN_IDS = new Set([
-  "plan_J8vFpCWME75W3",   // Pro monthly
-  "plan_9nyRNbuhQF0pk",   // Pro 3-month
-  "plan_SIYHeHyFp1dbR",   // legacy Pro
-  "plan_mjpuBNS3KJqmw",   // Ultra monthly, $249.99
-  "plan_tfYMBwmuOwuB0",   // Pro 6-month, $250
-]);
-
-// Tier-aware "you keep" list. Sprint progress is not persisted anywhere, so
-// it is not promised; "locked-in Pro pricing" only applies to Pro plans.
-function keepsFor(planId: string | null): string[] {
-  const isPro = planId ? PRO_PLAN_IDS.has(planId) : false;
-  const base = [
-    "Your streak and wins",
-    "Your saved deals and buyers",
-    "Your Discord community role",
-  ];
-  if (isPro) base.push("Your locked-in Pro pricing");
-  return base;
-}
+// The things a pause preserves. FLAT, not tier-aware: this list replaced a
+// keepsFor(planId) helper that appended "Your locked-in Pro pricing" only for
+// Pro and Ultra plan ids. "Locked-in pricing" is true on any plan — pausing
+// holds whatever price you are on — so the branch was no longer earning its
+// keep. Gate 2 was the ONLY tier-aware screen in the cancel flow; nothing is
+// now. `planId` is still accepted so the call site is unchanged and the
+// branch can come back without re-threading the prop.
+const KEEPS = [
+  "All 40 hours of live calls every week",
+  "Coaches answering you in the chat",
+  "The full Studio and every tool in it",
+  "Your saved deals and buyer network",
+  "Your Discord role and locked-in pricing",
+];
 
 function CheckIcon() {
   return (
@@ -30,13 +24,23 @@ function CheckIcon() {
 }
 
 type Props = {
+  /** Currently unused — see the KEEPS comment above. Kept on the type so the
+   *  CancelFlow call site is untouched. */
   planId: string | null;
   onAccept: () => void;
   onDecline: () => void;
+  /** True while the pause request is in flight. */
+  pausing?: boolean;
+  /** Set when the pause failed. The gate stays open so they can retry. */
+  error?: string | null;
 };
 
-export default function Gate2Pause({ planId, onAccept, onDecline }: Props) {
-  const KEEPS = keepsFor(planId);
+export default function Gate2Pause({
+  onAccept,
+  onDecline,
+  pausing = false,
+  error = null,
+}: Props) {
   return (
     <>
       <div className="cf-pause-icn">
@@ -47,9 +51,9 @@ export default function Gate2Pause({ planId, onAccept, onDecline }: Props) {
       </div>
 
       <div className="cf-modal-eyeb">Need a break?</div>
-      <div className="cf-modal-h">Pause instead</div>
+      <div className="cf-modal-h">Take 14 days on us</div>
       <div className="cf-modal-sub">
-        {"We'll still be here when you're ready to come back. Freeze your membership for 30 days, free."}
+        {"Your next payment moves back two weeks. Nothing else changes."}
       </div>
 
       <div className="cf-pause-keeps">
@@ -66,12 +70,44 @@ export default function Gate2Pause({ planId, onAccept, onDecline }: Props) {
         </div>
       </div>
 
-      <button className="cf-btn-primary blue" onClick={onAccept}>
-        Pause for 30 days
+      {/* Footer line sits between the list and the buttons, per the copy deck.
+          No existing class fits (cf-modal-sub is the subheading, cf-foot-back
+          is a link button), so it carries the muted/centred idiom inline. */}
+      <p
+        style={{
+          margin: "0 0 14px",
+          textAlign: "center",
+          fontSize: 13,
+          lineHeight: 1.5,
+          color: "var(--txt-dim)",
+        }}
+      >
+        Most people quit two weeks before it clicks.
+      </p>
+
+      <button className="cf-btn-primary blue" onClick={onAccept} disabled={pausing}>
+        {pausing ? "Pausing\u2026" : "Push my payment 14 days"}
       </button>
-      <button className="cf-btn-secondary" onClick={onDecline}>
+      <button className="cf-btn-secondary" onClick={onDecline} disabled={pausing}>
         No thanks, continue
       </button>
+
+      {/* Failure keeps the member here rather than closing on a false
+          success. The button above is the retry. */}
+      {error && (
+        <p
+          role="alert"
+          style={{
+            marginTop: 12,
+            textAlign: "center",
+            fontSize: 12.5,
+            lineHeight: 1.5,
+            color: "var(--red)",
+          }}
+        >
+          {error}
+        </p>
+      )}
     </>
   );
 }

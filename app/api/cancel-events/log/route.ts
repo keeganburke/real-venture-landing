@@ -8,6 +8,7 @@ const EVENT_TYPES = [
   "pause_offered",
   "pause_accepted",
   "pause_declined",
+  "pause_failed",
   "free_days_offered",
   "free_days_accepted",
   "free_days_declined",

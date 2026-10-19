@@ -45,8 +45,6 @@ type Props = {
 
 export default function Gate4Loss({ onKeep, onTestimonialShown, onProceedToCancel }: Props) {
   const [index, setIndex] = useState(0);
-  const [cancelling, setCancelling] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -62,41 +60,21 @@ export default function Gate4Loss({ onKeep, onTestimonialShown, onProceedToCance
 
   const testimonial = TESTIMONIALS[index];
 
-  // Real cancellation: Whop cancels at period end, then we land the member back
-  // on /manage-membership with a confirmation banner. No off-site redirect.
-  const quit = async () => {
-    if (cancelling) return;
-    setCancelling(true);
-    setError(null);
+  // Plain redirect. No API call.
+  //
+  // This reverts commit 373ff69, which had replaced the redirect with a real
+  // POST /api/whop/cancel. That route stays on disk, unreferenced from here,
+  // the same treatment Gate3FreeDays got — it is not deleted and can be wired
+  // back in.
+  //
+  // What a redirect gives up, deliberately: the in-app confirmation banner,
+  // the ends_at date, the whop_cancel_completed event (so the funnel records
+  // that someone LEFT, not that they churned), and the pinned
+  // cancellation_mode "at_period_end" — on whop.com the member chooses, and
+  // nothing stops an immediate cancellation that forfeits paid-for access.
+  const quit = () => {
     onProceedToCancel();
-
-    try {
-      const res = await fetch("/api/whop/cancel", { method: "POST" });
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.ok) throw new Error("cancel failed");
-
-      const endsAt = typeof data.ends_at === "string" ? data.ends_at : null;
-      // Fire and forget, keepalive so it survives the navigation below.
-      fetch("/api/cancel-events/log", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        keepalive: true,
-        body: JSON.stringify({
-          event_type: "whop_cancel_completed",
-          session_id: crypto.randomUUID(),
-          event_data: { ends_at: endsAt },
-        }),
-      }).catch(() => {});
-
-      window.location.href = `/manage-membership?cancelled=1${
-        endsAt ? `&ends=${encodeURIComponent(endsAt)}` : ""
-      }`;
-    } catch {
-      setError(
-        "Something went wrong. Please try again or contact support at realventureestate@gmail.com."
-      );
-      setCancelling(false);
-    }
+    window.location.href = "https://whop.com";
   };
 
   return (
@@ -133,23 +111,9 @@ export default function Gate4Loss({ onKeep, onTestimonialShown, onProceedToCance
       <button className="cf-btn-primary" onClick={onKeep}>
         Keep my plan
       </button>
-      <button className="cf-btn-quit" onClick={quit} disabled={cancelling}>
-        {cancelling ? "Cancelling\u2026" : "I'd rather quit, cancel my membership"}
+      <button className="cf-btn-quit" onClick={quit}>
+        {"I'd rather quit, cancel my membership"}
       </button>
-      {error && (
-        <p
-          role="alert"
-          style={{
-            marginTop: 12,
-            textAlign: "center",
-            fontSize: 12.5,
-            lineHeight: 1.5,
-            color: "var(--red)",
-          }}
-        >
-          {error}
-        </p>
-      )}
     </>
   );
 }

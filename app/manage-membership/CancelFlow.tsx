@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import Gate1Reason from "./gates/Gate1Reason";
 import Gate2Pause from "./gates/Gate2Pause";
-import Gate3FreeDays from "./gates/Gate3FreeDays";
 import Gate4Loss from "./gates/Gate4Loss";
 
 type Props = {
@@ -43,12 +42,17 @@ function useCancelTracking(sessionId: string | null, membershipId: string, plan:
   );
 }
 
-// Events fired when each gate renders. Gate 5 is not a gate component, it is
-// the redirect fired from Gate 4's quit handler.
+// Events fired when each gate renders, indexed by gate number.
+//
+// The 15-free-days gate was removed from the flow; the sequence is now
+// reason -> pause -> loss. Its component (gates/Gate3FreeDays.tsx), its route
+// (app/api/whop/add-free-days/route.ts) and its migration all remain on disk,
+// unreferenced, so the offer can be restored without rebuilding it. The
+// free_days_* event types stay whitelisted in cancel-events/log because
+// historical rows carry them.
 const GATE_OPEN_EVENTS = [
   "cancel_flow_started",
   "pause_offered",
-  "free_days_offered",
   "loss_screen_viewed",
 ];
 
@@ -56,6 +60,8 @@ export default function CancelFlow({ open, onClose, membershipId, plan, planId =
   const [currentGate, setCurrentGate] = useState(0);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [, setSavedAt] = useState<number | null>(null);
+  const [pausing, setPausing] = useState(false);
+  const [pauseError, setPauseError] = useState<string | null>(null);
 
   const track = useCancelTracking(sessionId, membershipId, plan);
 
@@ -63,6 +69,8 @@ export default function CancelFlow({ open, onClose, membershipId, plan, planId =
     if (open) {
       setSessionId(crypto.randomUUID());
       setCurrentGate(0);
+      setPausing(false);
+      setPauseError(null);
     } else {
       setSessionId(null);
     }
@@ -95,31 +103,57 @@ export default function CancelFlow({ open, onClose, membershipId, plan, planId =
     setCurrentGate(1);
   };
 
-  const handlePauseAccept = () => {
-    track("pause_accepted", { pause_days: 30 });
-    fetch("/api/whop/pause", { method: "POST" });
-    saved("pause");
+  // Awaited, and checked. This was fire-and-forget: the request was sent with
+  // no await and no response check, and the modal closed claiming success
+  // whatever came back. pause_accepted fired BEFORE the call, so it counted
+  // intent rather than outcome and has been inflating the pause numbers.
+  const handlePauseAccept = async () => {
+    if (pausing) return;
+    setPausing(true);
+    setPauseError(null);
+
+    try {
+      const res = await fetch("/api/whop/pause", { method: "POST" });
+      const data = await res.json().catch(() => null);
+
+      // Both conditions: the route can answer 200 with { ok: false } when the
+      // membership lookup fails, so res.ok alone is not enough.
+      if (!res.ok || !data?.ok) {
+        // 409 is "already paused" — a different situation from a failure, and
+        // it needs a different sentence. Nothing is broken and retrying will
+        // not help.
+        const conflict = res.status === 409 || data?.whop_status === 409;
+        track("pause_failed", {
+          status: res.status,
+          whop_status: data?.whop_status ?? null,
+          error: typeof data?.error === "string" ? data.error : null,
+          conflict,
+        });
+        setPauseError(
+          conflict
+            ? "This membership is already paused. Close this and check your plan status."
+            : "We couldn't pause your membership. Please try again, or contact support at realventureestate@gmail.com."
+        );
+        setPausing(false);
+        return;
+      }
+
+      // Only now is it true.
+      track("pause_accepted", { pause_days: 14, resumes_at: data?.resumes_at ?? null });
+      setPausing(false);
+      saved("pause");
+    } catch {
+      track("pause_failed", { status: null, whop_status: null, error: "network", conflict: false });
+      setPauseError(
+        "We couldn't reach the server. Please check your connection and try again."
+      );
+      setPausing(false);
+    }
   };
 
   const handlePauseDecline = () => {
     track("pause_declined");
     setCurrentGate(2);
-  };
-
-  const handleFreeDaysAccept = () => {
-    // The accepted event is inserted server-side by the add-free-days route
-    // (its DB-enforced guard row), so no client-side track fire here.
-    fetch("/api/whop/add-free-days", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ days: 15 }),
-    });
-    saved("free_days");
-  };
-
-  const handleFreeDaysDecline = () => {
-    track("free_days_declined");
-    setCurrentGate(3);
   };
 
   const handleKeep = () => {
@@ -145,12 +179,15 @@ export default function CancelFlow({ open, onClose, membershipId, plan, planId =
           <Gate1Reason onReason={handleReason} onNeverMind={onClose} />
         )}
         {currentGate === 1 && (
-          <Gate2Pause planId={planId} onAccept={handlePauseAccept} onDecline={handlePauseDecline} />
+          <Gate2Pause
+            planId={planId}
+            onAccept={handlePauseAccept}
+            onDecline={handlePauseDecline}
+            pausing={pausing}
+            error={pauseError}
+          />
         )}
         {currentGate === 2 && (
-          <Gate3FreeDays onAccept={handleFreeDaysAccept} onDecline={handleFreeDaysDecline} />
-        )}
-        {currentGate === 3 && (
           <Gate4Loss
             onKeep={handleKeep}
             onTestimonialShown={(testimonialId, index) =>

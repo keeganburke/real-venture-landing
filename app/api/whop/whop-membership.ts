@@ -23,7 +23,12 @@ export async function getActiveMembershipId(request: NextRequest): Promise<
 
   const res = await fetch(`https://api.whop.com/api/v1/memberships?${params.toString()}`, {
     headers: {
-      Authorization: `Bearer ${process.env.WHOP_API_KEY ?? ""}`,
+      // Same requireWhopApiKey as whopAuthHeaders, deliberately. This lookup
+      // runs BEFORE every cancel/pause call, so leaving a `?? ""` here would
+      // make the throw above unreachable: a missing key would 401 this fetch,
+      // return "membership lookup failed", and the loud failure would never
+      // happen.
+      Authorization: `Bearer ${requireWhopApiKey()}`,
       Accept: "application/json",
     },
     cache: "no-store",
@@ -51,10 +56,33 @@ export async function getActiveMembershipId(request: NextRequest): Promise<
   return { ok: true, membershipId };
 }
 
+// Pinned Whop API version. Whop renamed the pause body field between
+// versions; pinning makes the request shape deterministic instead of riding
+// on whatever default the account is on.
+export const WHOP_API_VERSION_DATE = "2026-10-15";
+
+/**
+ * The API key, or a thrown error.
+ *
+ * Replaces a `?? ""` fallback that sent `Bearer ` with an empty token when the
+ * variable was missing. Whop answered that with a 401, which is
+ * indistinguishable from a key that exists but lacks a scope — so a config
+ * mistake looked like a permissions problem. Missing config now fails loudly
+ * at the call site, where the route's catch logs it.
+ */
+function requireWhopApiKey(): string {
+  const key = process.env.WHOP_API_KEY;
+  if (!key || key.trim() === "") {
+    throw new Error("WHOP_API_KEY is unset or empty");
+  }
+  return key;
+}
+
 export function whopAuthHeaders() {
   return {
-    Authorization: `Bearer ${process.env.WHOP_API_KEY ?? ""}`,
+    Authorization: `Bearer ${requireWhopApiKey()}`,
     "Content-Type": "application/json",
     Accept: "application/json",
+    "Api-Version-Date": WHOP_API_VERSION_DATE,
   };
 }
