@@ -32,7 +32,7 @@ type CheckoutCompletion = Parameters<NonNullable<CheckoutOptions["onComplete"]>>
 // checkout reaches. Pure, computed once; React 19 hoists <link> rendered in a
 // component into <head>, on the server render too, so the fetches start with
 // the page instead of on the first click.
-const WHOP_PRELOAD = preloadHints();
+const WHOP_PRELOAD = preloadHints({ wallets: false, bankConnections: false });
 
 // Grey blocks about the size of the loaded form (email field, card box, pay
 // button). Shown over the element while onLoadingChange reports loading.
