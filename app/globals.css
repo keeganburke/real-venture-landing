@@ -3527,6 +3527,46 @@ a.tier-cta {
   padding: 12px 0 4px;
   /* Never a blank box while the Elements checkout boots or after an error. */
   min-height: 240px;
+  position: relative;
+}
+/* The live element plus, while it loads, a skeleton painted over it. */
+.modal-checkout-wrap .pm-checkout-live {
+  position: relative;
+  min-height: 330px;
+}
+.modal-checkout-wrap .pm-checkout-skel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg);
+  pointer-events: none;
+}
+.modal-checkout-wrap .pm-skel {
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  animation: pm-skel-pulse 1.4s ease-in-out infinite;
+}
+.modal-checkout-wrap .pm-skel-label { width: 72px; height: 12px; border-radius: 6px; }
+.modal-checkout-wrap .pm-skel-field { height: 48px; }
+.modal-checkout-wrap .pm-skel-card { height: 150px; }
+.modal-checkout-wrap .pm-skel-button { height: 52px; margin-top: 6px; border-radius: 12px; background: rgba(229, 181, 71, 0.18); }
+@keyframes pm-skel-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal-checkout-wrap .pm-skel { animation: none; }
+}
+/* Checkout step on desktop: the inner column (header card, plan bar, feats,
+   checkout) fills the 1020px box with 28px on every side instead of a 560px
+   column centred in it. Phones keep the committed 28px 20px 24px body padding.
+   .pm-checkout is set on .modal by LandingClient only in the checkout step. */
+@media (min-width: 901px) {
+  .modal.pm-checkout .modal-body { padding: 28px; }
+  .modal.pm-checkout .modal-step-narrow { max-width: none; }
+  .modal.pm-checkout .pm-header { margin: -28px -28px 0; }
 }
 .modal-checkout-wrap .pm-checkout-loading,
 .modal-checkout-wrap .pm-checkout-error {

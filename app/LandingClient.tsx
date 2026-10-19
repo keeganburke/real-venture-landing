@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { WhopElements, Checkout, CheckoutElement, type CheckoutOptions } from "@whop/elements-react";
-import { loadWhop } from "@whop/elements";
+import { loadWhop, preloadHints } from "@whop/elements";
 import NavDrawer from "./components/NavDrawer";
 import CtaStrip from "./components/CtaStrip";
 import TrustRow from "./components/TrustRow";
@@ -27,6 +27,26 @@ function retryWhop() {
   return whopLoad;
 }
 type CheckoutCompletion = Parameters<NonNullable<CheckoutOptions["onComplete"]>>[0];
+
+// <link> hints for the hosted SDK, the Whop API and the payment providers the
+// checkout reaches. Pure, computed once; React 19 hoists <link> rendered in a
+// component into <head>, on the server render too, so the fetches start with
+// the page instead of on the first click.
+const WHOP_PRELOAD = preloadHints();
+
+// Grey blocks about the size of the loaded form (email field, card box, pay
+// button). Shown over the element while onLoadingChange reports loading.
+function CheckoutSkeleton() {
+  return (
+    <div className="pm-checkout-skel" aria-hidden="true">
+      <div className="pm-skel pm-skel-label" />
+      <div className="pm-skel pm-skel-field" />
+      <div className="pm-skel pm-skel-label" />
+      <div className="pm-skel pm-skel-card" />
+      <div className="pm-skel pm-skel-button" />
+    </div>
+  );
+}
 
 // /free hero: "members online" line under the Discord button. One place to
 // change it; no Discord API call.
@@ -326,12 +346,33 @@ export default function LandingClient({ variant, discordUrl = "https://discord.c
   const [isClient, setIsClient] = useState(false);
   useEffect(() => {
     setIsClient(true);
+    // Warm the SDK during idle time (setTimeout 1500 where requestIdleCallback
+    // is missing, e.g. Safari) so the first open only has to create the
+    // checkout session. A failed warm-up is held by the SDK and retried on
+    // demand by retryWhop(); swallow it here so nothing is unhandled.
+    const warm = () => {
+      getWhop().catch(() => {});
+    };
+    let idle: number | null = null;
+    let timer: number | null = null;
+    if (typeof window.requestIdleCallback === "function") {
+      idle = window.requestIdleCallback(warm, { timeout: 1500 });
+    } else {
+      timer = window.setTimeout(warm, 1500);
+    }
+    return () => {
+      if (idle !== null && typeof window.cancelIdleCallback === "function") window.cancelIdleCallback(idle);
+      if (timer !== null) window.clearTimeout(timer);
+    };
   }, []);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutAttempt, setCheckoutAttempt] = useState(0);
+  // True from mount until onLoadingChange reports the element painted.
+  const [checkoutLoading, setCheckoutLoading] = useState(true);
   const retryCheckout = () => {
     retryWhop();
     setCheckoutError(null);
+    setCheckoutLoading(true);
     setCheckoutAttempt((n) => n + 1);
   };
 
@@ -469,6 +510,12 @@ export default function LandingClient({ variant, discordUrl = "https://discord.c
         : PLANS.base
     : null;
 
+  // Every new <Checkout> mount (plan or term change) starts loading again.
+  const activePlanId = activePlan?.planId ?? null;
+  useEffect(() => {
+    setCheckoutLoading(true);
+  }, [activePlanId]);
+
   const toggleDrawer = () => setDrawerOpen((open) => !open);
   const closeDrawer = () => setDrawerOpen(false);
 
@@ -478,6 +525,15 @@ export default function LandingClient({ variant, discordUrl = "https://discord.c
 
   return (
     <>
+      {WHOP_PRELOAD.map((hint) => (
+        <link
+          key={`${hint.rel}:${hint.href}`}
+          rel={hint.rel}
+          href={hint.href}
+          {...(hint.as ? { as: hint.as } : {})}
+          {...(hint.crossOrigin ? { crossOrigin: hint.crossOrigin } : {})}
+        />
+      ))}
       <div className="wrap lp">
         {authNotice && authCode === "denied" && (
           <div className="lp-auth-warning" role="alert">
@@ -1050,7 +1106,7 @@ export default function LandingClient({ variant, discordUrl = "https://discord.c
         }}
       >
         <div
-          className={`modal${step === "checkout" ? ` pm-theme-${planCopy.accent}` : ""}`}
+          className={`modal${step === "checkout" ? ` pm-theme-${planCopy.accent} pm-checkout` : ""}`}
         >
           {step !== "checkout" && (
             <button className="modal-close" onClick={closePricing} aria-label="Close">{"×"}</button>
@@ -1274,30 +1330,43 @@ export default function LandingClient({ variant, discordUrl = "https://discord.c
                       </button>
                     </div>
                   ) : isClient ? (
-                    <WhopElements
-                      elements={getWhop()}
-                      onLoadError={() => setCheckoutError("sdk_load_failed")}
-                    >
-                      <Checkout
-                        key={`${activePlan.planId}:${checkoutAttempt}`}
-                        plan={activePlan.planId}
-                        returnUrl={`${window.location.origin}/login?justpurchased=1`}
-                        {...(referralCode ? { affiliateCode: referralCode } : {})}
-                        appearance={{
-                          theme: {
-                            appearance: "dark",
-                            // Ultra checkout takes the tier purple; Base and Pro keep gold.
-                            accentColor: selectedPlan === "ultra" ? "violet" : "gold",
-                          },
-                        }}
-                        onComplete={handleCheckoutComplete}
-                        fallback={<div className="pm-checkout-loading">Loading secure checkout...</div>}
+                    <div className="pm-checkout-live">
+                      <WhopElements
+                        elements={getWhop()}
+                        onLoadError={() => setCheckoutError("sdk_load_failed")}
                       >
-                        <CheckoutElement onError={(e) => setCheckoutError(e.code ?? e.message ?? "element_error")} />
-                      </Checkout>
-                    </WhopElements>
+                        <Checkout
+                          key={`${activePlan.planId}:${checkoutAttempt}`}
+                          plan={activePlan.planId}
+                          returnUrl={`${window.location.origin}/login?justpurchased=1`}
+                          {...(referralCode ? { affiliateCode: referralCode } : {})}
+                          appearance={{
+                            theme: {
+                              appearance: "dark",
+                              // Ultra checkout takes the tier purple; Base and Pro keep gold.
+                              accentColor: selectedPlan === "ultra" ? "violet" : "gold",
+                            },
+                            // Whop's own seller/product header duplicates our
+                            // plan bar above it. Price, total, price context and
+                            // the promo trigger stay visible on purpose.
+                            classes: {
+                              ".whop-CheckoutSellerLogo": { display: "none" },
+                              ".whop-CheckoutSeller": { display: "none" },
+                              ".whop-CheckoutItem": { display: "none" },
+                              ".whop-CheckoutItemHeadline": { display: "none" },
+                              ".whop-CheckoutItemDescription": { display: "none" },
+                            },
+                          }}
+                          onComplete={handleCheckoutComplete}
+                          onLoadingChange={setCheckoutLoading}
+                        >
+                          <CheckoutElement onError={(e) => setCheckoutError(e.code ?? e.message ?? "element_error")} />
+                        </Checkout>
+                      </WhopElements>
+                      {checkoutLoading && <CheckoutSkeleton />}
+                    </div>
                   ) : (
-                    <div className="pm-checkout-loading">Loading secure checkout...</div>
+                    <CheckoutSkeleton />
                   )}
                 </div>
                 <div className="pm-friction">
