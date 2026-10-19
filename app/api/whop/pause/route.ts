@@ -34,17 +34,26 @@ export async function POST(request: NextRequest) {
     // 14 days from now, as an ISO 8601 date-time.
     const resumesAtIso = new Date(Date.now() + PAUSE_DAYS * 86_400_000).toISOString();
 
+    // Api-Version-Date is stripped on THIS request only, so Whop evaluates it
+    // against whatever version the key itself is provisioned for.
+    // whop-membership.ts still sets the header for every other caller.
+    const pauseHeaders: Record<string, string> = { ...whopAuthHeaders() };
+    delete pauseHeaders["Api-Version-Date"];
+
+    // Retries are safe: Whop collapses repeats of the same key instead of
+    // stacking a second pause onto the membership.
+    pauseHeaders["Idempotency-Key"] = crypto.randomUUID();
+
     const res = await fetch(
       `https://api.whop.com/api/v1/memberships/${lookup.membershipId}/pause`,
       {
         method: "POST",
-        headers: {
-          ...whopAuthHeaders(),
-          // Retries are safe: Whop collapses repeats of the same key instead
-          // of stacking a second pause onto the membership.
-          "Idempotency-Key": crypto.randomUUID(),
-        },
+        headers: pauseHeaders,
+        // Both field names, same timestamp. Older versions of the endpoint
+        // take `until`, newer take `resumes_at`; sending both means whichever
+        // the key's version expects lands and the other is ignored.
         body: JSON.stringify({
+          until: resumesAtIso,
           resumes_at: resumesAtIso,
           void_payments: true,
         }),
