@@ -1,6 +1,10 @@
 "use client";
 
-import { useFlowQuery } from "./CancelShell";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCancelEvents, useFlowQuery } from "./CancelShell";
+
+const FINAL_PATH = "/manage-membership/cancel/final";
 
 // William's founder letter, one per cancel reason. Copy is verbatim from the
 // spec with em dashes rendered as " - " (repo rule). Blank lines separate
@@ -65,27 +69,51 @@ Either way, no hard feelings.
 
 // reason is optional: /testimonial passes it from searchParams; /final's
 // FinalLoss renders the card bare, so it falls back to the URL's ?reason.
-type Props = { reason?: string | null };
+// showActions renders the /testimonial decision under the letter:
+// "Keep my plan" (logs kept_plan, back to /manage-membership) and
+// "I still want to cancel" (on to /final, carrying ?reason and ?session).
+type Props = { reason?: string | null; showActions?: boolean };
 
-export default function TestimonialCard({ reason }: Props) {
-  const { reason: urlReason } = useFlowQuery();
+export default function TestimonialCard({ reason, showActions = false }: Props) {
+  const router = useRouter();
+  const { reason: urlReason, href } = useFlowQuery();
+  const { logOnce } = useCancelEvents();
   const key = reason ?? urlReason;
   const letter = (key && LETTERS[key]) || LETTERS.other;
   const paragraphs = letter.split(/\n\s*\n/);
+
+  const keepPlan = () => {
+    void logOnce("kept_plan");
+    router.push("/manage-membership");
+  };
+
   return (
-    <div className="william-letter">
-      <div className="william-letter-head">
-        <div className="william-letter-avatar" aria-hidden="true">W</div>
-        <div>
-          <div className="william-letter-name">William</div>
-          <div className="william-letter-role">Founder, Real Venture</div>
+    <>
+      <div className="william-letter">
+        <div className="william-letter-head">
+          <div className="william-letter-avatar" aria-hidden="true">W</div>
+          <div>
+            <div className="william-letter-name">William</div>
+            <div className="william-letter-role">Founder, Real Venture</div>
+          </div>
+        </div>
+        <div className="william-letter-body">
+          {paragraphs.map((para, i) => (
+            <p key={i}>{para}</p>
+          ))}
         </div>
       </div>
-      <div className="william-letter-body">
-        {paragraphs.map((para, i) => (
-          <p key={i}>{para}</p>
-        ))}
-      </div>
-    </div>
+
+      {showActions && (
+        <div className="cancel-continue">
+          <button type="button" className="cancel-btn-primary" onClick={keepPlan}>
+            Keep my plan
+          </button>
+          <Link href={href(FINAL_PATH)} className="cancel-btn-quit">
+            I still want to cancel
+          </Link>
+        </div>
+      )}
+    </>
   );
 }

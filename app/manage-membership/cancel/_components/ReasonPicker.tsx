@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useFlowQuery } from "./CancelShell";
+import { useCancelEvents, useFlowQuery } from "./CancelShell";
 
 // Values match Whop's cancel_option enum where one exists; life_busy and
 // no_results are ours.
@@ -16,8 +16,11 @@ const REASONS: { value: string; label: string }[] = [
 export default function ReasonPicker() {
   const router = useRouter();
   const { session } = useFlowQuery();
+  const { logOnce } = useCancelEvents();
 
   const pick = (value: string) => {
+    // Same event_data shape as the old modal: { reason }. Fire and forget.
+    void logOnce("reason_selected", { reason: value });
     const q = new URLSearchParams({ reason: value });
     if (session) q.set("session", session);
     router.push(`/manage-membership/cancel/testimonial?${q.toString()}`);

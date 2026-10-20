@@ -67,6 +67,17 @@ export default async function AdminDiscordPage() {
     discord_connections: discordByUser.get(p.whop_user_id) ?? null,
   }));
 
+  // Tiebreaker for rows the backfill has not reached yet: whop_joined_at is
+  // only written by scripts/backfill-whop-members.mjs, so a member who bought
+  // after the last run has NULL there and the SQL order drops them to the
+  // bottom. Sort in code on (whop_joined_at ?? created_at) DESC so new
+  // buyers rise to the top either way; the table marks the fallback rows.
+  rows.sort((a, b) => {
+    const ka = a.whop_joined_at ?? a.created_at ?? "";
+    const kb = b.whop_joined_at ?? b.created_at ?? "";
+    return kb.localeCompare(ka);
+  });
+
   const total = rows.length;
   const connected = rows.filter((r) => r.discord_connections).length;
   const pct = total === 0 ? 0 : Math.round((connected / total) * 100);

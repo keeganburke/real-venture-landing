@@ -1,0 +1,372 @@
+/* Comp Picker mini-game styles.
+   All selectors namespaced .comp-picker-*. */
+
+.comp-picker-intro {
+  max-width: 560px;
+  margin: 40px auto;
+  padding: 32px 24px;
+  background: #0f0f0f;
+  border: 1px solid #262626;
+  border-radius: 16px;
+  color: #fafafa;
+  text-align: center;
+}
+.comp-picker-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: #facc15;
+}
+.comp-picker-sub {
+  font-size: 15px;
+  color: #a1a1aa;
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+.comp-picker-subject-card {
+  display: flex;
+  gap: 16px;
+  padding: 12px;
+  background: #171717;
+  border: 1px solid #262626;
+  border-radius: 12px;
+  text-align: left;
+  margin-bottom: 24px;
+}
+.comp-picker-subject-photo {
+  width: 120px;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.comp-picker-subject-details {
+  flex: 1;
+  min-width: 0;
+}
+.comp-picker-subject-address {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fafafa;
+  margin-bottom: 2px;
+}
+.comp-picker-subject-city {
+  font-size: 13px;
+  color: #a1a1aa;
+  margin-bottom: 6px;
+}
+.comp-picker-subject-specs {
+  font-size: 12px;
+  color: #71717a;
+}
+.comp-picker-start-btn {
+  background: #facc15;
+  color: #0a0a0a;
+  border: 0;
+  border-radius: 999px;
+  padding: 14px 40px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.comp-picker-start-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(250, 204, 21, 0.3);
+}
+.comp-picker-start-btn:active {
+  transform: translateY(0);
+}
+
+.comp-picker-play {
+  max-width: 900px;
+  margin: 24px auto;
+  padding: 0 16px;
+}
+.comp-picker-instructions {
+  color: #a1a1aa;
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+.comp-picker-map {
+  width: 100%;
+  height: 500px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #262626;
+}
+.comp-picker-map-loading,
+.comp-picker-map-error {
+  width: 100%;
+  height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #171717;
+  color: #a1a1aa;
+  border-radius: 12px;
+  border: 1px solid #262626;
+}
+.comp-picker-map-error {
+  color: #f87171;
+}
+.comp-picker-preload-note {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #71717a;
+}
+
+@media (max-width: 640px) {
+  .comp-picker-subject-photo {
+    width: 96px;
+    height: 72px;
+  }
+  .comp-picker-map,
+  .comp-picker-map-loading,
+  .comp-picker-map-error {
+    height: 400px;
+  }
+}
+
+/* Map wrapper: relative so the done block and map stack cleanly */
+.comp-picker-map-wrap {
+  position: relative;
+}
+
+.comp-picker-done {
+  margin-top: 24px;
+  padding: 24px;
+  background: #171717;
+  border: 1px solid #262626;
+  border-radius: 12px;
+  text-align: center;
+  color: #fafafa;
+  font-size: 15px;
+}
+.comp-picker-done > div {
+  margin-bottom: 16px;
+}
+
+/* Subject marker: HTML OverlayView (green price pill above the house PNG).
+   72px wide, anchored so the house base sits on the coord. The PNG has an
+   opaque white background, so it is multiplied onto the map tiles. */
+.comp-picker-subject-marker {
+  position: absolute;
+  width: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  user-select: none;
+}
+.comp-picker-subject-pill {
+  background: #22c55e;
+  color: #0a0a0a;
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  padding: 3px 10px;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  white-space: nowrap;
+}
+.comp-picker-subject-house {
+  width: 28px;
+  height: 28px;
+  margin-top: 4px;
+  display: block;
+  mix-blend-mode: multiply;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+
+/* Coach bubble: flip card anchored above the clicked pin (OverlayView in
+   the map's float pane). Front = property, back = William's verdict. */
+.comp-bubble-wrap {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  width: 320px;
+  perspective: 1000px;
+  z-index: 10;
+  pointer-events: auto;
+}
+.comp-bubble {
+  position: relative;
+  width: 100%;
+  background: #0f0f0f;
+  border: 1px solid #262626;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  transform-style: preserve-3d;
+  transition: transform 500ms ease;
+  min-height: 300px;
+}
+.comp-bubble.comp-bubble-flipped {
+  transform: rotateY(180deg);
+}
+.comp-bubble-wrap::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #0f0f0f;
+}
+.comp-bubble-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0f0f0f;
+}
+.comp-bubble-back {
+  transform: rotateY(180deg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+.comp-bubble-photo { width: 100%; height: 140px; object-fit: cover; display: block; }
+.comp-bubble-body { padding: 12px; }
+.comp-bubble-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 10px; margin-bottom: 6px;
+}
+.comp-bubble-address {
+  font-size: 14px; font-weight: 600; color: #fafafa;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.comp-bubble-city {
+  font-size: 12px; color: #a1a1aa; margin-bottom: 8px;
+}
+.comp-bubble-price-pill {
+  background: #facc15; color: #0a0a0a; padding: 4px 10px;
+  border-radius: 999px; font-weight: 700; font-size: 13px; white-space: nowrap;
+  flex-shrink: 0;
+}
+.comp-bubble-pills { display: flex; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+.comp-bubble-pills span {
+  background: #262626; color: #fafafa; padding: 3px 8px;
+  border-radius: 6px; font-size: 11px; font-weight: 500;
+}
+.comp-bubble-sold { font-size: 12px; color: #a1a1aa; margin-bottom: 12px; }
+.comp-bubble-actions { display: flex; gap: 6px; }
+.comp-bubble-btn-good, .comp-bubble-btn-bad {
+  flex: 1; padding: 10px; border: 0; border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: transform 100ms ease, filter 100ms ease;
+}
+.comp-bubble-btn-good { background: #22c55e; color: #0a0a0a; }
+.comp-bubble-btn-bad { background: #ef4444; color: #fafafa; }
+.comp-bubble-btn-good:hover, .comp-bubble-btn-bad:hover { filter: brightness(1.1); }
+.comp-bubble-btn-good:active, .comp-bubble-btn-bad:active { transform: scale(0.98); }
+.comp-bubble-close {
+  width: 100%; margin-top: auto; padding: 8px;
+  background: transparent; color: #a1a1aa; border: 1px solid #262626;
+  border-radius: 6px; font-size: 12px; cursor: pointer;
+}
+.comp-bubble-close:hover { background: #171717; color: #fafafa; }
+
+.coach-speech {
+  display: flex; gap: 10px; align-items: flex-start;
+  animation: coach-fade-in 250ms ease;
+}
+@keyframes coach-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.coach-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 2px solid #facc15; flex-shrink: 0; object-fit: cover;
+}
+.coach-bubble {
+  background: #171717; border: 1px solid #262626;
+  border-radius: 10px; padding: 10px 12px; flex: 1; position: relative;
+}
+.coach-bubble::before {
+  content: '';
+  position: absolute;
+  left: -7px; top: 12px;
+  width: 0; height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-right: 7px solid #171717;
+}
+.coach-verdict-mark {
+  font-size: 12px; font-weight: 700; margin-bottom: 4px; color: #facc15;
+}
+.coach-headline {
+  font-size: 14px; font-weight: 600; color: #fafafa; margin-bottom: 4px;
+}
+.coach-reason {
+  font-size: 13px; color: #a1a1aa; line-height: 1.4; min-height: 40px;
+}
+.coach-reason.coach-typing::after {
+  content: '|';
+  display: inline-block;
+  animation: coach-caret-blink 700ms infinite;
+  color: #facc15;
+  margin-left: 2px;
+}
+@keyframes coach-caret-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Explainer screen shown before the subject card */
+.comp-picker-explainer-lead {
+  font-size: 16px;
+  line-height: 1.55;
+  color: #fafafa;
+  margin: 0 0 16px;
+  text-align: left;
+}
+.comp-picker-explainer-goal-line {
+  font-size: 16px;
+  line-height: 1.55;
+  color: #fafafa;
+  margin: 0 0 24px;
+  text-align: left;
+}
+.comp-picker-explainer-goal-label {
+  color: #facc15;
+  font-weight: 700;
+}
+
+/* Mobile (<640px): the coach bubble is a centred full-screen modal instead
+   of an overlay anchored to the pin. The bubble keeps its 300px min-height
+   because both faces are absolutely positioned and would collapse to 0. */
+.comp-picker-mobile-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: comp-picker-fade-in 150ms ease;
+}
+.comp-picker-mobile-modal-wrap {
+  width: 100%;
+  max-width: 400px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+.comp-picker-mobile-modal-wrap .comp-bubble-wrap {
+  position: static;
+  transform: none;
+  width: 100%;
+}
+.comp-picker-mobile-modal-wrap .comp-bubble-wrap::after {
+  display: none;
+}
+@keyframes comp-picker-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

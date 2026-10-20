@@ -12,8 +12,10 @@ import {
 
 export const dynamic = "force-dynamic";
 
+// Mirrors the 7-question intake (app/onboarding/intake-config.ts) and the
+// columns app/api/intake/save/route.ts writes on completion.
 const INTAKE_COLUMNS =
-  "whop_user_id, display_name, intake_dream, intake_hours, intake_tried, intake_tried_failure, intake_worry, intake_identity, intake_invest, intake_seriousness, intake_completed_at";
+  "whop_user_id, display_name, intake_dream, whop_commitment_min, intake_tried, intake_tried_failure, intake_situation, intake_seriousness_scale, intake_seriousness_followup, intake_age, whop_phone, intake_completed_at";
 
 export default async function AdminOnboardingPage() {
   const cookieStore = await cookies();

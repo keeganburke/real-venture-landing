@@ -56,7 +56,7 @@ export default async function DashboardPage({
       .not("completed_at", "is", null),
     supabase
       .from("member_profiles")
-      .select("display_name,spotlight_completed_at")
+      .select("display_name,spotlight_completed_at,intake_dream,whop_joined_at,intake_completed_at,created_at")
       .eq("whop_user_id", userId)
       .maybeSingle(),
     getWhopMemberSummary(userId),
@@ -75,6 +75,21 @@ export default async function DashboardPage({
   // last question, and it wins even for someone who already finished once.
   // Otherwise a null spotlight_completed_at (or no profile row) means unseen.
   const showTour = tour === "1" || !profileRes.data?.spotlight_completed_at;
+
+  // WHY banner: the member's intake Q1 answer, verbatim. Null hides it.
+  const rawWhy = profileRes.data?.intake_dream;
+  const why = typeof rawWhy === "string" && rawWhy.trim().length > 0 ? rawWhy.trim() : null;
+
+  // William welcome (first 14 days). Join date preference: Whop membership
+  // start (filled by scripts/backfill-whop-members.mjs), else when they
+  // finished onboarding, else when the profile row first appeared.
+  const p = profileRes.data;
+  const joinedAt: string | null =
+    (typeof p?.whop_joined_at === "string" && p.whop_joined_at) ||
+    (typeof p?.intake_completed_at === "string" && p.intake_completed_at) ||
+    (typeof p?.created_at === "string" && p.created_at) ||
+    null;
+  const firstName = displayName?.trim().split(/\s+/)[0] || "there";
 
   const courses = coursesRes.data ?? [];
   const lessons = (lessonsRes.data ?? []) as LessonRow[];
@@ -119,6 +134,9 @@ export default async function DashboardPage({
       destinations={DESTINATIONS}
       feedback={FEEDBACK}
       showTour={showTour}
+      why={why}
+      joinedAt={joinedAt}
+      firstName={firstName}
     />
   );
 }

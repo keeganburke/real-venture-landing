@@ -188,7 +188,18 @@ export function AdminDiscordTable({ rows }: { rows: AdminDiscordRow[] }) {
                       <div className="admin-td-id">{r.whop_user_id}</div>
                     </td>
                     <td>{r.whop_display_name || r.whop_username || EMPTY}</td>
-                    <td>{fmtDate(r.whop_joined_at)}</td>
+                    <td>
+                      {r.whop_joined_at ? (
+                        fmtDate(r.whop_joined_at)
+                      ) : (
+                        // Backfill has not stamped this row yet: show first
+                        // login as the bought date, clearly marked.
+                        <>
+                          {fmtDate(r.created_at)}
+                          <span style={{ fontSize: "11px", color: "#8a8a92", marginLeft: "4px" }}>(first login)</span>
+                        </>
+                      )}
+                    </td>
                     <td>{fmtDate(r.created_at)}</td>
                     <td>
                       {(() => {

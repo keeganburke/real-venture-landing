@@ -61,6 +61,11 @@ type Props = {
   destinations: Destination[];
   feedback: FeedbackAction[];
   showTour?: boolean;
+  // Still supplied by dashboard/page.tsx for the (currently unmounted)
+  // WhyBanner and WilliamWelcome components; not read here right now.
+  why: string | null;
+  joinedAt: string | null;
+  firstName: string;
 };
 
 // Schedule times are Pacific wall-clock; render everything in LA terms so

@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import TestimonialCard from "./TestimonialCard";
-import { useFlowQuery } from "./CancelShell";
+import { useCancelEvents } from "./CancelShell";
 
 // Same list the old Gate4Loss shows.
 const LOSS_FEATURES = [
@@ -19,43 +19,30 @@ const LOSS_FEATURES = [
   "Locked-in pricing",
 ];
 
-const CONFIRMED_PATH = "/manage-membership/cancel/confirmed";
-const ERROR_COPY =
-  "Something went wrong. Try again or email support at realventureestate@gmail.com.";
+// The last step does not call Whop. Members manage the plan on whop.com
+// themselves; we log the hand-off and send them there.
+const WHOP_URL = "https://whop.com";
 
 export default function FinalLoss() {
-  const { href } = useFlowQuery();
-  const [cancelling, setCancelling] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const { logOnce } = useCancelEvents();
+  const [leaving, setLeaving] = useState(false);
 
-  const fail = () => {
-    setError(ERROR_COPY);
-    setCancelling(false);
+  const keepPlan = () => {
+    void logOnce("kept_plan");
+    router.push("/manage-membership");
   };
 
-  // Real Whop cancel: POST /api/whop/cancel (cookie auth, no body).
-  // On success we hard-navigate to /confirmed so the flow state is fresh;
-  // ends_at is only added when Whop returned one (URLSearchParams encodes it).
+  // Log first (bounded by the helper's timeout, never throws), then redirect.
+  // `leaving` disables the button so a double click cannot double-log.
   const cancel = async () => {
-    if (cancelling) return;
-    setCancelling(true);
-    setError(null);
+    if (leaving) return;
+    setLeaving(true);
     try {
-      const res = await fetch("/api/whop/cancel", { method: "POST" });
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data || data.ok !== true) {
-        fail();
-        return;
-      }
-      const extra: Record<string, string> = { action: "cancelled" };
-      if (typeof data.ends_at === "string" && data.ends_at) extra.ends_at = data.ends_at;
-      window.location.href = href(CONFIRMED_PATH, extra);
-    } catch {
-      fail();
-    }
+      await logOnce("redirected_to_whop");
+    } catch {}
+    window.location.href = WHOP_URL;
   };
-
-  const label = cancelling ? "Cancelling..." : error ? "Try again" : "Cancel my membership";
 
   return (
     <>
@@ -71,22 +58,17 @@ export default function FinalLoss() {
       <TestimonialCard />
 
       <div className="cancel-continue">
-        <Link href="/manage-membership" className="cancel-btn-primary">
+        <button type="button" className="cancel-btn-primary" onClick={keepPlan}>
           Keep my plan
-        </Link>
-        {error && (
-          <p className="cancel-error" role="alert">
-            {error}
-          </p>
-        )}
+        </button>
         <button
           type="button"
           className="cancel-btn-quit"
-          onClick={cancel}
-          disabled={cancelling}
-          aria-busy={cancelling}
+          onClick={() => void cancel()}
+          disabled={leaving}
+          aria-busy={leaving}
         >
-          {label}
+          {leaving ? "Taking you to Whop..." : "Cancel my membership"}
         </button>
       </div>
     </>

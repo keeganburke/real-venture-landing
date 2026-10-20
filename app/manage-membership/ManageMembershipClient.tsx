@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import CancelFlow from "./CancelFlow";
+import Link from "next/link";
 
 export type MembershipSummary = {
   membershipId: string | null;
@@ -17,11 +17,10 @@ type Props = {
 };
 
 export default function ManageMembershipClient({ membership }: Props) {
-  const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelledNotice, setCancelledNotice] = useState<string | null>(null);
 
-  // Gate 4 lands here as /manage-membership?cancelled=1&ends=<iso> after a
-  // successful Whop cancellation. Show it once, then clean the URL.
+  // Legacy landing: /manage-membership?cancelled=1&ends=<iso> after a Whop
+  // cancellation. Show the notice once, then clean the URL.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("cancelled") !== "1") return;
@@ -43,8 +42,6 @@ export default function ManageMembershipClient({ membership }: Props) {
     const rest = params.toString();
     window.history.replaceState({}, "", window.location.pathname + (rest ? "?" + rest : ""));
   }, []);
-
-  const openCancelModal = () => setCancelOpen(true);
 
   const statusColor =
     membership.status === "Active" ? "var(--green)" : "var(--txt-mut)";
@@ -140,19 +137,12 @@ export default function ManageMembershipClient({ membership }: Props) {
           </div>
           */}
 
-          <button type="button" className="cancel-link" onClick={openCancelModal}>
+          {/* Cancel flow lives on its own routes: reason -> testimonial -> final. */}
+          <Link href="/manage-membership/cancel/reason" className="cancel-link">
             Cancel membership
-          </button>
+          </Link>
         </div>
       </div>
-
-      <CancelFlow
-        open={cancelOpen}
-        onClose={() => setCancelOpen(false)}
-        membershipId={membership.membershipId ?? ""}
-        plan={membership.planName || "Pro"}
-        planId={membership.planId}
-      />
     </main>
   );
 }
