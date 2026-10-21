@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "../../../../lib/supabase/server";
 import { whopAuthHeaders } from "../whop-membership";
+import { checkOneFromWebhook } from "../../../../lib/discord-kick";
 
 export const dynamic = "force-dynamic";
 
@@ -322,8 +323,11 @@ async function finishEvent(eventId: string, metadata: Json): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// membership_ended: re-check with Whop, record the verdict. NO kick, NO DM,
-// NO role change, in either mode. The verdict feeds a later, separate step.
+// membership_ended: re-check with Whop and record the verdict as before, then
+// hand the member to lib/discord-kick (same rules as the nightly sweep). That
+// step kicks only when DISCORD_KICK_MODE=live; otherwise it logs + posts a
+// "would kick" line. It is independent of WHOP_WEBHOOK_ACTIONS, which still
+// only gates the payment.failed DM. NO DM, NO role change here.
 // ---------------------------------------------------------------------------
 
 async function handleMembershipEnded(eventId: string, eventType: string, data: Json | null) {
@@ -363,6 +367,14 @@ async function handleMembershipEnded(eventId: string, eventType: string, data: J
   console.log(
     `[whop/webhook] membership_ended ${verdict} whop ${whopUserId ?? "none"} discord ${discordUserId ?? "none"}`
   );
+
+  // Auto-kick check (lib/discord-kick): never throws, logs to discord_kick_log,
+  // posts one line to the mod channel. Only members with a Discord link can
+  // be evaluated; everyone else is already recorded above as no_discord_link.
+  if (whopUserId && discordUserId) {
+    const kick = await checkOneFromWebhook(whopUserId, discordUserId);
+    console.log(`[whop/webhook] membership_ended kick-check ${kick.action} (${kick.reason}) mode ${kick.mode}`);
+  }
   return ok();
 }
 
