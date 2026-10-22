@@ -3,8 +3,11 @@ import { SESSION_COOKIE_NAME, verifySessionToken } from "../../../lib/session";
 
 // Resolves the caller's active membership id from their rv_session cookie,
 // using the same v1 memberships lookup as /manage-membership/page.tsx.
+export type WhopMembershipRow = Record<string, unknown>;
+
 export async function getActiveMembershipId(request: NextRequest): Promise<
-  { ok: true; membershipId: string } | { ok: false; error: string; status: number }
+  | { ok: true; membershipId: string; whopUserId: string; membership: WhopMembershipRow }
+  | { ok: false; error: string; status: number }
 > {
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   const session = token ? await verifySessionToken(token) : null;
@@ -14,12 +17,21 @@ export async function getActiveMembershipId(request: NextRequest): Promise<
   const companyId = process.env.WHOP_COMPANY_ID;
   if (!productId || !companyId) return { ok: false, error: "missing whop config", status: 200 };
 
-  const params = new URLSearchParams({ company_id: companyId });
-  params.append("user_ids", session.whopUserId);
-  params.append("product_ids", productId);
-  params.append("statuses", "active");
-  params.append("statuses", "trialing");
-  params.append("statuses", "completed");
+  // SINGULAR filters, pinned version, owner-checked. The plural form
+  // (user_ids / product_ids / statuses) is silently IGNORED by the key's
+  // current API version (checked 2026-10-22: 20 rows, 20 different owners,
+  // newest first, on api-version-date 2026-09-22 and 2026-10-15-1 alike), so
+  // the old query returned the newest membership in the whole company and
+  // this helper would have handed the pause/cancel routes someone else's
+  // membership. user_id + product_id return exactly the caller's rows on both
+  // versions. Status is filtered locally; the owner check below is the
+  // backstop if a filter is ever ignored again.
+  const params = new URLSearchParams({
+    company_id: companyId,
+    user_id: session.whopUserId,
+    product_id: productId,
+    first: "50",
+  });
 
   const res = await fetch(`https://api.whop.com/api/v1/memberships?${params.toString()}`, {
     headers: {
@@ -30,17 +42,29 @@ export async function getActiveMembershipId(request: NextRequest): Promise<
       // happen.
       Authorization: `Bearer ${requireWhopApiKey()}`,
       Accept: "application/json",
+      "Api-Version-Date": WHOP_API_VERSION_DATE,
     },
     cache: "no-store",
   });
   if (!res.ok) return { ok: false, error: "membership lookup failed", status: 200 };
 
   const page = await res.json();
-  // Same priority as the manage page: paying memberships (active or
-  // trialing) before completed one-time purchases, newest first per tier.
-  const rows: Record<string, unknown>[] = (Array.isArray(page?.data) ? page.data : []).filter(
+  const all: Record<string, unknown>[] = (Array.isArray(page?.data) ? page.data : []).filter(
     (m: unknown): m is Record<string, unknown> => !!m && typeof m === "object"
   );
+  // A row for another user means the filter was ignored: refuse rather than
+  // act on a stranger's membership.
+  if (all.some((m) => rowOwner(m) !== null && rowOwner(m) !== session.whopUserId)) {
+    console.error("whop-membership: foreign user in memberships read (user_id filter ignored)");
+    return { ok: false, error: "membership lookup failed", status: 200 };
+  }
+  // Same priority as the manage page: paying memberships (active or
+  // trialing) before completed one-time purchases, newest first per tier.
+  const rows = all.filter((m) => {
+    const product = rowProduct(m);
+    if (product !== null && product !== productId) return false;
+    return m.status === "active" || m.status === "trialing" || m.status === "completed";
+  });
   const tier = (m: Record<string, unknown>) =>
     m.status === "active" || m.status === "trialing" ? 0 : 1;
   const createdAtMs = (v: unknown) => {
@@ -53,13 +77,36 @@ export async function getActiveMembershipId(request: NextRequest): Promise<
   if (typeof membershipId !== "string" || membershipId.length === 0) {
     return { ok: false, error: "no membership", status: 200 };
   }
-  return { ok: true, membershipId };
+  // The row and the session's Whop user id ride along so callers that need
+  // more than the id (the pause route's refusal checks) do not re-fetch.
+  return { ok: true, membershipId, whopUserId: session.whopUserId, membership: rows[0] };
+}
+
+function idOf(v: unknown): string | null {
+  if (typeof v === "string" && v.length > 0) return v;
+  if (v && typeof v === "object") {
+    const id = (v as { id?: unknown }).id;
+    if (typeof id === "string" && id.length > 0) return id;
+  }
+  return null;
+}
+export function rowOwner(m: WhopMembershipRow): string | null {
+  return idOf(m.user_id) ?? idOf(m.user) ?? null;
+}
+export function rowProduct(m: WhopMembershipRow): string | null {
+  return idOf(m.product_id) ?? idOf(m.product) ?? null;
 }
 
 // Pinned Whop API version. Whop renamed the pause body field between
 // versions; pinning makes the request shape deterministic instead of riding
 // on whatever default the account is on.
-export const WHOP_API_VERSION_DATE = "2026-10-15";
+//
+// "2026-10-15-1" is the value the published specs carry (pause-membership
+// and cancel-membership both say x-api-version-date: 2026-10-15-1). Checked
+// 2026-10-22: GET /memberships (list, with status=paused) and
+// GET /memberships/{id} both answer 200 with this header and return the same
+// fields as the bare "2026-10-15".
+export const WHOP_API_VERSION_DATE = "2026-10-15-1";
 
 /**
  * The API key, or a thrown error.

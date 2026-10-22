@@ -10,6 +10,14 @@ export type MembershipSummary = {
   price: string;
   status: string;
   renewalDate: string | null;
+  // Whop lists the membership under status=paused (pause-state.ts).
+  paused: boolean;
+  // Formatted resumes_at from the pause_succeeded event (the 14-day date we
+  // sent to Whop). Null for a membership paused by hand in Whop.
+  pausedUntil: string | null;
+  // Gate 2 may be offered (not paused, no pause in 180 days, has billing).
+  pausable: boolean;
+  pauseBlock: string | null;
 };
 
 type Props = {
@@ -25,8 +33,11 @@ export default function ManageMembershipClient({ membership }: Props) {
 
   const openCancelModal = () => setCancelOpen(true);
 
-  const statusColor =
-    membership.status === "Active" ? "var(--green)" : "var(--txt-mut)";
+  const statusColor = membership.paused
+    ? "var(--gold)"
+    : membership.status === "Active"
+      ? "var(--green)"
+      : "var(--txt-mut)";
 
   return (
     <main className="manage-mem-page">
@@ -48,12 +59,20 @@ export default function ManageMembershipClient({ membership }: Props) {
             </div>
             <div className="plan-meta">
               <span>
-                Status: <b style={{ color: statusColor }}>{membership.status}</b>
+                Status: <b style={{ color: statusColor }}>{membership.paused ? "Paused" : membership.status}</b>
               </span>
-              {membership.renewalDate && (
-                <span>
-                  Renews: <b>{membership.renewalDate}</b>
-                </span>
+              {membership.paused ? (
+                membership.pausedUntil && (
+                  <span>
+                    Paused until: <b>{membership.pausedUntil}</b>
+                  </span>
+                )
+              ) : (
+                membership.renewalDate && (
+                  <span>
+                    Renews: <b>{membership.renewalDate}</b>
+                  </span>
+                )
               )}
             </div>
           </div>
@@ -114,6 +133,8 @@ export default function ManageMembershipClient({ membership }: Props) {
         membershipId={membership.membershipId ?? ""}
         plan={membership.planName || "Pro"}
         planId={membership.planId}
+        pausable={membership.pausable}
+        pauseBlock={membership.pauseBlock}
       />
     </main>
   );

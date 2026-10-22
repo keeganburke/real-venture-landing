@@ -1,4 +1,5 @@
 import { createAdminClient } from "./supabase/admin";
+import { listPausedMemberships } from "./whop-paused";
 
 // Discord auto-kick, shared by the nightly sweep (app/api/cron/discord-sweep)
 // and the Whop webhook (membership.deactivated / membership.went_invalid).
@@ -6,8 +7,15 @@ import { createAdminClient } from "./supabase/admin";
 // Decision rules (decideKick, pure):
 //   kick ONLY if the member holds a member role (Base / Pro / Ultra) AND has a
 //   discord_connections link AND none of the linked Whop users holds a
-//   membership on WHOP_PRODUCT_ID in a live status (anything that is not
-//   canceled / expired / drafted: active, trialing, past_due, completed, paused).
+//   membership on WHOP_PRODUCT_ID that is still live. A membership is live if
+//   its status is not ended (anything but canceled / expired / drafted: active,
+//   trialing, past_due, completed, paused) OR its current_period_end (or
+//   renewal_period_end) is still in the future. Whop flips status to canceled
+//   the moment a member clicks cancel, so canceled + future period end = paid
+//   time left, skipped as paid_time_left. A paused membership is live, logged
+//   with its own reason "paused": Whop keeps status active/trialing on it, so
+//   paused = listed by GET /memberships?status=paused (primary) OR
+//   most_recent_action === "paused_at" (second signal); either one counts.
 //   never kick: bots, the guild owner, allowlisted ids, protected roles (Owner,
 //   Founder, Group Coach, Real Venture Underwriter, Moderator, Guest) or any
 //   role carrying kick / ban / admin / manage-guild / manage-roles bits, members
@@ -16,7 +24,8 @@ import { createAdminClient } from "./supabase/admin";
 // Mode: DISCORD_KICK_MODE === "live" removes people; anything else is shadow
 // (log + mod post, no DELETE). Every sweep posts one summary to
 // DISCORD_MOD_WEBHOOK_URL; without it, console only.
-// Safety: more than 25 candidates in one sweep means act on none; a Whop read
+// Safety: more than 25 candidates in one sweep (cap override: ?cap=N, max 60,
+// on a manual authorized call only) means act on none; a Whop read
 // that fails or looks wrong means act on none; in live mode the first 403 from
 // Discord stops the run.
 
@@ -28,6 +37,7 @@ const DISCORD_API = "https://discord.com/api/v10";
 const WHOP_API = "https://api.whop.com/api/v1";
 
 export const SWEEP_CAP = 25;
+export const SWEEP_CAP_MAX = 60;
 export const RECENT_JOIN_DAYS = 7;
 const RECENT_JOIN_MS = RECENT_JOIN_DAYS * 24 * 60 * 60 * 1000;
 const WHOP_PAGE_LIMIT = 100;
@@ -116,7 +126,9 @@ export type SkipReason =
   | "new_member_only"
   | "recent_join"
   | "no_link"
-  | "live_membership";
+  | "live_membership"
+  | "paused"
+  | "paid_time_left";
 
 export type KickDecision =
   | { action: "kick"; reason: "no_live_membership" }
@@ -133,6 +145,10 @@ export type DecideInput = {
   joinedAt: string | null; // ISO; null = unknown (treated as not recent)
   linkedWhopUserIds: string[];
   liveWhopUserIds: ReadonlySet<string>;
+  // Whop users whose membership is paused (most_recent_action paused_at) and not otherwise live.
+  pausedWhopUserIds?: ReadonlySet<string>;
+  // Whop users whose only membership is ended in status but not yet past its period end.
+  paidTimeWhopUserIds?: ReadonlySet<string>;
   now?: number;
   rules?: {
     memberRoleIds: ReadonlySet<string>;
@@ -179,6 +195,14 @@ export function decideKick(input: DecideInput): KickDecision {
   if (input.linkedWhopUserIds.length === 0) return { action: "skip", reason: "no_link" };
   if (input.linkedWhopUserIds.some((id) => input.liveWhopUserIds.has(id))) {
     return { action: "skip", reason: "live_membership" };
+  }
+  const paused = input.pausedWhopUserIds;
+  if (paused && input.linkedWhopUserIds.some((id) => paused.has(id))) {
+    return { action: "skip", reason: "paused" };
+  }
+  const paid = input.paidTimeWhopUserIds;
+  if (paid && input.linkedWhopUserIds.some((id) => paid.has(id))) {
+    return { action: "skip", reason: "paid_time_left" };
   }
   return { action: "kick", reason: "no_live_membership" };
 }
@@ -268,7 +292,7 @@ async function kickMember(discordUserId: string): Promise<number> {
   return res.status;
 }
 
-async function postToModChannel(content: string): Promise<void> {
+export async function postToModChannel(content: string): Promise<void> {
   const url = process.env.DISCORD_MOD_WEBHOOK_URL;
   if (!url) {
     console.log("[discord-kick] DISCORD_MOD_WEBHOOK_URL unset, summary:\n" + content);
@@ -331,8 +355,68 @@ function rowStatus(m: MembershipRow): string {
   return typeof m.status === "string" ? m.status : "unknown";
 }
 
+// ISO string (what api/v1 returns) or unix seconds / ms; anything else = null.
+function toMs(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value < 1e12 ? value * 1000 : value;
+  if (typeof value === "string" && value.length > 0) {
+    if (/^\d+$/.test(value)) return toMs(Number(value));
+    const t = Date.parse(value);
+    return Number.isNaN(t) ? null : t;
+  }
+  return null;
+}
+
+// Latest of current_period_end / renewal_period_end, or null when neither parses.
+export function rowPeriodEnd(m: MembershipRow): number | null {
+  const ends = [toMs(m.current_period_end), toMs(m.renewal_period_end)].filter((t): t is number => t !== null);
+  return ends.length ? Math.max(...ends) : null;
+}
+
+export type MembershipLiveness = "live" | "paused" | "paid_time_left" | "ended";
+
+// Exact shape of a paused membership on api/v1 (GET /memberships/{id},
+// 2026-10-22, mem_LFgWJxU3PVzCrq right after the pause): status stays
+// "trialing" / "active", current_period_end is unchanged, and the only pause
+// marker is most_recent_action === "paused_at". No payment_collection_paused
+// field is returned on any Api-Version-Date.
+const EMPTY_IDS: ReadonlySet<string> = new Set();
+
+export function rowIsPaused(m: MembershipRow): boolean {
+  return m.most_recent_action === "paused_at";
+}
+
+// pausedIds: membership ids from GET /memberships?status=paused (lib/whop-paused.ts).
+export function classifyMembership(
+  m: MembershipRow,
+  now: number = Date.now(),
+  pausedIds: ReadonlySet<string> = EMPTY_IDS
+): MembershipLiveness {
+  if (!ENDED_STATUSES.has(rowStatus(m))) {
+    const listed = typeof m.id === "string" && pausedIds.has(m.id);
+    return listed || rowIsPaused(m) ? "paused" : "live";
+  }
+  const end = rowPeriodEnd(m);
+  return end !== null && end > now ? "paid_time_left" : "ended";
+}
+
+export type LivenessSets = { live: Set<string>; paused: Set<string>; paidTime: Set<string> };
+
+// Per-user rollup: live beats paused beats paid_time_left; a user in no set is ended.
+export function addToLiveness(sets: LivenessSets, owner: string, c: MembershipLiveness): void {
+  if (c === "live") {
+    sets.live.add(owner);
+    sets.paused.delete(owner);
+    sets.paidTime.delete(owner);
+  } else if (c === "paused" && !sets.live.has(owner)) {
+    sets.paused.add(owner);
+    sets.paidTime.delete(owner);
+  } else if (c === "paid_time_left" && !sets.live.has(owner) && !sets.paused.has(owner)) {
+    sets.paidTime.add(owner);
+  }
+}
+
 export type LivenessResult =
-  | { ok: true; live: Set<string>; rows: number; pages: number }
+  | { ok: true; live: Set<string>; paused: Set<string>; paidTime: Set<string>; rows: number; pages: number }
   | { ok: false; error: string };
 
 // Every membership on WHOP_PRODUCT_ID, all statuses, paged. A row for another
@@ -342,7 +426,13 @@ export async function loadLiveWhopUsers(): Promise<LivenessResult> {
   const companyId = process.env.WHOP_COMPANY_ID;
   const productId = process.env.WHOP_PRODUCT_ID;
   if (!companyId || !productId) return { ok: false, error: "WHOP_COMPANY_ID or WHOP_PRODUCT_ID unset" };
-  const live = new Set<string>();
+  const sets: LivenessSets = { live: new Set<string>(), paused: new Set<string>(), paidTime: new Set<string>() };
+  const now = Date.now();
+  // Paused list first: primary paused signal. A failed read aborts the sweep
+  // like any other bad Whop read.
+  const pausedList = await listPausedMemberships();
+  if (!pausedList.ok) return { ok: false, error: `paused list: ${pausedList.error}` };
+  const pausedIds = new Set<string>(pausedList.rows.map((m) => String(m.id)));
   let rows = 0;
   let after: string | null = null;
   let pages = 0;
@@ -367,7 +457,7 @@ export async function loadLiveWhopUsers(): Promise<LivenessResult> {
         const owner = rowOwner(m);
         if (!owner) continue;
         rows++;
-        if (!ENDED_STATUSES.has(rowStatus(m))) live.add(owner);
+        addToLiveness(sets, owner, classifyMembership(m, now, pausedIds));
       }
       const hasNext = page?.page_info?.has_next_page === true;
       const next = page?.page_info?.end_cursor ?? null;
@@ -380,12 +470,14 @@ export async function loadLiveWhopUsers(): Promise<LivenessResult> {
   }
   if (pages >= WHOP_MAX_PAGES) return { ok: false, error: `memberships read exceeded ${WHOP_MAX_PAGES} pages` };
   if (rows === 0) return { ok: false, error: "memberships read returned zero rows" };
-  return { ok: true, live, rows, pages: pages + 1 };
+  return { ok: true, live: sets.live, paused: sets.paused, paidTime: sets.paidTime, rows, pages: pages + 1 };
 }
 
 // One user: singular user_id filter plus an owner check on every row, since the
 // plural user_ids filter has been seen ignored on newer Whop API versions.
-export async function isWhopUserLive(whopUserId: string): Promise<{ ok: true; live: boolean; statuses: string[] } | { ok: false; error: string }> {
+export async function isWhopUserLive(
+  whopUserId: string
+): Promise<{ ok: true; live: boolean; paused: boolean; paidTimeLeft: boolean; statuses: string[] } | { ok: false; error: string }> {
   const companyId = process.env.WHOP_COMPANY_ID;
   const productId = process.env.WHOP_PRODUCT_ID;
   if (!companyId || !productId) return { ok: false, error: "WHOP_COMPANY_ID or WHOP_PRODUCT_ID unset" };
@@ -396,18 +488,34 @@ export async function isWhopUserLive(whopUserId: string): Promise<{ ok: true; li
     if (!res.ok) return { ok: false, error: `memberships read HTTP ${res.status}` };
     const page = (await res.json().catch(() => null)) as { data?: unknown[] } | null;
     const data = (Array.isArray(page?.data) ? page!.data : []).filter((m): m is MembershipRow => !!m && typeof m === "object");
+    // This user's paused memberships (status=paused + user_id), owner-checked.
+    const pq = new URLSearchParams({ company_id: companyId, user_id: whopUserId, product_id: productId, status: "paused", first: "50" });
+    const pres = await fetch(`${WHOP_API}/memberships?${pq.toString()}`, { headers: whopHeaders(), cache: "no-store" });
+    if (!pres.ok) return { ok: false, error: `paused list HTTP ${pres.status}` };
+    const ppage = (await pres.json().catch(() => null)) as { data?: unknown[] } | null;
+    const pausedIds = new Set<string>();
+    for (const m of (Array.isArray(ppage?.data) ? ppage!.data : []).filter((x): x is MembershipRow => !!x && typeof x === "object")) {
+      const owner = rowOwner(m);
+      if (owner !== null && owner !== whopUserId) return { ok: false, error: "foreign user in paused list (user_id filter ignored)" };
+      if (typeof m.id === "string") pausedIds.add(m.id);
+    }
     const statuses: string[] = [];
+    const now = Date.now();
     let live = false;
+    let paused = false;
+    let paidTimeLeft = false;
     for (const m of data) {
       const owner = rowOwner(m);
       if (owner !== null && owner !== whopUserId) return { ok: false, error: "foreign user in memberships read (user_id filter ignored)" };
       const product = rowProduct(m);
       if (product !== null && product !== productId) continue; // other products never count as live
-      const st = rowStatus(m);
-      statuses.push(st);
-      if (!ENDED_STATUSES.has(st)) live = true;
+      statuses.push(rowStatus(m));
+      const c = classifyMembership(m, now, pausedIds);
+      if (c === "live") live = true;
+      else if (c === "paused") paused = true;
+      else if (c === "paid_time_left") paidTimeLeft = true;
     }
-    return { ok: true, live, statuses };
+    return { ok: true, live, paused: paused && !live, paidTimeLeft: paidTimeLeft && !live && !paused, statuses };
   } catch (err) {
     return { ok: false, error: `memberships read threw: ${err instanceof Error ? err.message : "unknown"}` };
   }
@@ -485,6 +593,8 @@ function emptyCounts(): SweepSummary["counts"] {
     recent_join: 0,
     no_link: 0,
     live_membership: 0,
+    paused: 0,
+    paid_time_left: 0,
     cap_exceeded: 0,
   };
 }
@@ -506,15 +616,18 @@ function formatSummary(source: LogSource, s: SweepSummary, guildName: string | n
   if (s.failed.length) lines.push(`failed: ${s.failed.length} -> ${s.failed.join(", ")}`);
   const c = s.counts;
   lines.push(
-    `skips: no_link ${c.no_link} | new_member_only ${c.new_member_only} | live_membership ${c.live_membership} | ` +
+    `skips: no_link ${c.no_link} | new_member_only ${c.new_member_only} | live_membership ${c.live_membership} | paused ${c.paused} | paid_time_left ${c.paid_time_left} | ` +
       `protected ${c.protected_role + c.protected_permission} | allowlisted ${c.allowlisted} | recent_join ${c.recent_join} | ` +
       `cap_exceeded ${c.cap_exceeded} | no_member_role ${c.no_member_role} | bots ${c.bot} | owner ${c.guild_owner}`
   );
   return lines.join("\n");
 }
 
-export async function runDiscordSweep(): Promise<SweepSummary> {
+// cap: candidate ceiling for this run; the route passes a value only for an
+// authorized manual call with ?cap=N. Clamped to 1..SWEEP_CAP_MAX.
+export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<SweepSummary> {
   const mode = kickMode();
+  const cap = Math.min(Math.max(Math.floor(opts.cap ?? SWEEP_CAP), 1), SWEEP_CAP_MAX);
   const summary: SweepSummary = {
     mode,
     scanned: 0,
@@ -571,6 +684,8 @@ export async function runDiscordSweep(): Promise<SweepSummary> {
         joinedAt: m.joined_at ?? null,
         linkedWhopUserIds: whop,
         liveWhopUserIds: liveness.live,
+        pausedWhopUserIds: liveness.paused,
+        paidTimeWhopUserIds: liveness.paidTime,
         rules,
       });
       if (decision.action === "skip") {
@@ -586,8 +701,8 @@ export async function runDiscordSweep(): Promise<SweepSummary> {
     }
     summary.candidates = candidates.length;
 
-    if (candidates.length > SWEEP_CAP) {
-      summary.aborted = `${candidates.length} kick candidates exceed the cap of ${SWEEP_CAP}`;
+    if (candidates.length > cap) {
+      summary.aborted = `${candidates.length} kick candidates exceed the cap of ${cap}`;
       summary.counts.cap_exceeded = candidates.length;
       for (const c of candidates) {
         logRows.push({ discord_user_id: c.id, whop_user_ids: c.whop, reason: "cap_exceeded", mode, action: "skipped", source: "sweep" });
@@ -674,7 +789,11 @@ export async function checkOneFromWebhook(whopUserId: string, discordUserId: str
     const links = await loadLinks();
     const whop = Array.from(new Set([whopUserId, ...(links.get(discordUserId) ?? [])]));
     const live = new Set<string>();
+    const paused = new Set<string>();
+    const paidTime = new Set<string>();
     if (liveness.live) live.add(whopUserId);
+    if (liveness.paused) paused.add(whopUserId);
+    if (liveness.paidTimeLeft) paidTime.add(whopUserId);
     for (const other of whop) {
       if (other === whopUserId) continue;
       const r = await isWhopUserLive(other);
@@ -683,6 +802,8 @@ export async function checkOneFromWebhook(whopUserId: string, discordUserId: str
         return { action: "aborted", reason: r.error, mode };
       }
       if (r.live) live.add(other);
+      if (r.paused) paused.add(other);
+      if (r.paidTimeLeft) paidTime.add(other);
     }
     const roleIds = member.roles ?? [];
     const rolePermissions: Record<string, string> = {};
@@ -703,6 +824,8 @@ export async function checkOneFromWebhook(whopUserId: string, discordUserId: str
       joinedAt: member.joined_at ?? null,
       linkedWhopUserIds: whop,
       liveWhopUserIds: live,
+      pausedWhopUserIds: paused,
+      paidTimeWhopUserIds: paidTime,
     });
 
     if (decision.action === "skip") {

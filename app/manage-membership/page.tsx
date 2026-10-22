@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../../lib/session";
 import ManageMembershipClient, { type MembershipSummary } from "./ManageMembershipClient";
+import { readPauseState } from "../api/whop/pause-state";
+import { rowOwner, rowProduct, WHOP_API_VERSION_DATE } from "../api/whop/whop-membership";
 
 function formatRenewal(value: unknown): string | null {
   if (typeof value !== "string" && typeof value !== "number") return null;
@@ -43,6 +45,10 @@ const FALLBACK: MembershipSummary = {
   price: "$49.99 / month",
   status: "Active",
   renewalDate: null,
+  paused: false,
+  pausedUntil: null,
+  pausable: true,
+  pauseBlock: null,
 };
 
 function createdAtMs(value: unknown): number {
@@ -82,25 +88,47 @@ async function fetchMembership(whopUserId: string): Promise<MembershipSummary | 
   if (!productId || !companyId) return FALLBACK;
 
   try {
-    const params = new URLSearchParams({ company_id: companyId });
-    params.append("user_ids", whopUserId);
-    params.append("product_ids", productId);
+    // Singular user_id / product_id, pinned version, owner-checked: the plural
+    // user_ids / product_ids filters are ignored by the key's API version and
+    // return the newest membership in the company (see whop-membership.ts).
+    const params = new URLSearchParams({ company_id: companyId, user_id: whopUserId, product_id: productId, first: "50" });
     const res = await fetch(`https://api.whop.com/api/v1/memberships?${params.toString()}`, {
       headers: {
         Authorization: `Bearer ${process.env.WHOP_API_KEY ?? ""}`,
         Accept: "application/json",
+        "Api-Version-Date": WHOP_API_VERSION_DATE,
       },
       cache: "no-store",
     });
     if (!res.ok) return FALLBACK;
     const page = await res.json();
-    const m = pickMembership(Array.isArray(page?.data) ? page.data : []);
+    const all: unknown[] = Array.isArray(page?.data) ? page.data : [];
+    const own = all.filter((row): row is Record<string, unknown> => {
+      if (!row || typeof row !== "object") return false;
+      const r = row as Record<string, unknown>;
+      const owner = rowOwner(r);
+      if (owner !== null && owner !== whopUserId) return false;
+      const product = rowProduct(r);
+      return product === null || product === productId;
+    });
+    if (all.some((row) => row && typeof row === "object" && rowOwner(row as Record<string, unknown>) !== null && rowOwner(row as Record<string, unknown>) !== whopUserId)) {
+      console.error("manage-membership: foreign user in memberships read (user_id filter ignored)");
+      return FALLBACK;
+    }
+    const m = pickMembership(own);
     if (!m) return null;
 
     const status =
       typeof m.status === "string" && m.status.length > 0
         ? m.status.charAt(0).toUpperCase() + m.status.slice(1)
         : FALLBACK.status;
+
+    // Paused / pausable, decided once here and handed to the cancel flow so
+    // Gate 2 is skipped (not shown) when it cannot succeed. Whop keeps status
+    // "active"/"trialing" on a paused membership; the paused flag comes from
+    // the status=paused list read in pause-state.ts.
+    const pause = await readPauseState(whopUserId, m);
+    for (const w of pause.warnings) console.warn("manage-membership: pause state warning", w);
 
     const planId = readPlanId(m);
     const rawPrice =
@@ -113,7 +141,16 @@ async function fetchMembership(whopUserId: string): Promise<MembershipSummary | 
       planName: (planId && PLAN_NAMES[planId]) || planId || FALLBACK.planName,
       price: rawPrice ?? FALLBACK.price,
       status,
-      renewalDate: formatRenewal(m.renewal_period_end) ?? formatRenewal(m.expires_at),
+      // api/v1 returns current_period_end; renewal_period_end is the name in
+      // the published schema and is kept as a fallback.
+      renewalDate:
+        formatRenewal(m.current_period_end) ??
+        formatRenewal(m.renewal_period_end) ??
+        formatRenewal(m.expires_at),
+      paused: pause.paused,
+      pausedUntil: formatRenewal(pause.resumesAt),
+      pausable: pause.block === null,
+      pauseBlock: pause.block,
     };
   } catch {
     return FALLBACK;

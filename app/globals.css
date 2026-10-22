@@ -294,6 +294,12 @@ body.modal-open{overflow:hidden}
 .cf-btn-primary.green{background:linear-gradient(180deg,#86EFAC 0%,#4ADE80 50%,#22C55E 100%);color:#052e16;box-shadow:0 0 40px rgba(74,222,128,.35),0 0 80px rgba(74,222,128,.15)}
 .cf-btn-secondary{background:transparent;color:var(--txt-mut);border:1px solid var(--line-hi);padding:13px 20px;border-radius:12px;font-weight:700;font-size:14px;cursor:pointer;width:100%;font-family:"Inter",sans-serif}
 .cf-btn-secondary:hover{background:var(--card-hi);color:var(--txt)}
+.cf-btn-primary:disabled{opacity:.7;cursor:default}
+.cf-btn-spinner{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-2px;margin-right:8px;animation:cf-spin .7s linear infinite}
+@keyframes cf-spin{to{transform:rotate(360deg)}}
+.cf-pause-done-icn{width:64px;height:64px;background:linear-gradient(135deg,rgba(74,222,128,.28),rgba(74,222,128,.08));border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;color:var(--green)}
+.cf-pause-done-icn svg{width:32px;height:32px;stroke-width:2}
+.cf-btn-primary.link{display:block;text-align:center;text-decoration:none;box-sizing:border-box}
 .cf-btn-quit{background:transparent;color:var(--txt-dim);border:none;padding:14px;font-size:13px;cursor:pointer;width:100%;text-align:center;text-decoration:underline;text-decoration-color:var(--line-hi);text-underline-offset:3px;font-family:"Inter",sans-serif;margin-top:4px}
 .cf-btn-quit:hover{color:var(--red)}
 

@@ -9,6 +9,10 @@ const EVENT_TYPES = [
   "pause_accepted",
   "pause_declined",
   "pause_failed",
+  // pause_skipped: Gate 2 not shown (already paused / used / no subscription).
+  // pause_succeeded is deliberately NOT here: only /api/whop/pause writes it,
+  // and the 180-day reuse check reads it.
+  "pause_skipped",
   "free_days_offered",
   "free_days_accepted",
   "free_days_declined",

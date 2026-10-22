@@ -85,8 +85,22 @@ export default function Gate2Pause({
         Most people quit two weeks before it clicks.
       </p>
 
-      <button className="cf-btn-primary blue" onClick={onAccept} disabled={pausing}>
-        {pausing ? "Pausing\u2026" : "Push my payment 14 days"}
+      {/* Disabled + spinner while the request is in flight. CancelFlow also
+          ignores a second click, so a double tap cannot send two pauses. */}
+      <button
+        className="cf-btn-primary blue"
+        onClick={onAccept}
+        disabled={pausing}
+        aria-busy={pausing}
+      >
+        {pausing ? (
+          <>
+            <span className="cf-btn-spinner" aria-hidden="true" />
+            {"Pausing\u2026"}
+          </>
+        ) : (
+          "Push my payment 14 days"
+        )}
       </button>
       <button className="cf-btn-secondary" onClick={onDecline} disabled={pausing}>
         No thanks, continue
