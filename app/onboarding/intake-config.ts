@@ -136,7 +136,7 @@ export const INTAKE_QUESTIONS: IntakeQuestion[] = [
     kind: "phone",
     id: "phone",
     question: "What's your phone number?",
-    subheading: "So we can text you about live streams, your deals, and free gifts. Reply STOP to opt out.",
+    subheading: "So we can text you about live streams, your deals, account updates, and free gifts. Reply STOP to opt out.",
     placeholder: "(555) 555-5555",
   },
 ];

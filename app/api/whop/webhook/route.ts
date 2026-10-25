@@ -1,10 +1,13 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { createAdminClient } from "../../../../lib/supabase/server";
 import { whopAuthHeaders } from "../whop-membership";
 import { checkOneFromWebhook } from "../../../../lib/discord-kick";
 
 export const dynamic = "force-dynamic";
+// Background work (waitUntil) may outlive the response; give it room.
+export const maxDuration = 60;
 
 // POST /api/whop/webhook
 //
@@ -14,8 +17,21 @@ export const dynamic = "force-dynamic";
 //   payment_failed_renewal       a subscription cycle charge failed -> DM the member
 //   payment_failed_new_checkout  a first-time checkout charge failed -> DM with the join link
 //   membership_ended             membership.deactivated / membership.went_invalid
-//                                -> live Whop re-check, verdict RECORDED ONLY (no kick here)
+//                                -> live Whop re-check, verdict recorded, then the
+//                                   lib/discord-kick check (kicks only when DISCORD_KICK_MODE=live)
+//   payment_succeeded            recorded only (ids + billing_reason), no side effects yet
+//   membership_updated           recorded only (ids + status), no side effects yet
 //   ignored                      every other type: recorded with the payload's top-level keys
+//
+// Timing: Whop counts anything that is not a 2xx within 5 seconds as a failed
+// delivery and disabled this endpoint on 2026-09-02 after 90 of them. So the
+// request path does only: verify signature -> parse -> claim the event id in
+// webhook_events -> respond 200. Everything else (Whop reads, Discord DM, kick
+// check, the metadata update) runs after the response via waitUntil.
+//
+// Payload shapes: v1 webhooks pinned to a dated API version send { type, data }
+// with data.account_id; unpinned (legacy) ones send { action, data } with
+// data.company_id. Both are accepted: type ?? action, account_id ?? company_id.
 //
 // Action switch: WHOP_WEBHOOK_ACTIONS=live enables the Discord DMs. Unset
 // means LOG-ONLY: no request to discord.com and no write request to Whop;
@@ -30,19 +46,23 @@ export const dynamic = "force-dynamic";
 // without it skips verification so local curl tests work.
 //
 // After the signature passes, this route ALWAYS returns 200. Whop retries on
-// non-2xx, and a retry storm against a handler that adds free days is worse
-// than a logged failure.
+// non-2xx, and a retry storm is worse than a logged failure.
 
 // Whop event types (verified against @whop/sdk 0.0.39 webhook types:
 // PaymentFailedWebhookEvent.type = "payment.failed", data = Payment with
 // billing_reason in subscription_create | subscription_cycle |
 // subscription_update | one_time | manual | subscription | null).
 const WHOP_EVENT_PAYMENT_FAILED = "payment.failed";
-// Same strings Studio's webhook classifies as a deactivation.
+// Same strings Studio's webhook classifies as a deactivation. went_invalid is
+// the legacy name, kept as an alias; the current event list has deactivated.
 const WHOP_EVENTS_MEMBERSHIP_ENDED = new Set(["membership.deactivated", "membership.went_invalid"]);
+const WHOP_EVENT_PAYMENT_SUCCEEDED = "payment.succeeded";
+const WHOP_EVENT_MEMBERSHIP_UPDATED = "membership.updated";
 const PAYMENT_FAILED_RENEWAL = "payment_failed_renewal";
 const PAYMENT_FAILED_NEW_CHECKOUT = "payment_failed_new_checkout";
 const MEMBERSHIP_ENDED = "membership_ended";
+const PAYMENT_SUCCEEDED = "payment_succeeded";
+const MEMBERSHIP_UPDATED = "membership_updated";
 const IGNORED = "ignored";
 
 // LOG-ONLY unless explicitly switched to live. Live only unlocks the Discord DMs.
@@ -119,6 +139,13 @@ function idOf(value: unknown): string | null {
 
 function str(value: unknown): string | null {
   return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+// The company the event belongs to, in either payload shape (pinned v1 sends
+// account_id, legacy sends company_id). Recorded in metadata; the membership
+// re-check keeps using WHOP_COMPANY_ID from the environment.
+function payloadAccountId(data: Json | null): string | null {
+  return idOf(data?.account_id) ?? idOf(data?.company_id) ?? idOf(data?.account) ?? idOf(data?.company);
 }
 
 type FailedPayment = {
@@ -290,7 +317,7 @@ async function resolveDmTarget(whopUserId: string | null): Promise<string | null
 // deliveries race the insert and exactly one wins (PK violation 23505 on the
 // other), which a check-then-insert cannot guarantee. Trade-off: a crash
 // mid-processing leaves the row marked handled with pending metadata rather
-// than retrying, which is the safer failure for a handler that grants days.
+// than retrying.
 // ---------------------------------------------------------------------------
 
 async function claimEvent(eventId: string, eventType: string): Promise<"claimed" | "duplicate" | "error"> {
@@ -328,19 +355,10 @@ async function finishEvent(eventId: string, metadata: Json): Promise<void> {
 // step kicks only when DISCORD_KICK_MODE=live; otherwise it logs + posts a
 // "would kick" line. It is independent of WHOP_WEBHOOK_ACTIONS, which still
 // only gates the payment.failed DM. NO DM, NO role change here.
+// Runs AFTER the 200 (waitUntil); the event is already claimed.
 // ---------------------------------------------------------------------------
 
-async function handleMembershipEnded(eventId: string, eventType: string, data: Json | null) {
-  const claim = await claimEvent(eventId, MEMBERSHIP_ENDED);
-  if (claim === "duplicate") {
-    console.log("[whop/webhook] membership_ended duplicate delivery", eventId);
-    return ok();
-  }
-  if (claim === "error") {
-    console.error("[whop/webhook] membership_ended idempotency guard unavailable, not recorded", eventId);
-    return ok();
-  }
-
+async function processMembershipEnded(eventId: string, eventType: string, data: Json | null): Promise<void> {
   // Same field path Studio's extractUserId uses: data.user (string or { id }), then data.user_id.
   const whopUserId = idOf(data?.user) ?? str(data?.user_id);
   let verdict: EndedVerdict = "no_user_id";
@@ -355,6 +373,7 @@ async function handleMembershipEnded(eventId: string, eventType: string, data: J
     flow: MEMBERSHIP_ENDED,
     mode: MODE,
     event_type: eventType,
+    account_id: payloadAccountId(data),
     verdict,
     whop_user_id: whopUserId,
     discord_user_id: discordUserId,
@@ -375,24 +394,89 @@ async function handleMembershipEnded(eventId: string, eventType: string, data: J
     const kick = await checkOneFromWebhook(whopUserId, discordUserId);
     console.log(`[whop/webhook] membership_ended kick-check ${kick.action} (${kick.reason}) mode ${kick.mode}`);
   }
-  return ok();
+}
+
+// ---------------------------------------------------------------------------
+// payment.succeeded and membership.updated: RECORD ONLY (ids, status, billing
+// reason, payload key names; never emails or amounts). No side effects yet;
+// the payment-recovery drip will read these rows later.
+// ---------------------------------------------------------------------------
+
+async function processRecordOnly(flow: string, eventId: string, eventType: string, data: Json | null): Promise<void> {
+  const membership = data?.membership;
+  await finishEvent(eventId, {
+    flow,
+    mode: MODE,
+    event_type: eventType,
+    account_id: payloadAccountId(data),
+    membership_id: idOf(membership) ?? str(data?.membership_id) ?? (flow === MEMBERSHIP_UPDATED ? str(data?.id) : null),
+    user_id: idOf(data?.user) ?? str(data?.user_id),
+    plan_id: idOf(data?.plan) ?? str(data?.plan_id),
+    status: str(data?.status),
+    billing_reason: flow === PAYMENT_SUCCEEDED ? str(data?.billing_reason) : undefined,
+    membership_status:
+      membership && typeof membership === "object" ? str((membership as Json).status) : undefined,
+    data_keys: data ? Object.keys(data).sort() : [],
+    completed_at: new Date().toISOString(),
+  });
 }
 
 // ---------------------------------------------------------------------------
 // Everything else: record that it arrived (type + payload KEYS only, never values).
 // ---------------------------------------------------------------------------
 
-async function handleIgnored(eventId: string, eventType: string, data: Json | null) {
-  const claim = await claimEvent(eventId, IGNORED);
-  if (claim !== "claimed") return ok();
+async function processIgnored(eventId: string, eventType: string, data: Json | null): Promise<void> {
   await finishEvent(eventId, {
     flow: IGNORED,
     mode: MODE,
     event_type: eventType,
+    account_id: payloadAccountId(data),
     data_keys: data ? Object.keys(data).sort() : [],
     completed_at: new Date().toISOString(),
   });
-  return ok();
+}
+
+// payment.failed after the claim: DM (or log-only) + metadata. Behaviour unchanged.
+async function processPaymentFailed(eventId: string, flow: string, payment: FailedPayment, data: Json | null): Promise<void> {
+  const dmText = flow === PAYMENT_FAILED_RENEWAL ? DM_RENEWAL : DM_NEW_CHECKOUT;
+  const target = await resolveDmTarget(payment.userId);
+  let dmSent = false;
+  let dmWouldSend = false;
+  if (!target) {
+    console.log("[webhook payment_failed] no Discord connection for", payment.userId, "skipping DM");
+  } else if (ACTIONS_LIVE) {
+    dmSent = await sendDiscordDm(target, dmText);
+  } else {
+    // LOG-ONLY: record what would have gone out, touch nothing.
+    dmWouldSend = true;
+    console.log("[webhook payment_failed] LOG-ONLY: would DM", target, "with", flow);
+  }
+
+  await finishEvent(eventId, {
+    flow,
+    mode: MODE,
+    account_id: payloadAccountId(data),
+    membership_id: payment.membershipId,
+    user_id: payment.userId,
+    plan_id: payment.planId,
+    billing_reason: payment.billingReason,
+    discord_user_id: target,
+    dm_sent: dmSent,
+    dm_would_send: dmWouldSend,
+    dm_text: dmWouldSend ? dmText : undefined,
+    test_mode: Boolean(process.env.WEBHOOK_TEST_DISCORD_ID),
+    completed_at: new Date().toISOString(),
+  });
+}
+
+// Hands work to the platform after the response is sent. A rejection is logged
+// and never surfaces; the event row keeps { pending: true } in that case.
+function runAfterResponse(label: string, work: Promise<void>): void {
+  waitUntil(
+    work.catch((err) => {
+      console.error(`[whop/webhook] background ${label} failed`, err);
+    })
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -426,8 +510,8 @@ export async function POST(request: NextRequest) {
     }
 
     // From here on: always 200.
-    // Same precedence as Studio's webhook: action first, then type.
-    const eventType = str(event.action) ?? str(event.type) ?? "unknown";
+    // Pinned v1 payloads carry `type`; legacy unpinned ones carry `action`.
+    const eventType = str(event.type) ?? str(event.action) ?? "unknown";
 
     // Envelope id is "a unique ID for every single webhook request"; the
     // Standard Webhooks message id header is the fallback.
@@ -439,11 +523,25 @@ export async function POST(request: NextRequest) {
 
     const data = (event.data && typeof event.data === "object" ? event.data : null) as Json | null;
 
+    // Fast path for every type except payment.failed: claim, respond, then
+    // finish in the background.
     if (WHOP_EVENTS_MEMBERSHIP_ENDED.has(eventType)) {
-      return handleMembershipEnded(eventId, eventType, data);
+      const claim = await claimEvent(eventId, MEMBERSHIP_ENDED);
+      if (claim === "duplicate") console.log("[whop/webhook] membership_ended duplicate delivery", eventId);
+      else if (claim === "error") console.error("[whop/webhook] membership_ended idempotency guard unavailable, not recorded", eventId);
+      else runAfterResponse(MEMBERSHIP_ENDED, processMembershipEnded(eventId, eventType, data));
+      return ok();
+    }
+    if (eventType === WHOP_EVENT_PAYMENT_SUCCEEDED || eventType === WHOP_EVENT_MEMBERSHIP_UPDATED) {
+      const flow = eventType === WHOP_EVENT_PAYMENT_SUCCEEDED ? PAYMENT_SUCCEEDED : MEMBERSHIP_UPDATED;
+      const claim = await claimEvent(eventId, flow);
+      if (claim === "claimed") runAfterResponse(flow, processRecordOnly(flow, eventId, eventType, data));
+      return ok();
     }
     if (eventType !== WHOP_EVENT_PAYMENT_FAILED) {
-      return handleIgnored(eventId, eventType, data);
+      const claim = await claimEvent(eventId, IGNORED);
+      if (claim === "claimed") runAfterResponse(IGNORED, processIgnored(eventId, eventType, data));
+      return ok();
     }
 
     const payment = extractPayment(data);
@@ -466,41 +564,14 @@ export async function POST(request: NextRequest) {
       return ok();
     }
     if (claim === "error") {
-      // Without the guard we cannot prove this is a first delivery. Do not
-      // grant days or DM on an unguarded event; Whop's own emails still go out.
+      // Without the guard we cannot prove this is a first delivery. Do not DM
+      // on an unguarded event; Whop's own emails still go out.
       console.error("[webhook payment_failed] idempotency guard unavailable, skipping side effects", eventId);
       return ok();
     }
 
-    const dmText = flow === PAYMENT_FAILED_RENEWAL ? DM_RENEWAL : DM_NEW_CHECKOUT;
-    const target = await resolveDmTarget(payment.userId);
-    let dmSent = false;
-    let dmWouldSend = false;
-    if (!target) {
-      console.log("[webhook payment_failed] no Discord connection for", payment.userId, "skipping DM");
-    } else if (ACTIONS_LIVE) {
-      dmSent = await sendDiscordDm(target, dmText);
-    } else {
-      // LOG-ONLY: record what would have gone out, touch nothing.
-      dmWouldSend = true;
-      console.log("[webhook payment_failed] LOG-ONLY: would DM", target, "with", flow);
-    }
-
-    await finishEvent(eventId, {
-      flow,
-      mode: MODE,
-      membership_id: payment.membershipId,
-      user_id: payment.userId,
-      plan_id: payment.planId,
-      billing_reason: payment.billingReason,
-      discord_user_id: target,
-      dm_sent: dmSent,
-      dm_would_send: dmWouldSend,
-      dm_text: dmWouldSend ? dmText : undefined,
-      test_mode: Boolean(process.env.WEBHOOK_TEST_DISCORD_ID),
-      completed_at: new Date().toISOString(),
-    });
-
+    // Claimed: respond now, DM + metadata after the response.
+    runAfterResponse(flow, processPaymentFailed(eventId, flow, payment, data));
     return ok();
   } catch (err) {
     // Never throw out of a webhook. Log and acknowledge.
