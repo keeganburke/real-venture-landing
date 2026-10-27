@@ -8,9 +8,17 @@ import { WHOP_API_VERSION_DATE, rowOwner, rowProduct } from "../app/api/whop/who
 // Every run: list Real Venture memberships Whop has as past_due, work out
 // which drip day each is on (whole America/Chicago calendar days since the
 // newest failed renewal payment, starting at 1), and for the ones whose day
-// window has opened send the day's message on three channels: SMS + email
-// through the GHL inbound webhook (one JSON POST), and a Discord DM through
-// our bot when the member has a discord_connections row.
+// window has opened send the day's message on three channels: email through
+// the GHL inbound webhook (GHL_RECOVERY_WEBHOOK_URL), SMS through a second
+// GHL webhook (GHL_RECOVERY_SMS_WEBHOOK_URL) when we have a phone, and a
+// Discord DM through our bot when the member has a discord_connections row.
+//
+// GHL routing: with a phone we POST {first_name, phone, sms_text, day} to the
+// SMS webhook and the email payload to the email webhook with skip_sms "yes".
+// Without a phone only the email webhook is posted, with skip_sms "" so GHL
+// may text a phone it already has on the contact. Each POST is recorded as
+// its own payment_recovery_sends row (channel ghl / ghl_sms) so one failing
+// never blocks the other.
 //
 // Before EVERY send the membership is re-read live from Whop; anything other
 // than past_due (paid, canceled, anything) stops that sequence
@@ -126,6 +134,8 @@ export function firstNameOf(name: string | null): string {
   return first && first.length > 0 ? first : "there";
 }
 
+// Email webhook payload. skip_sms "yes" when the SMS webhook handles the
+// text (we have a phone), "" when GHL may text a phone it already has.
 export type GhlPayload = {
   first_name: string;
   email: string;
@@ -135,6 +145,15 @@ export type GhlPayload = {
   email_body: string;
   day: number;
   plan_name: string;
+  skip_sms: "yes" | "";
+};
+
+// SMS webhook payload. Only built when we have a phone.
+export type GhlSmsPayload = {
+  first_name: string;
+  phone: string;
+  sms_text: string;
+  day: number;
 };
 
 export function buildMessages(day: number, firstName: string, link: string): { text: string; subject: string; emailBody: string; sms: string } {
@@ -157,7 +176,13 @@ export function buildGhlPayload(input: { day: number; firstName: string; email: 
     email_body: m.emailBody,
     day: input.day,
     plan_name: input.planName,
+    skip_sms: input.phone ? "yes" : "",
   };
+}
+
+export function buildGhlSmsPayload(input: { day: number; firstName: string; phone: string; link: string }): GhlSmsPayload {
+  const m = buildMessages(input.day, input.firstName, input.link);
+  return { first_name: input.firstName, phone: input.phone, sms_text: m.sms, day: input.day };
 }
 
 // ---------------------------------------------------------------------------
@@ -369,10 +394,12 @@ async function alreadySentToday(membershipId: string, failedAt: string, day: num
 // ---------------------------------------------------------------------------
 
 type SendStatus = "pending" | "sent" | "failed" | "skipped";
+// ghl = email webhook, ghl_sms = SMS webhook, discord_dm = bot DM.
+type SendChannel = "ghl" | "ghl_sms" | "discord_dm";
 
 // Claims (membership_id, failed_at, day, channel). "duplicate" means another
 // run got there first and this run must send nothing for that day.
-async function claimSend(membershipId: string, failedAt: string, day: number, channel: "ghl" | "discord_dm"): Promise<"claimed" | "duplicate" | "error"> {
+async function claimSend(membershipId: string, failedAt: string, day: number, channel: SendChannel): Promise<"claimed" | "duplicate" | "error"> {
   const supabase = createAdminClient();
   const { error } = await supabase
     .from("payment_recovery_sends")
@@ -383,7 +410,7 @@ async function claimSend(membershipId: string, failedAt: string, day: number, ch
   return "error";
 }
 
-async function finishSend(membershipId: string, failedAt: string, day: number, channel: "ghl" | "discord_dm", status: SendStatus): Promise<void> {
+async function finishSend(membershipId: string, failedAt: string, day: number, channel: SendChannel, status: SendStatus): Promise<void> {
   const supabase = createAdminClient();
   const { error } = await supabase
     .from("payment_recovery_sends")
@@ -427,12 +454,16 @@ async function upsertRecord(fields: {
 }
 
 // ---------------------------------------------------------------------------
-// GHL: one JSON POST, 5 s timeout, one retry.
+// GHL: one JSON POST per webhook, 5 s timeout, one retry.
 // ---------------------------------------------------------------------------
 
-async function postGhl(payload: GhlPayload): Promise<{ ok: boolean; error: string | null }> {
-  const url = process.env.GHL_RECOVERY_WEBHOOK_URL;
-  if (!url) return { ok: false, error: "GHL_RECOVERY_WEBHOOK_URL unset" };
+type GhlTarget = "email" | "sms";
+const GHL_URL_ENV: Record<GhlTarget, string> = { email: "GHL_RECOVERY_WEBHOOK_URL", sms: "GHL_RECOVERY_SMS_WEBHOOK_URL" };
+
+async function postGhl(target: GhlTarget, payload: GhlPayload | GhlSmsPayload): Promise<{ ok: boolean; error: string | null }> {
+  const envName = GHL_URL_ENV[target];
+  const url = process.env[envName];
+  if (!url) return { ok: false, error: `${envName} unset` };
   let last: string | null = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -474,7 +505,9 @@ export type RecoveryItem = {
     | "no_failed_payment"
     | "error";
   detail: string | null;
+  // ghl = email webhook, ghlSms = SMS webhook (null until we know the phone).
   ghl: ChannelOutcome | null;
+  ghlSms: ChannelOutcome | null;
   discordDm: ChannelOutcome | null;
   hasEmail: boolean;
   hasPhone: boolean;
@@ -503,7 +536,11 @@ function formatSummary(s: RecoverySummary): string {
   const perDay = new Map<number, string[]>();
   for (const it of s.items) {
     if (it.outcome !== "sent" && it.outcome !== "would_send") continue;
-    const ch = [it.ghl ? `ghl:${it.ghl}` : null, it.discordDm ? `dm:${it.discordDm}` : null].filter(Boolean).join(" ");
+    const ch = [
+      it.ghl ? `email:${it.ghl}` : null,
+      it.ghlSms ? `sms:${it.ghlSms}` : null,
+      it.discordDm ? `dm:${it.discordDm}` : null,
+    ].filter(Boolean).join(" ");
     const list = perDay.get(it.day) ?? [];
     list.push(`${it.username}${it.ultra ? " (ULTRA)" : ""} [${it.planName}] ${ch}${it.hasPhone ? "" : " no-phone"}${it.hasEmail ? "" : " no-email"}`);
     perDay.set(it.day, list);
@@ -568,7 +605,7 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
       const ultra = planId !== null && ULTRA_PLANS.has(planId);
       const base: RecoveryItem = {
         membershipId, username: whopUserId, planName, ultra, day: 0, outcome: "error", detail: null,
-        ghl: null, discordDm: null, hasEmail: false, hasPhone: false, hasDiscord: false,
+        ghl: null, ghlSms: null, discordDm: null, hasEmail: false, hasPhone: false, hasDiscord: false,
       };
 
       try {
@@ -644,10 +681,12 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
         const discord = await readDiscord(whopUserId);
         const link = live.manageUrl ?? FALLBACK_LINK;
         const payload = buildGhlPayload({ day, firstName, email, phone, link, planName });
+        const smsPayload = phone ? buildGhlSmsPayload({ day, firstName, phone, link }) : null;
         const dmText = buildMessages(day, firstName, link).text;
         const item: RecoveryItem = {
           ...base, username, hasEmail: email.length > 0, hasPhone: phone.length > 0, hasDiscord: discord.discordUserId !== null,
           ghl: email || phone ? "would_send" : "skipped",
+          ghlSms: smsPayload ? "would_send" : "skipped",
           discordDm: discord.discordUserId ? "would_send" : "skipped",
           outcome: "would_send",
         };
@@ -657,23 +696,38 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
           continue;
         }
 
-        // Claim the day on the ghl channel first: a duplicate claim means
-        // another run already owns this day for this membership.
+        // Claim the day on the ghl (email) channel first: a duplicate claim
+        // means another run already owns this day for this membership.
         const claim = await claimSend(membershipId, failedAtIso, day, "ghl");
         if (claim === "duplicate") {
-          push({ ...item, outcome: "already_sent_today", ghl: null, discordDm: null });
+          push({ ...item, outcome: "already_sent_today", ghl: null, ghlSms: null, discordDm: null });
           continue;
         }
         if (claim === "error") {
-          push({ ...item, outcome: "error", detail: "could not claim send row", ghl: null, discordDm: null });
+          push({ ...item, outcome: "error", detail: "could not claim send row", ghl: null, ghlSms: null, discordDm: null });
           continue;
         }
         if (item.ghl === "would_send") {
-          const g = await postGhl(payload);
+          const g = await postGhl("email", payload);
           item.ghl = g.ok ? "sent" : "failed";
-          if (!g.ok) item.detail = [item.detail, `ghl ${g.error}`].filter(Boolean).join("; ");
+          if (!g.ok) item.detail = [item.detail, `ghl email ${g.error}`].filter(Boolean).join("; ");
         }
         await finishSend(membershipId, failedAtIso, day, "ghl", item.ghl === "sent" ? "sent" : item.ghl === "failed" ? "failed" : "skipped");
+
+        // SMS webhook: its own claim row, so an email failure never blocks
+        // the text and vice versa.
+        if (smsPayload) {
+          const smsClaim = await claimSend(membershipId, failedAtIso, day, "ghl_sms");
+          if (smsClaim === "claimed") {
+            const s = await postGhl("sms", smsPayload);
+            item.ghlSms = s.ok ? "sent" : "failed";
+            if (!s.ok) item.detail = [item.detail, `ghl sms ${s.error}`].filter(Boolean).join("; ");
+            await finishSend(membershipId, failedAtIso, day, "ghl_sms", s.ok ? "sent" : "failed");
+          } else {
+            item.ghlSms = "skipped";
+            if (smsClaim === "error") item.detail = [item.detail, "could not claim sms send row"].filter(Boolean).join("; ");
+          }
+        }
 
         if (discord.discordUserId) {
           const dmClaim = await claimSend(membershipId, failedAtIso, day, "discord_dm");
@@ -712,7 +766,17 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
 // ---------------------------------------------------------------------------
 
 export type RecoveryTestResult =
-  | { ok: true; day: number; ghl: "sent" | "failed"; ghlError: string | null; discordDm: "sent" | "failed"; payloadKeys: string[] }
+  | {
+      ok: true;
+      day: number;
+      ghl: "sent" | "failed";
+      ghlError: string | null;
+      ghlSms: "sent" | "failed";
+      ghlSmsError: string | null;
+      discordDm: "sent" | "failed";
+      payloadKeys: string[];
+      smsPayloadKeys: string[];
+    }
   | { ok: false; status: 400; error: string };
 
 export async function runRecoveryTest(day: number): Promise<RecoveryTestResult> {
@@ -724,15 +788,22 @@ export async function runRecoveryTest(day: number): Promise<RecoveryTestResult> 
   const phone = toE164(rawPhone);
   if (!phone) return { ok: false, status: 400, error: "RECOVERY_TEST_PHONE is not a usable phone number" };
   const firstName = "Keegan";
+  // Test always has a phone, so this mirrors the live with-phone route:
+  // SMS webhook gets the text, email webhook gets skip_sms "yes".
   const payload = buildGhlPayload({ day, firstName, email: email as string, phone, link: FALLBACK_LINK, planName: "Test" });
-  const g = await postGhl(payload);
+  const smsPayload = buildGhlSmsPayload({ day, firstName, phone, link: FALLBACK_LINK });
+  const g = await postGhl("email", payload);
+  const s = await postGhl("sms", smsPayload);
   const dm = await sendDiscordDm(OWNER_DISCORD_USER_ID, buildMessages(day, firstName, FALLBACK_LINK).text);
   return {
     ok: true,
     day,
     ghl: g.ok ? "sent" : "failed",
     ghlError: g.error,
+    ghlSms: s.ok ? "sent" : "failed",
+    ghlSmsError: s.error,
     discordDm: dm ? "sent" : "failed",
     payloadKeys: Object.keys(payload),
+    smsPayloadKeys: Object.keys(smsPayload),
   };
 }
