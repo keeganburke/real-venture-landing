@@ -97,7 +97,7 @@ type DayCopy = { text: (first: string, link: string) => string; subject: string 
 const COPY: Record<number, DayCopy> = {
   1: {
     text: (f, l) =>
-      `Hey ${f}, Henry from Real Venture. We couldn't process your payment, usually just a card thing. Update your payment info here to keep your access: ${l}`,
+      `Hey ${f}, William from Real Venture. We couldn't process your payment, usually just a card thing. Update your payment info here to keep your access: ${l}`,
     subject: "We couldn't process your payment",
   },
   2: {
@@ -141,7 +141,7 @@ export function buildMessages(day: number, firstName: string, link: string): { t
   const c = COPY[day];
   if (!c) throw new Error(`no copy for day ${day}`);
   const text = c.text(firstName, link);
-  return { text, subject: c.subject, emailBody: `Hey ${firstName},\n\n${text}\n\nHenry`, sms: text + SMS_SUFFIX };
+  return { text, subject: c.subject, emailBody: `${text}<br><br>William`, sms: text + SMS_SUFFIX };
 }
 
 export function buildGhlPayload(input: { day: number; firstName: string; email: string; phone: string; link: string; planName: string }): GhlPayload {
