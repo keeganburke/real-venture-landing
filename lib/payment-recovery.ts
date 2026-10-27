@@ -150,7 +150,9 @@ export function buildGhlPayload(input: { day: number; firstName: string; email: 
     first_name: input.firstName,
     email: input.email,
     phone: input.phone,
-    sms_text: input.phone ? m.sms : "",
+    // Always the day's SMS copy (with the STOP suffix), even with no phone;
+    // GHL decides what to do with it. phone is "" when we have none.
+    sms_text: m.sms,
     email_subject: m.subject,
     email_body: m.emailBody,
     day: input.day,
