@@ -106,6 +106,13 @@ function getDiscordStatusInfo(status: string): { message: string; variant: "succ
       return { message: "Almost there. Reach out in Discord if you don't see the role.", variant: "info" };
     case "misconfigured":
       return { message: "Discord isn't set up. Contact support.", variant: "error" };
+    case "no_membership":
+      return {
+        message: "No active Real Venture membership was found on this account, so Discord access can't be granted. If you just paid, wait a minute and try again, or contact support.",
+        variant: "error",
+      };
+    case "whop_unavailable":
+      return { message: "We couldn't verify your membership right now. Try again in a minute.", variant: "error" };
     default:
       return { message: "Something went wrong. Try again.", variant: "error" };
   }

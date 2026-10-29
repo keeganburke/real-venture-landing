@@ -199,7 +199,9 @@ type EndedVerdict =
 
 // Live read of EVERY membership the user holds with us: no product filter,
 // no status filter. Read only. Decides whether the member would be removed;
-// this file never acts on it.
+// this file never acts on it. SINGULAR user_id filter: the plural user_ids is
+// ignored by the key's API version and returned strangers' rows, which the
+// owner check below turned into keep_filter_untrusted on every event.
 async function checkMembershipEnded(
   whopUserId: string
 ): Promise<{ verdict: EndedVerdict; statuses: string[] }> {
@@ -209,8 +211,7 @@ async function checkMembershipEnded(
     return { verdict: "keep_check_failed", statuses: [] };
   }
   try {
-    const params = new URLSearchParams({ company_id: companyId, first: "100" });
-    params.append("user_ids", whopUserId);
+    const params = new URLSearchParams({ company_id: companyId, user_id: whopUserId, first: "100" });
     const res = await fetch(`https://api.whop.com/api/v1/memberships?${params.toString()}`, {
       method: "GET",
       headers: whopAuthHeaders(),
@@ -226,8 +227,8 @@ async function checkMembershipEnded(
     );
     const statuses = rows.map((m) => str(m.status) ?? "unknown");
     if (rows.length === 0) return { verdict: "keep_no_rows", statuses };
-    // If Whop ignored user_ids (seen on a newer API version), rows for other
-    // people come back. Never trust such a response.
+    // If Whop ignored user_id, rows for other people come back. Never trust
+    // such a response.
     const foreign = rows.some((m) => {
       const owner = idOf(m.user) ?? str(m.user_id);
       return owner !== null && owner !== whopUserId;

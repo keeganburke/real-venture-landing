@@ -1,33 +1,47 @@
 import { createAdminClient } from "./supabase/admin";
 import { listPausedMemberships } from "./whop-paused";
+import { sendDiscordDm } from "./discord-dm";
+import { WHOP_API_VERSION_DATE } from "../app/api/whop/whop-membership";
 
 // Discord auto-kick, shared by the nightly sweep (app/api/cron/discord-sweep)
 // and the Whop webhook (membership.deactivated / membership.went_invalid).
 //
 // Decision rules (decideKick, pure):
 //   kick ONLY if the member holds a member role (Base / Pro / Ultra) AND has a
-//   discord_connections link AND none of the linked Whop users holds a
-//   membership on WHOP_PRODUCT_ID that is still live. A membership is live if
-//   its status is not ended (anything but canceled / expired / drafted: active,
-//   trialing, past_due, completed, paused) OR its current_period_end (or
-//   renewal_period_end) is still in the future. Whop flips status to canceled
-//   the moment a member clicks cancel, so canceled + future period end = paid
-//   time left, skipped as paid_time_left. A paused membership is live, logged
-//   with its own reason "paused": Whop keeps status active/trialing on it, so
-//   paused = listed by GET /memberships?status=paused (primary) OR
-//   most_recent_action === "paused_at" (second signal); either one counts.
+//   discord_connections link AND none of the linked Whop users holds a live
+//   membership on ANY product of the company (Real Venture, Real Venture 1-1,
+//   Deposit, anything added later). A membership is live if its status is not
+//   ended (anything but canceled / expired / drafted: active, trialing,
+//   past_due, completed, paused). An ended membership still counts, as
+//   paid_time_left, ONLY when the member canceled it themselves
+//   (cancel_at_period_end === true) and current_period_end (or
+//   renewal_period_end) is still in the future. A canceled membership with
+//   cancel_at_period_end false is Whop's dunning cancel after a failed renewal:
+//   its current_period_end sits 30 days out but nothing was paid for it, so it
+//   is ended. A paused membership is live, logged with its own reason "paused":
+//   Whop keeps status active/trialing on it, so paused = listed by
+//   GET /memberships?status=paused (primary) OR most_recent_action ===
+//   "paused_at" (second signal); either one counts.
 //   never kick: bots, the guild owner, allowlisted ids, protected roles (Owner,
-//   Founder, Group Coach, Real Venture Underwriter, Moderator, Guest) or any
-//   role carrying kick / ban / admin / manage-guild / manage-roles bits, members
-//   with no member role (New Member only, Guest only, boosters, none), members
-//   with no link, and anyone who joined the server in the last 7 days.
-// Mode: DISCORD_KICK_MODE === "live" removes people; anything else is shadow
-// (log + mod post, no DELETE). Every sweep posts one summary to
-// DISCORD_MOD_WEBHOOK_URL; without it, console only.
-// Safety: more than 25 candidates in one sweep (cap override: ?cap=N, max 60,
-// on a manual authorized call only) means act on none; a Whop read
-// that fails or looks wrong means act on none; in live mode the first 403 from
-// Discord stops the run.
+//   Founder, Group Coach, Real Venture Underwriter, Moderator, Guest, plus
+//   anything DISCORD_PROTECTED_ROLE_IDS adds) or any role carrying kick / ban /
+//   admin / manage-guild / manage-roles bits, members with no member role (New
+//   Member only, Guest only, boosters, none), members with no link, and anyone
+//   who joined the server in the last 7 days.
+// Mode: DISCORD_KICK_MODE === "live" AND VERCEL_ENV === "production" removes
+// people; anything else (unset, preview, local) is shadow: log + mod post, no
+// DELETE. Every sweep posts one summary to DISCORD_MOD_WEBHOOK_URL, and in
+// live mode one line per kick; without the URL, console only.
+// Before each live kick the member gets a bot DM (KICK_DM); a DM failure never
+// blocks the kick.
+// Safety: one sweep at a time (discord_sweep_runs lease, 10 minutes, migration
+// 028; the webhook kick path skips while a sweep holds it, and both fail
+// CLOSED when the table cannot be read); a live user count below 90% of the
+// last successful sweep means the Whop read is suspect and the sweep acts on
+// no one; more than 25 candidates in one sweep (cap override: ?cap=N, max 60,
+// on a manual authorized call only) means act on none; a Whop read that fails
+// or looks wrong means act on none; in live mode the first 403 from Discord
+// stops the run.
 
 // ---------------------------------------------------------------------------
 // Constants (env first, snapshot literals as fallbacks)
@@ -45,6 +59,11 @@ const WHOP_MAX_PAGES = 80;
 const MAX_CONSECUTIVE_FAILURES = 5;
 const KICK_PAUSE_MS = 1100;
 const AUDIT_REASON = "Membership ended (auto sweep)";
+const SWEEP_LEASE_MS = 10 * 60 * 1000;
+// A live user count below this share of the last successful sweep's aborts the run.
+const LIVE_DROP_RATIO = 0.9;
+export const KICK_DM =
+  "Your Real Venture membership ended, so you've been removed from the Discord. Want back in? https://realventure.io/pricing";
 
 // Statuses that mean the membership is over. Everything else counts as live
 // (same set the webhook's membership_ended check uses).
@@ -79,25 +98,29 @@ function envOr(name: string, fallback: string): string {
   return v && v.trim().length > 0 ? v.trim() : fallback;
 }
 
+// Base / Pro / Ultra role ids (env first, snapshot literals as fallbacks).
+// Shared with app/api/discord/callback so the connect flow and the sweep agree.
+export function tierRoleIds(): { base: string; pro: string; ultra: string } {
+  return {
+    base: envOr("DISCORD_BASE_ROLE_ID", DEFAULT_ROLE_IDS.base),
+    pro: envOr("DISCORD_PRO_ROLE_ID", envOr("DISCORD_ROLE_ID", DEFAULT_ROLE_IDS.pro)),
+    ultra: envOr("DISCORD_ULTRA_ROLE_ID", DEFAULT_ROLE_IDS.ultra),
+  };
+}
+
 export function memberRoleIds(): Set<string> {
-  return new Set([
-    envOr("DISCORD_BASE_ROLE_ID", DEFAULT_ROLE_IDS.base),
-    envOr("DISCORD_PRO_ROLE_ID", envOr("DISCORD_ROLE_ID", DEFAULT_ROLE_IDS.pro)),
-    envOr("DISCORD_ULTRA_ROLE_ID", DEFAULT_ROLE_IDS.ultra),
-  ]);
+  const t = tierRoleIds();
+  return new Set([t.base, t.pro, t.ultra]);
 }
 
 export function newMemberRoleId(): string {
   return envOr("DISCORD_NEW_MEMBER_ROLE_ID", DEFAULT_ROLE_IDS.newMember);
 }
 
-// DISCORD_PROTECTED_ROLE_IDS (comma separated) replaces the default list when set.
+// The five staff roles and Guest are ALWAYS protected. DISCORD_PROTECTED_ROLE_IDS
+// (comma separated) can only add ids to that set, never remove one.
 export function protectedRoleIds(): Set<string> {
-  const raw = process.env.DISCORD_PROTECTED_ROLE_IDS;
-  if (raw && raw.trim().length > 0) {
-    return new Set(raw.split(",").map((s) => s.trim()).filter((s) => /^\d{5,}$/.test(s)));
-  }
-  return new Set([
+  const ids = new Set([
     DEFAULT_ROLE_IDS.owner,
     DEFAULT_ROLE_IDS.founder,
     DEFAULT_ROLE_IDS.groupCoach,
@@ -105,11 +128,21 @@ export function protectedRoleIds(): Set<string> {
     DEFAULT_ROLE_IDS.moderator,
     envOr("DISCORD_GUEST_ROLE_ID", DEFAULT_ROLE_IDS.guest),
   ]);
+  const raw = process.env.DISCORD_PROTECTED_ROLE_IDS;
+  if (raw && raw.trim().length > 0) {
+    for (const part of raw.split(",")) {
+      const id = part.trim();
+      if (/^\d{5,}$/.test(id)) ids.add(id);
+    }
+  }
+  return ids;
 }
 
 export type KickMode = "shadow" | "live";
+// Live needs BOTH switches: the mode flag and Vercel's production environment.
+// A preview deployment or a local shell holding production env vars stays shadow.
 export function kickMode(): KickMode {
-  return process.env.DISCORD_KICK_MODE === "live" ? "live" : "shadow";
+  return process.env.DISCORD_KICK_MODE === "live" && process.env.VERCEL_ENV === "production" ? "live" : "shadow";
 }
 
 // ---------------------------------------------------------------------------
@@ -331,7 +364,7 @@ export async function postToModChannel(content: string): Promise<void> {
 function whopHeaders(): Record<string, string> {
   const key = process.env.WHOP_API_KEY;
   if (!key) throw new Error("WHOP_API_KEY unset");
-  return { Authorization: `Bearer ${key}`, Accept: "application/json" };
+  return { Authorization: `Bearer ${key}`, Accept: "application/json", "Api-Version-Date": WHOP_API_VERSION_DATE };
 }
 
 function idOf(value: unknown): string | null {
@@ -347,9 +380,6 @@ type MembershipRow = Record<string, unknown>;
 
 function rowOwner(m: MembershipRow): string | null {
   return idOf(m.user) ?? idOf(m.user_id) ?? idOf(m.member) ?? null;
-}
-function rowProduct(m: MembershipRow): string | null {
-  return idOf(m.product) ?? idOf(m.product_id) ?? null;
 }
 function rowStatus(m: MembershipRow): string {
   return typeof m.status === "string" ? m.status : "unknown";
@@ -386,6 +416,10 @@ export function rowIsPaused(m: MembershipRow): boolean {
 }
 
 // pausedIds: membership ids from GET /memberships?status=paused (lib/whop-paused.ts).
+// Ended statuses: paid_time_left ONLY for a member-initiated cancel
+// (cancel_at_period_end === true) whose period has not run out. Whop's own
+// dunning cancel leaves cancel_at_period_end false and a current_period_end
+// 30 days past the failed renewal that was never paid for, so it is ended.
 export function classifyMembership(
   m: MembershipRow,
   now: number = Date.now(),
@@ -395,6 +429,7 @@ export function classifyMembership(
     const listed = typeof m.id === "string" && pausedIds.has(m.id);
     return listed || rowIsPaused(m) ? "paused" : "live";
   }
+  if (m.cancel_at_period_end !== true) return "ended";
   const end = rowPeriodEnd(m);
   return end !== null && end > now ? "paid_time_left" : "ended";
 }
@@ -419,13 +454,15 @@ export type LivenessResult =
   | { ok: true; live: Set<string>; paused: Set<string>; paidTime: Set<string>; rows: number; pages: number }
   | { ok: false; error: string };
 
-// Every membership on WHOP_PRODUCT_ID, all statuses, paged. A row for another
-// product, a cursor that does not advance, or zero rows means the read cannot
-// be trusted and the caller acts on no one.
+// Every membership in the company, EVERY product, all statuses, paged. The
+// product filter was dropped on purpose: a live membership on Real Venture
+// 1-1, Deposit or any product added later keeps the member. A non-2xx, a
+// throw, a cursor that does not advance, too many pages or zero rows means the
+// read cannot be trusted and the caller acts on no one; the sweep also
+// compares the live count with the previous successful run.
 export async function loadLiveWhopUsers(): Promise<LivenessResult> {
   const companyId = process.env.WHOP_COMPANY_ID;
-  const productId = process.env.WHOP_PRODUCT_ID;
-  if (!companyId || !productId) return { ok: false, error: "WHOP_COMPANY_ID or WHOP_PRODUCT_ID unset" };
+  if (!companyId) return { ok: false, error: "WHOP_COMPANY_ID unset" };
   const sets: LivenessSets = { live: new Set<string>(), paused: new Set<string>(), paidTime: new Set<string>() };
   const now = Date.now();
   // Paused list first: primary paused signal. A failed read aborts the sweep
@@ -439,7 +476,6 @@ export async function loadLiveWhopUsers(): Promise<LivenessResult> {
   try {
     for (; pages < WHOP_MAX_PAGES; pages++) {
       const params = new URLSearchParams({ company_id: companyId, first: String(WHOP_PAGE_LIMIT) });
-      params.append("product_ids", productId);
       if (after) params.set("after", after);
       const res = await fetch(`${WHOP_API}/memberships?${params.toString()}`, { headers: whopHeaders(), cache: "no-store" });
       if (!res.ok) return { ok: false, error: `memberships read HTTP ${res.status}` };
@@ -450,10 +486,6 @@ export async function loadLiveWhopUsers(): Promise<LivenessResult> {
         (m): m is MembershipRow => !!m && typeof m === "object"
       );
       for (const m of data) {
-        const product = rowProduct(m);
-        if (product !== null && product !== productId) {
-          return { ok: false, error: "foreign product in memberships read (product_ids filter ignored)" };
-        }
         const owner = rowOwner(m);
         if (!owner) continue;
         rows++;
@@ -473,23 +505,22 @@ export async function loadLiveWhopUsers(): Promise<LivenessResult> {
   return { ok: true, live: sets.live, paused: sets.paused, paidTime: sets.paidTime, rows, pages: pages + 1 };
 }
 
-// One user: singular user_id filter plus an owner check on every row, since the
-// plural user_ids filter has been seen ignored on newer Whop API versions.
+// One user, every product: singular user_id filter plus an owner check on every
+// row, since the plural user_ids filter has been seen ignored on newer Whop API
+// versions.
 export async function isWhopUserLive(
   whopUserId: string
 ): Promise<{ ok: true; live: boolean; paused: boolean; paidTimeLeft: boolean; statuses: string[] } | { ok: false; error: string }> {
   const companyId = process.env.WHOP_COMPANY_ID;
-  const productId = process.env.WHOP_PRODUCT_ID;
-  if (!companyId || !productId) return { ok: false, error: "WHOP_COMPANY_ID or WHOP_PRODUCT_ID unset" };
+  if (!companyId) return { ok: false, error: "WHOP_COMPANY_ID unset" };
   try {
     const params = new URLSearchParams({ company_id: companyId, user_id: whopUserId, first: String(WHOP_PAGE_LIMIT) });
-    params.append("product_ids", productId);
     const res = await fetch(`${WHOP_API}/memberships?${params.toString()}`, { headers: whopHeaders(), cache: "no-store" });
     if (!res.ok) return { ok: false, error: `memberships read HTTP ${res.status}` };
     const page = (await res.json().catch(() => null)) as { data?: unknown[] } | null;
     const data = (Array.isArray(page?.data) ? page!.data : []).filter((m): m is MembershipRow => !!m && typeof m === "object");
     // This user's paused memberships (status=paused + user_id), owner-checked.
-    const pq = new URLSearchParams({ company_id: companyId, user_id: whopUserId, product_id: productId, status: "paused", first: "50" });
+    const pq = new URLSearchParams({ company_id: companyId, user_id: whopUserId, status: "paused", first: "50" });
     const pres = await fetch(`${WHOP_API}/memberships?${pq.toString()}`, { headers: whopHeaders(), cache: "no-store" });
     if (!pres.ok) return { ok: false, error: `paused list HTTP ${pres.status}` };
     const ppage = (await pres.json().catch(() => null)) as { data?: unknown[] } | null;
@@ -507,8 +538,6 @@ export async function isWhopUserLive(
     for (const m of data) {
       const owner = rowOwner(m);
       if (owner !== null && owner !== whopUserId) return { ok: false, error: "foreign user in memberships read (user_id filter ignored)" };
-      const product = rowProduct(m);
-      if (product !== null && product !== productId) continue; // other products never count as live
       statuses.push(rowStatus(m));
       const c = classifyMembership(m, now, pausedIds);
       if (c === "live") live = true;
@@ -567,16 +596,115 @@ async function logDecisions(
 }
 
 // ---------------------------------------------------------------------------
+// Sweep runs: lease, previous live count, run record (discord_sweep_runs, 028)
+// ---------------------------------------------------------------------------
+
+type SweepLease = { ok: true; runId: number } | { ok: false; error: string };
+
+// One sweep at a time. Leases past their expiry are released first, then the
+// insert races on the partial unique index (one row with status 'running');
+// the loser gets 23505. Any other failure (table missing, Supabase down) fails
+// CLOSED: no lease, no sweep.
+async function acquireSweepLease(mode: KickMode): Promise<SweepLease> {
+  try {
+    const supabase = createAdminClient();
+    const nowIso = new Date().toISOString();
+    const { error: expireError } = await supabase
+      .from("discord_sweep_runs")
+      .update({ status: "expired", finished_at: nowIso, aborted_reason: "lease expired" })
+      .eq("status", "running")
+      .lt("lease_expires_at", nowIso);
+    if (expireError) return { ok: false, error: `lease expiry update failed: ${expireError.message}` };
+    const { data, error } = await supabase
+      .from("discord_sweep_runs")
+      .insert({ mode, status: "running", lease_expires_at: new Date(Date.now() + SWEEP_LEASE_MS).toISOString() })
+      .select("id")
+      .single();
+    if (error) {
+      if (error.code === "23505") return { ok: false, error: "another sweep is running (lease held)" };
+      return { ok: false, error: `lease insert failed: ${error.message}` };
+    }
+    const runId = Number(data?.id);
+    if (!Number.isFinite(runId)) return { ok: false, error: "lease insert returned no id" };
+    return { ok: true, runId };
+  } catch (err) {
+    return { ok: false, error: `lease threw: ${err instanceof Error ? err.message : "unknown"}` };
+  }
+}
+
+// live_count of the most recent run whose Whop read was accepted (whop_read_ok),
+// or null when there is none yet (first run after migration 028).
+async function lastAcceptedLiveCount(): Promise<{ ok: true; live: number | null } | { ok: false; error: string }> {
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("discord_sweep_runs")
+      .select("live_count")
+      .eq("whop_read_ok", true)
+      .not("live_count", "is", null)
+      .order("started_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) return { ok: false, error: `previous run read failed: ${error.message}` };
+    const live = data && typeof data.live_count === "number" ? data.live_count : null;
+    return { ok: true, live };
+  } catch (err) {
+    return { ok: false, error: `previous run read threw: ${err instanceof Error ? err.message : "unknown"}` };
+  }
+}
+
+async function finishSweepRun(runId: number, patch: Record<string, unknown>): Promise<void> {
+  try {
+    const supabase = createAdminClient();
+    const { error } = await supabase
+      .from("discord_sweep_runs")
+      .update({ ...patch, finished_at: new Date().toISOString() })
+      .eq("id", runId);
+    if (error) console.error("[discord-kick] sweep run update failed", error.message);
+  } catch (err) {
+    console.error("[discord-kick] sweep run update threw", err instanceof Error ? err.message : "unknown");
+  }
+}
+
+// "running" while a sweep holds an unexpired lease; "unknown" when the table
+// cannot be read (the webhook path then skips: fail closed).
+async function sweepLeaseState(): Promise<"running" | "idle" | "unknown"> {
+  try {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase
+      .from("discord_sweep_runs")
+      .select("id")
+      .eq("status", "running")
+      .gt("lease_expires_at", new Date().toISOString())
+      .limit(1);
+    if (error) {
+      console.error("[discord-kick] sweep lease read failed", error.message);
+      return "unknown";
+    }
+    return (data ?? []).length > 0 ? "running" : "idle";
+  } catch (err) {
+    console.error("[discord-kick] sweep lease read threw", err instanceof Error ? err.message : "unknown");
+    return "unknown";
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Sweep
 // ---------------------------------------------------------------------------
 
 export type SweepSummary = {
   mode: KickMode;
+  run_id: number | null;
   scanned: number;
   candidates: number;
+  whop_rows: number | null;
+  whop_live: number | null;
+  previous_live: number | null;
   kicked: string[];
   would_kick: string[];
   failed: string[];
+  dm_sent: number;
+  dm_failed: number;
   counts: Record<SkipReason | "cap_exceeded", number>;
   aborted: string | null;
 };
@@ -611,8 +739,12 @@ function formatSummary(source: LogSource, s: SweepSummary, guildName: string | n
     `**${head}** ${guildName ? `for ${guildName} ` : ""}| mode **${s.mode}** | scanned ${s.scanned} | candidates ${s.candidates}`,
   ];
   if (s.aborted) lines.push(`ALERT: ${s.aborted}. Acted on no one.`);
+  if (source === "sweep") {
+    lines.push(`whop: rows ${s.whop_rows ?? "?"} | live users ${s.whop_live ?? "?"} | previous run ${s.previous_live ?? "none"}`);
+  }
   const acted = s.mode === "live" ? s.kicked : s.would_kick;
   lines.push(`${s.mode === "live" ? "kicked" : "would kick"}: ${acted.length}${acted.length ? " -> " + acted.join(", ") : ""}`);
+  if (s.mode === "live") lines.push(`kick DMs: sent ${s.dm_sent} | failed ${s.dm_failed}`);
   if (s.failed.length) lines.push(`failed: ${s.failed.length} -> ${s.failed.join(", ")}`);
   const c = s.counts;
   lines.push(
@@ -630,25 +762,44 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
   const cap = Math.min(Math.max(Math.floor(opts.cap ?? SWEEP_CAP), 1), SWEEP_CAP_MAX);
   const summary: SweepSummary = {
     mode,
+    run_id: null,
     scanned: 0,
     candidates: 0,
+    whop_rows: null,
+    whop_live: null,
+    previous_live: null,
     kicked: [],
     would_kick: [],
     failed: [],
+    dm_sent: 0,
+    dm_failed: 0,
     counts: emptyCounts(),
     aborted: null,
   };
   let guildName: string | null = null;
   const logRows: Parameters<typeof logDecisions>[0] = [];
 
+  // One sweep at a time (discord_sweep_runs lease). No lease, no sweep.
+  const lease = await acquireSweepLease(mode);
+  if (!lease.ok) {
+    summary.aborted = `sweep lock: ${lease.error}`;
+    await postToModChannel(formatSummary("sweep", summary, guildName));
+    return summary;
+  }
+  summary.run_id = lease.runId;
+  let whopReadOk = false;
+  let pausedCount: number | null = null;
+  let paidTimeCount: number | null = null;
+
   try {
-    const [guild, roles, members, links, allowlist, liveness] = await Promise.all([
+    const [guild, roles, members, links, allowlist, liveness, previous] = await Promise.all([
       fetchGuild(),
       fetchRoles(),
       fetchAllMembers(),
       loadLinks(),
       loadAllowlist(),
       loadLiveWhopUsers(),
+      lastAcceptedLiveCount(),
     ]);
     guildName = guild.name;
     summary.scanned = members.length;
@@ -658,6 +809,26 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
       await postToModChannel(formatSummary("sweep", summary, guildName));
       return summary;
     }
+    summary.whop_rows = liveness.rows;
+    summary.whop_live = liveness.live.size;
+    pausedCount = liveness.paused.size;
+    paidTimeCount = liveness.paidTime.size;
+    if (!previous.ok) {
+      summary.aborted = `previous sweep read failed: ${previous.error}`;
+      await postToModChannel(formatSummary("sweep", summary, guildName));
+      return summary;
+    }
+    summary.previous_live = previous.live;
+    // Truncated-data guard: a well-formed but short read (missing page, early
+    // has_next_page false) would turn live members into candidates. Compare
+    // with the last accepted run before trusting this one.
+    if (previous.live !== null && liveness.live.size < previous.live * LIVE_DROP_RATIO) {
+      summary.aborted =
+        `Whop live users ${liveness.live.size} is below ${Math.round(LIVE_DROP_RATIO * 100)}% of the last accepted sweep (${previous.live}); read looks truncated`;
+      await postToModChannel(formatSummary("sweep", summary, guildName));
+      return summary;
+    }
+    whopReadOk = true;
 
     const rules = { memberRoleIds: memberRoleIds(), newMemberRoleId: newMemberRoleId(), protectedRoleIds: protectedRoleIds() };
     const everyone = roles.get(guildId());
@@ -719,10 +890,15 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
         logRows.push({ discord_user_id: c.id, whop_user_ids: c.whop, reason: "no_live_membership", mode, action: "would_kick", source: "sweep" });
         continue;
       }
+      // DM first (a kicked member can no longer be DMed by the bot). Failure
+      // is counted and never blocks the kick.
+      if (await sendDiscordDm(c.id, KICK_DM)) summary.dm_sent++;
+      else summary.dm_failed++;
       const status = await kickMember(c.id);
       if (status === 204) {
         summary.kicked.push(label(c.member));
         logRows.push({ discord_user_id: c.id, whop_user_ids: c.whop, reason: "no_live_membership", mode, action: "kicked", source: "sweep" });
+        await postToModChannel(`**Discord sweep** | mode **live** | kicked ${label(c.member)} (no_live_membership)`);
         consecutiveFailures = 0;
       } else if (status === 403) {
         summary.failed.push(label(c.member));
@@ -745,6 +921,25 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
     }
   } catch (err) {
     summary.aborted = `sweep threw: ${err instanceof Error ? err.message : "unknown"}`;
+  } finally {
+    // Runs on every exit above, early returns included: release the lease and
+    // record the counts the next run compares against.
+    await finishSweepRun(lease.runId, {
+      status: summary.aborted ? "aborted" : "ok",
+      aborted_reason: summary.aborted,
+      whop_read_ok: whopReadOk,
+      rows_read: summary.whop_rows,
+      live_count: summary.whop_live,
+      paused_count: pausedCount,
+      paid_time_count: paidTimeCount,
+      scanned: summary.scanned,
+      candidates: summary.candidates,
+      kicked: summary.kicked.length,
+      would_kick: summary.would_kick.length,
+      failed: summary.failed.length,
+      dm_sent: summary.dm_sent,
+      dm_failed: summary.dm_failed,
+    });
   }
 
   await logDecisions(logRows);
@@ -834,16 +1029,29 @@ export async function checkOneFromWebhook(whopUserId: string, discordUserId: str
       return { action: "skipped", reason: decision.reason, mode };
     }
 
+    // Never act while a sweep holds the lease (it will decide on this member
+    // itself), and never act when the lease table cannot be read.
+    const leaseState = await sweepLeaseState();
+    if (leaseState !== "idle") {
+      const reason = leaseState === "running" ? "sweep_running" : "sweep_lock_unavailable";
+      await logDecisions([{ discord_user_id: discordUserId, whop_user_ids: whop, reason, mode, action: "skipped", source: "webhook" }]);
+      await line(`${label(member)}: skipped (${reason}) | statuses ${liveness.statuses.join(",") || "none"}`);
+      return { action: "skipped", reason, mode };
+    }
+
     if (mode !== "live") {
       await logDecisions([{ discord_user_id: discordUserId, whop_user_ids: whop, reason: "no_live_membership", mode, action: "would_kick", source: "webhook" }]);
       await line(`would kick ${label(member)} (no_live_membership) | statuses ${liveness.statuses.join(",") || "none"}`);
       return { action: "would_kick", reason: "no_live_membership", mode };
     }
 
+    // DM first (a kicked member can no longer be DMed by the bot); a failed DM
+    // never blocks the kick.
+    const dmSent = await sendDiscordDm(discordUserId, KICK_DM);
     const status = await kickMember(discordUserId);
     if (status === 204) {
       await logDecisions([{ discord_user_id: discordUserId, whop_user_ids: whop, reason: "no_live_membership", mode, action: "kicked", source: "webhook" }]);
-      await line(`kicked ${label(member)} (no_live_membership)`);
+      await line(`kicked ${label(member)} (no_live_membership) | dm ${dmSent ? "sent" : "failed"}`);
       return { action: "kicked", reason: "no_live_membership", mode };
     }
     const reason = status === 403 ? "discord_403" : `discord_${status}`;
