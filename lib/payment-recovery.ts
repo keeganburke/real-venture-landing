@@ -5,62 +5,84 @@ import { WHOP_API_VERSION_DATE, rowOwner, rowProduct } from "../app/api/whop/who
 
 // Payment-recovery drip. Runs hourly (app/api/cron/payment-recovery).
 //
-// Every run: list Real Venture memberships Whop has as past_due, work out
-// which drip day each is on (whole America/Chicago calendar days since the
-// newest failed renewal payment, starting at 1), and for the ones whose day
-// window has opened send the day's message on three channels: email through
-// the GHL inbound webhook (GHL_RECOVERY_WEBHOOK_URL), SMS through a second
-// GHL webhook (GHL_RECOVERY_SMS_WEBHOOK_URL) when we have a phone, and a
-// Discord DM through our bot when the member has a discord_connections row.
+// Every run: list Real Venture memberships Whop has as past_due, find the
+// failed renewal payment behind each one, and follow Whop's own retry
+// schedule instead of a fixed number of days:
+//   - a membership stays in the drip while Whop shows it past_due, up to
+//     MAX_DAY (14) America/Chicago calendar days after failed_at (day 1 =
+//     the calendar day of the failure). Not past_due any more (paid,
+//     canceled, anything) or day > 14 stops the sequence.
+//   - the FIRST message goes out on the first hourly run that finds the
+//     membership, whatever the hour.
+//   - after that at most one message per Chicago calendar day, sent by the
+//     run at FOLLOWUP_HOUR (10:00 Chicago; a later run the same day catches
+//     up if the 10:00 run failed, the per-day dedupe keeps it to one).
 //
-// GHL routing: with a phone we POST {first_name, phone, sms_text, day} to the
-// SMS webhook and the email payload to the email webhook with skip_sms "yes".
-// Without a phone only the email webhook is posted, with skip_sms "" so GHL
-// may text a phone it already has on the contact. Each POST is recorded as
-// its own payment_recovery_sends row (channel ghl / ghl_sms) so one failing
-// never blocks the other.
+// Copy is chosen by MESSAGE NUMBER (messages already sent in this failure
+// sequence + 1), not by calendar day, and names Whop's next retry: {when} is
+// next_payment_attempt_at in Chicago as "today", "tomorrow" or the weekday
+// name. With no usable next attempt (null, unparsable, or already in the
+// past) the retry sentence is dropped.
+//
+// Three channels: email through the GHL inbound webhook
+// (GHL_RECOVERY_WEBHOOK_URL), SMS through a second GHL webhook
+// (GHL_RECOVERY_SMS_WEBHOOK_URL) when we have a phone, and a Discord DM
+// through our bot when the member has a discord_connections row.
+// GHL routing: with a phone we POST {first_name, phone, sms_text, day,
+// message_number} to the SMS webhook and the email payload to the email
+// webhook with skip_sms "yes". Without a phone only the email webhook is
+// posted, with skip_sms "" so GHL may text a phone it already has on the
+// contact. Each POST is recorded as its own payment_recovery_sends row
+// (channel ghl / ghl_sms / discord_dm) so one failing never blocks the other.
 //
 // Before EVERY send the membership is re-read live from Whop; anything other
-// than past_due (paid, canceled, anything) stops that sequence
-// (payment_recovery.stopped_at) and sends nothing. One send per membership
-// per day, deduped on (membership_id, failed_at, day) in
-// payment_recovery_sends. Day 6+ is marked done and never messaged.
+// than past_due stops that sequence (payment_recovery.stopped_at) and sends
+// nothing. Also before every send: the same Whop user's OTHER memberships are
+// read (singular user_id, owner-checked, every product); if any is active,
+// trialing, completed or paused the member is NOT messaged (outcome
+// has_other_live_membership, the past_due one is a duplicate) and, once per
+// failure sequence (payment_recovery.other_live_flagged_at), one line goes to
+// the mod channel asking to cancel the extra one in Whop. Dedupe: payment_recovery_sends is unique on (membership_id,
+// failed_at, day, channel) where day is the Chicago calendar day index (1 to
+// 14, migration 030); message_number is recorded on every row and the next
+// message number is the count of distinct days already claimed + 1.
 //
 // Repeat failures: a NEW failed renewal (newer failed_at than the stored
 // payment_recovery.failed_at) resets the row (started_at now, last_day_sent
-// 0, stopped_at / stop_reason null) and the 5 days run again. The sends
-// dedupe key carries failed_at, so the new sequence starts clean.
+// 0, stopped_at / stop_reason null) and the sequence starts again at message
+// 1. The sends dedupe key carries failed_at, so the new sequence starts clean.
 //
-// Test mode (runRecoveryTest): day N's real copy on all three channels to
-// the owner only (RECOVERY_TEST_PHONE, RECOVERY_TEST_EMAIL, the owner's
-// Discord id below). Any RECOVERY_MODE, no Whop reads, no table writes.
-//
-// Windows (America/Chicago): day 1 the first hourly run that finds them,
-// day 2 10:00, day 3 13:00, day 4 19:00, day 5 10:00. A day whose window
-// was missed is not caught up later; the member gets the next day's message.
+// Test mode (runRecoveryTest): message N's real copy (1 to 5) on all three
+// channels to the owner only (RECOVERY_TEST_PHONE, RECOVERY_TEST_EMAIL, the
+// owner's Discord id below). Any RECOVERY_MODE, no Whop reads, no table
+// writes. {when} is "tomorrow" in the test.
 //
 // Mode: RECOVERY_MODE === "live" sends and writes the two tables. Anything
-// else is shadow: no sends, no table writes, one summary to the mod channel
-// (usernames only) on the 10:00 Chicago run or when asked (?post=1).
+// else is shadow: no sends, no table writes (reads only), one summary to the
+// mod channel (usernames only) on the 10:00 Chicago run or when asked
+// (?post=1).
 //
 // Verified 2026-10-26 against the live API: a failed renewal is a payment
 // with status "open", substatus "past_due", billing_reason
 // "subscription_cycle"; GET /payments?account_id&membership_id honors the
-// filter; GET /members/{member_id} carries the email; membership rows carry
-// manage_url.
+// filter; payments carry next_payment_attempt_at; GET /members/{member_id}
+// carries the email; membership rows carry manage_url.
 
 const WHOP_API = "https://api.whop.com/api/v1";
 const TZ = "America/Chicago";
 const PAGE_LIMIT = 100;
 const MAX_PAGES = 20;
-export const MAX_DAY = 5;
+// Last Chicago calendar day (counted from failed_at = day 1) the drip may message.
+export const MAX_DAY = 14;
+// Highest message number with its own copy; test mode accepts 1 to this.
+export const MAX_MESSAGE = 5;
 export const FALLBACK_LINK = "https://whop.com/@me/settings/memberships";
 const GHL_TIMEOUT_MS = 5000;
 // Guild member "keeganburke" (looked up 2026-10-26 via guild member search). Test sends go here only.
 export const OWNER_DISCORD_USER_ID = "1251247376031551577";
 
-// Hour (Chicago, 0-23) the day's window opens. Day 1 has no window.
-const WINDOW_HOUR: Record<number, number | null> = { 1: null, 2: 10, 3: 13, 4: 19, 5: 10 };
+// Chicago hour (0-23) from which a follow-up message (message 2+) may go out.
+const FOLLOWUP_HOUR = 10;
 const SUMMARY_HOUR = 10;
 
 const ULTRA_PLANS: ReadonlySet<string> = new Set(["plan_mjpuBNS3KJqmw", "plan_MVEXluUMjBlxL", "plan_8CGnZkflAnXOe"]);
@@ -98,36 +120,48 @@ function parseMs(v: unknown): number | null {
 }
 
 // ---------------------------------------------------------------------------
-// Copy. No em or en dashes anywhere in this file.
+// Copy, by message number. No em or en dashes anywhere in this file.
+// `when` is "today" / "tomorrow" / a weekday name, or null (retry sentence
+// dropped; messages 1 and 3 keep a short card line so the link survives).
 // ---------------------------------------------------------------------------
 
-type DayCopy = { text: (first: string, link: string) => string; subject: string };
-const COPY: Record<number, DayCopy> = {
+type MessageCopy = { text: (first: string, link: string, when: string | null) => string; subject: string };
+const COPY: Record<number, MessageCopy> = {
   1: {
-    text: (f, l) =>
-      `Hey ${f}, William from Real Venture. We couldn't process your payment, usually just a card thing. Update your payment info here to keep your access: ${l}`,
+    text: (f, l, w) =>
+      `Hey ${f}, William from Real Venture. We couldn't process your payment, usually just a card thing. ` +
+      (w ? `We'll try it again ${w}, so make sure it's covered or update your card here: ${l}` : `Make sure it's covered or update your card here: ${l}`),
     subject: "We couldn't process your payment",
   },
   2: {
-    text: (f, l) =>
-      `Yo ${f}, we're still having trouble processing your payment. Update your card here and nothing changes: ${l}`,
+    text: (f, l, w) =>
+      `Yo ${f}, we're still having trouble processing your payment. ${w ? `Next try is ${w}. ` : ""}Update your card here and nothing changes: ${l}`,
     subject: "Update your payment info to keep your access",
   },
   3: {
-    text: (_f, l) =>
-      `Your Real Venture access is still on, just need your payment info updated to keep it that way: ${l}`,
-    subject: "Your access is still on (for now)",
+    text: (_f, l, w) =>
+      `Your Real Venture access is still on. ` +
+      (w ? `We'll run your card again ${w}, just make sure it's covered: ${l}` : `Just make sure your card's covered or update it here: ${l}`),
+    subject: "Your access is still on",
   },
   4: {
-    text: (f, l) => `Heads up ${f}, your access ends soon unless your payment info gets updated: ${l}`,
+    text: (f, l, w) =>
+      `Heads up ${f}, the next try on your card${w ? ` (${w})` : ""} could be the last one before your access ends. Update it here: ${l}`,
     subject: "Your access ends soon",
   },
   5: {
-    text: (f, l) => `Last reminder ${f}, your access is about to end. Update your payment info here: ${l}`,
-    subject: "Last reminder about your access",
+    text: (f, l, w) => `${f}, your spot's still open. ${w ? `We'll try your card again ${w}. ` : ""}Update it here to keep it: ${l}`,
+    subject: "Your spot's still open",
   },
 };
 const SMS_SUFFIX = " Reply STOP to opt out";
+
+// Message 5's copy repeats for every later message.
+export function copyFor(messageNumber: number): MessageCopy {
+  const c = COPY[Math.min(Math.max(Math.floor(messageNumber), 1), MAX_MESSAGE)];
+  if (!c) throw new Error(`no copy for message ${messageNumber}`);
+  return c;
+}
 
 export function firstNameOf(name: string | null): string {
   const first = (name ?? "").trim().split(/\s+/)[0];
@@ -136,6 +170,8 @@ export function firstNameOf(name: string | null): string {
 
 // Email webhook payload. skip_sms "yes" when the SMS webhook handles the
 // text (we have a phone), "" when GHL may text a phone it already has.
+// day = Chicago calendar day of the failure sequence (1 to 14);
+// message_number = which message of the sequence this is (1, 2, 3 ...).
 export type GhlPayload = {
   first_name: string;
   email: string;
@@ -144,6 +180,7 @@ export type GhlPayload = {
   email_subject: string;
   email_body: string;
   day: number;
+  message_number: number;
   plan_name: string;
   skip_sms: "yes" | "";
 };
@@ -154,35 +191,38 @@ export type GhlSmsPayload = {
   phone: string;
   sms_text: string;
   day: number;
+  message_number: number;
 };
 
-export function buildMessages(day: number, firstName: string, link: string): { text: string; subject: string; emailBody: string; sms: string } {
-  const c = COPY[day];
-  if (!c) throw new Error(`no copy for day ${day}`);
-  const text = c.text(firstName, link);
+export type MessageInput = { day: number; messageNumber: number; firstName: string; link: string; when: string | null };
+
+export function buildMessages(input: MessageInput): { text: string; subject: string; emailBody: string; sms: string } {
+  const c = copyFor(input.messageNumber);
+  const text = c.text(input.firstName, input.link, input.when);
   return { text, subject: c.subject, emailBody: `${text}<br><br>William`, sms: text + SMS_SUFFIX };
 }
 
-export function buildGhlPayload(input: { day: number; firstName: string; email: string; phone: string; link: string; planName: string }): GhlPayload {
-  const m = buildMessages(input.day, input.firstName, input.link);
+export function buildGhlPayload(input: MessageInput & { email: string; phone: string; planName: string }): GhlPayload {
+  const m = buildMessages(input);
   return {
     first_name: input.firstName,
     email: input.email,
     phone: input.phone,
-    // Always the day's SMS copy (with the STOP suffix), even with no phone;
-    // GHL decides what to do with it. phone is "" when we have none.
+    // Always the SMS copy (with the STOP suffix), even with no phone; GHL
+    // decides what to do with it. phone is "" when we have none.
     sms_text: m.sms,
     email_subject: m.subject,
     email_body: m.emailBody,
     day: input.day,
+    message_number: input.messageNumber,
     plan_name: input.planName,
     skip_sms: input.phone ? "yes" : "",
   };
 }
 
-export function buildGhlSmsPayload(input: { day: number; firstName: string; phone: string; link: string }): GhlSmsPayload {
-  const m = buildMessages(input.day, input.firstName, input.link);
-  return { first_name: input.firstName, phone: input.phone, sms_text: m.sms, day: input.day };
+export function buildGhlSmsPayload(input: MessageInput & { phone: string }): GhlSmsPayload {
+  const m = buildMessages(input);
+  return { first_name: input.firstName, phone: input.phone, sms_text: m.sms, day: input.day, message_number: input.messageNumber };
 }
 
 // ---------------------------------------------------------------------------
@@ -208,11 +248,23 @@ export function recoveryDay(failedAtMs: number, nowMs: number): number {
   return chicago(nowMs).dayIndex - chicago(failedAtMs).dayIndex + 1;
 }
 
-export function windowOpen(day: number, nowMs: number): boolean {
-  const h = WINDOW_HOUR[day];
-  if (h === undefined) return false;
-  if (h === null) return true;
-  return chicago(nowMs).hour >= h;
+// Message 1 goes any hour; later messages from FOLLOWUP_HOUR Chicago.
+export function windowOpen(messageNumber: number, nowMs: number): boolean {
+  if (messageNumber <= 1) return true;
+  return chicago(nowMs).hour >= FOLLOWUP_HOUR;
+}
+
+// Whop's next retry, named in Chicago: "today", "tomorrow", or the weekday
+// name. null when unknown, unparsable, or already behind us (Whop has not
+// refreshed it yet), so the copy drops the retry sentence rather than naming
+// a day that already passed.
+export function whenLabel(nextAttemptMs: number | null, nowMs: number): string | null {
+  if (nextAttemptMs === null) return null;
+  const diff = chicago(nextAttemptMs).dayIndex - chicago(nowMs).dayIndex;
+  if (diff < 0) return null;
+  if (diff === 0) return "today";
+  if (diff === 1) return "tomorrow";
+  return new Intl.DateTimeFormat("en-US", { timeZone: TZ, weekday: "long" }).format(new Date(nextAttemptMs));
 }
 
 // ---------------------------------------------------------------------------
@@ -276,8 +328,11 @@ async function listPastDue(): Promise<{ ok: true; rows: Row[] } | { ok: false; e
 
 // Newest renewal payment that is not paid: that is the failed renewal. Its
 // created_at is the failure moment (last_payment_attempt_at moves with
-// Whop's own retries and would reset the day counter).
-async function findFailedRenewal(membershipId: string): Promise<{ ok: true; failedAtMs: number | null } | { ok: false; error: string }> {
+// Whop's own retries and would reset the day counter). Its
+// next_payment_attempt_at is Whop's next retry, used for {when}.
+async function findFailedRenewal(
+  membershipId: string
+): Promise<{ ok: true; failedAtMs: number | null; nextAttemptMs: number | null } | { ok: false; error: string }> {
   const companyId = process.env.WHOP_COMPANY_ID;
   if (!companyId) return { ok: false, error: "WHOP_COMPANY_ID unset" };
   const params = new URLSearchParams({ account_id: companyId, membership_id: membershipId, first: "50" });
@@ -286,15 +341,52 @@ async function findFailedRenewal(membershipId: string): Promise<{ ok: true; fail
   const data = (body as { data?: unknown[] } | null)?.data;
   const rows = (Array.isArray(data) ? data : []).filter((p): p is Row => !!p && typeof p === "object");
   let newest: number | null = null;
+  let nextAttemptMs: number | null = null;
   for (const p of rows) {
     if (idOf(p.membership_id) !== membershipId) continue; // filter ignored: never trust
     const reason = str(p.billing_reason);
     if (reason !== "subscription_cycle" && reason !== "subscription_update") continue;
     if (p.status === "paid") continue;
     const ms = parseMs(p.created_at);
-    if (ms !== null && (newest === null || ms > newest)) newest = ms;
+    if (ms !== null && (newest === null || ms > newest)) {
+      newest = ms;
+      nextAttemptMs = parseMs(p.next_payment_attempt_at);
+    }
   }
-  return { ok: true, failedAtMs: newest };
+  return { ok: true, failedAtMs: newest, nextAttemptMs };
+}
+
+const OTHER_LIVE_STATUSES: ReadonlySet<string> = new Set(["active", "trialing", "completed", "paused"]);
+
+// The same user's OTHER memberships, any product: singular user_id filter,
+// owner-checked. Returns the first one that is still live (so the past_due
+// one is a duplicate the member is not paying for), or null.
+async function findOtherLiveMembership(
+  whopUserId: string,
+  membershipId: string
+): Promise<{ ok: true; other: { id: string; planName: string; status: string } | null } | { ok: false; error: string }> {
+  const companyId = process.env.WHOP_COMPANY_ID;
+  if (!companyId) return { ok: false, error: "WHOP_COMPANY_ID unset" };
+  const params = new URLSearchParams({ company_id: companyId, user_id: whopUserId, first: String(PAGE_LIMIT) });
+  const { status, body } = await whopGet(`memberships?${params.toString()}`);
+  if (status !== 200) return { ok: false, error: `user memberships HTTP ${status}` };
+  const data = (body as { data?: unknown[] } | null)?.data;
+  const rows = (Array.isArray(data) ? data : []).filter((m): m is Row => !!m && typeof m === "object");
+  for (const m of rows) {
+    const owner = rowOwner(m);
+    if (owner !== null && owner !== whopUserId) return { ok: false, error: "foreign user in memberships read (user_id filter ignored)" };
+  }
+  for (const m of rows) {
+    const id = str(m.id);
+    if (!id || id === membershipId) continue;
+    const st = str(m.status) ?? "unknown";
+    if (!OTHER_LIVE_STATUSES.has(st)) continue;
+    const planId = idOf(m.plan_id) ?? idOf(m.plan);
+    const product = rowProduct(m);
+    const planName = (planId && PLAN_NAMES[planId]) || planId || product || "unknown plan";
+    return { ok: true, other: { id, planName, status: st } };
+  }
+  return { ok: true, other: null };
 }
 
 async function readMembership(membershipId: string): Promise<{ ok: true; status: string; manageUrl: string | null } | { ok: false; error: string }> {
@@ -352,13 +444,22 @@ async function readDiscord(whopUserId: string): Promise<{ discordUserId: string 
   return { discordUserId: str(data?.discord_user_id), discordUsername: str(data?.discord_username) };
 }
 
-type RecoveryRecord = { membership_id: string; failed_at: string | null; stopped_at: string | null; last_day_sent: number };
+type RecoveryRecord = {
+  membership_id: string;
+  failed_at: string | null;
+  stopped_at: string | null;
+  last_day_sent: number;
+  other_live_flagged_at: string | null;
+};
 
 async function loadRecords(ids: string[]): Promise<{ ok: true; byId: Map<string, RecoveryRecord> } | { ok: false; error: string }> {
   const byId = new Map<string, RecoveryRecord>();
   if (ids.length === 0) return { ok: true, byId };
   const supabase = createAdminClient();
-  const { data, error } = await supabase.from("payment_recovery").select("membership_id, failed_at, stopped_at, last_day_sent").in("membership_id", ids);
+  // select * so a column added by a later migration (030:
+  // other_live_flagged_at) never aborts the drip before that migration runs;
+  // a missing column just reads as null.
+  const { data, error } = await supabase.from("payment_recovery").select("*").in("membership_id", ids);
   if (error) return { ok: false, error: `payment_recovery read failed: ${error.message}` };
   for (const r of data ?? []) {
     if (typeof r.membership_id === "string") {
@@ -367,26 +468,33 @@ async function loadRecords(ids: string[]): Promise<{ ok: true; byId: Map<string,
         failed_at: str(r.failed_at),
         stopped_at: str(r.stopped_at),
         last_day_sent: Number(r.last_day_sent ?? 0),
+        other_live_flagged_at: str(r.other_live_flagged_at),
       });
     }
   }
   return { ok: true, byId };
 }
 
-async function alreadySentToday(membershipId: string, failedAt: string, day: number): Promise<boolean | null> {
+// Calendar days already claimed for this failure sequence (any channel, any
+// status). Its size is the number of messages already sent, so the next
+// message number is size + 1; membership of today's day is the per-day dedupe.
+async function loadSentDays(membershipId: string, failedAt: string): Promise<Set<number> | null> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("payment_recovery_sends")
-    .select("channel")
+    .select("day")
     .eq("membership_id", membershipId)
-    .eq("failed_at", failedAt)
-    .eq("day", day)
-    .limit(1);
+    .eq("failed_at", failedAt);
   if (error) {
     console.error("[payment-recovery] sends read failed", error.message);
     return null;
   }
-  return (data ?? []).length > 0;
+  const days = new Set<number>();
+  for (const r of data ?? []) {
+    const d = Number(r.day);
+    if (Number.isInteger(d)) days.add(d);
+  }
+  return days;
 }
 
 // ---------------------------------------------------------------------------
@@ -399,11 +507,17 @@ type SendChannel = "ghl" | "ghl_sms" | "discord_dm";
 
 // Claims (membership_id, failed_at, day, channel). "duplicate" means another
 // run got there first and this run must send nothing for that day.
-async function claimSend(membershipId: string, failedAt: string, day: number, channel: SendChannel): Promise<"claimed" | "duplicate" | "error"> {
+async function claimSend(
+  membershipId: string,
+  failedAt: string,
+  day: number,
+  messageNumber: number,
+  channel: SendChannel
+): Promise<"claimed" | "duplicate" | "error"> {
   const supabase = createAdminClient();
   const { error } = await supabase
     .from("payment_recovery_sends")
-    .insert({ membership_id: membershipId, failed_at: failedAt, day, channel, status: "pending" });
+    .insert({ membership_id: membershipId, failed_at: failedAt, day, message_number: messageNumber, channel, status: "pending" });
   if (!error) return "claimed";
   if (error.code === "23505") return "duplicate";
   console.error("[payment-recovery] sends insert failed", error.message);
@@ -430,6 +544,7 @@ async function upsertRecord(fields: {
   lastDaySent?: number;
   stopReason?: string;
   reset?: boolean;
+  otherLiveFlagged?: boolean;
 }): Promise<void> {
   const supabase = createAdminClient();
   const row: Record<string, unknown> = {
@@ -443,8 +558,10 @@ async function upsertRecord(fields: {
     row.last_day_sent = 0;
     row.stopped_at = null;
     row.stop_reason = null;
+    row.other_live_flagged_at = null;
   }
   if (fields.lastDaySent !== undefined) row.last_day_sent = fields.lastDaySent;
+  if (fields.otherLiveFlagged) row.other_live_flagged_at = new Date().toISOString();
   if (fields.stopReason !== undefined) {
     row.stopped_at = new Date().toISOString();
     row.stop_reason = fields.stopReason;
@@ -493,7 +610,13 @@ export type RecoveryItem = {
   username: string;
   planName: string;
   ultra: boolean;
+  // Chicago calendar day of the failure sequence (1 = day of failed_at).
   day: number;
+  // Message this run would send / sent (messages already sent + 1); 0 when
+  // the item never got that far.
+  messageNumber: number;
+  // {when} as the copy would print it, null = retry sentence dropped.
+  when: string | null;
   outcome:
     | "sent"
     | "would_send"
@@ -501,6 +624,7 @@ export type RecoveryItem = {
     | "already_sent_today"
     | "stopped_now"
     | "stopped_previously"
+    | "has_other_live_membership"
     | "done"
     | "no_failed_payment"
     | "error";
@@ -526,14 +650,14 @@ export type RecoverySummary = {
 function emptyCounts(): RecoverySummary["counts"] {
   return {
     sent: 0, would_send: 0, not_due_yet: 0, already_sent_today: 0, stopped_now: 0,
-    stopped_previously: 0, done: 0, no_failed_payment: 0, error: 0,
+    stopped_previously: 0, has_other_live_membership: 0, done: 0, no_failed_payment: 0, error: 0,
   };
 }
 
 function formatSummary(s: RecoverySummary): string {
   const lines = [`**Payment recovery** | mode **${s.mode}** | past_due on Whop ${s.pastDue}`];
   if (s.aborted) lines.push(`ALERT: ${s.aborted}. Sent nothing.`);
-  const perDay = new Map<number, string[]>();
+  const perMessage = new Map<number, string[]>();
   for (const it of s.items) {
     if (it.outcome !== "sent" && it.outcome !== "would_send") continue;
     const ch = [
@@ -541,22 +665,29 @@ function formatSummary(s: RecoverySummary): string {
       it.ghlSms ? `sms:${it.ghlSms}` : null,
       it.discordDm ? `dm:${it.discordDm}` : null,
     ].filter(Boolean).join(" ");
-    const list = perDay.get(it.day) ?? [];
-    list.push(`${it.username}${it.ultra ? " (ULTRA)" : ""} [${it.planName}] ${ch}${it.hasPhone ? "" : " no-phone"}${it.hasEmail ? "" : " no-email"}`);
-    perDay.set(it.day, list);
+    const list = perMessage.get(it.messageNumber) ?? [];
+    list.push(
+      `${it.username}${it.ultra ? " (ULTRA)" : ""} [${it.planName}] day ${it.day} retry ${it.when ?? "unknown"} ${ch}${it.hasPhone ? "" : " no-phone"}${it.hasEmail ? "" : " no-email"}`
+    );
+    perMessage.set(it.messageNumber, list);
   }
-  for (const day of [1, 2, 3, 4, 5]) {
-    const list = perDay.get(day);
-    if (!list) continue;
-    lines.push(`day ${day} (${list.length}): ${list.join("; ")}`);
+  for (const n of Array.from(perMessage.keys()).sort((a, b) => a - b)) {
+    const list = perMessage.get(n) ?? [];
+    lines.push(`message ${n} (${list.length}): ${list.join("; ")}`);
   }
   const c = s.counts;
   lines.push(
     `sent ${c.sent} | would send ${c.would_send} | not due yet ${c.not_due_yet} | already today ${c.already_sent_today} | ` +
-      `stopped now ${c.stopped_now} | stopped before ${c.stopped_previously} | done (day 6+) ${c.done} | no failed payment ${c.no_failed_payment} | errors ${c.error}`
+      `stopped now ${c.stopped_now} | stopped before ${c.stopped_previously} | other live membership ${c.has_other_live_membership} | ` +
+      `done (day ${MAX_DAY + 1}+) ${c.done} | no failed payment ${c.no_failed_payment} | errors ${c.error}`
   );
   const stops = s.items.filter(
-    (it) => it.outcome === "stopped_now" || it.outcome === "error" || it.outcome === "no_failed_payment" || (it.detail ?? "").startsWith("restarted")
+    (it) =>
+      it.outcome === "stopped_now" ||
+      it.outcome === "has_other_live_membership" ||
+      it.outcome === "error" ||
+      it.outcome === "no_failed_payment" ||
+      (it.detail ?? "").startsWith("restarted")
   );
   for (const it of stops) lines.push(`${it.outcome}: ${it.username} (${it.membershipId}) ${it.detail ?? ""}`);
   return lines.join("\n");
@@ -586,16 +717,15 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
     }
     summary.pastDue = listed.rows.length;
 
-    let records = new Map<string, RecoveryRecord>();
-    if (mode === "live") {
-      const loaded = await loadRecords(listed.rows.map((m) => String(m.id)));
-      if (!loaded.ok) {
-        summary.aborted = `Supabase read failed: ${loaded.error}`;
-        await maybePost(true);
-        return summary;
-      }
-      records = loaded.byId;
+    // Read in both modes (shadow then reports real message numbers); only
+    // live writes.
+    const loaded = await loadRecords(listed.rows.map((m) => String(m.id)));
+    if (!loaded.ok) {
+      summary.aborted = `Supabase read failed: ${loaded.error}`;
+      await maybePost(true);
+      return summary;
     }
+    const records = loaded.byId;
 
     for (const m of listed.rows) {
       const membershipId = String(m.id);
@@ -604,7 +734,7 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
       const planName = (planId && PLAN_NAMES[planId]) || planId || "unknown";
       const ultra = planId !== null && ULTRA_PLANS.has(planId);
       const base: RecoveryItem = {
-        membershipId, username: whopUserId, planName, ultra, day: 0, outcome: "error", detail: null,
+        membershipId, username: whopUserId, planName, ultra, day: 0, messageNumber: 0, when: null, outcome: "error", detail: null,
         ghl: null, ghlSms: null, discordDm: null, hasEmail: false, hasPhone: false, hasDiscord: false,
       };
 
@@ -621,9 +751,10 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
         const failedAtIso = new Date(failed.failedAtMs).toISOString();
         const day = recoveryDay(failed.failedAtMs, now);
         base.day = day;
+        base.when = whenLabel(failed.nextAttemptMs, now);
 
         // Stored row vs this failure: a newer failed_at is a new sequence
-        // (reset, run the 5 days again); otherwise a stopped row stays stopped.
+        // (reset, start again at message 1); otherwise a stopped row stays stopped.
         const rec = records.get(membershipId);
         const storedFailedMs = rec?.failed_at ? parseMs(rec.failed_at) : null;
         const newFailure = rec !== undefined && (storedFailedMs === null || failed.failedAtMs > storedFailedMs);
@@ -644,20 +775,23 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
           push({ ...base, outcome: "error", detail: `failure in the future (day ${day})` });
           continue;
         }
-        if (!windowOpen(day, now)) {
-          push({ ...base, outcome: "not_due_yet", detail: `window ${WINDOW_HOUR[day]}:00 Chicago` });
+
+        // Messages already sent in this sequence decide the next message
+        // number; today's day already claimed = nothing more today.
+        const sentDays = await loadSentDays(membershipId, failedAtIso);
+        if (sentDays === null) {
+          push({ ...base, outcome: "error", detail: "sends read failed" });
           continue;
         }
-        if (mode === "live") {
-          const sentToday = await alreadySentToday(membershipId, failedAtIso, day);
-          if (sentToday === null) {
-            push({ ...base, outcome: "error", detail: "sends read failed" });
-            continue;
-          }
-          if (sentToday) {
-            push({ ...base, outcome: "already_sent_today" });
-            continue;
-          }
+        const messageNumber = sentDays.size + 1;
+        base.messageNumber = messageNumber;
+        if (sentDays.has(day)) {
+          push({ ...base, outcome: "already_sent_today" });
+          continue;
+        }
+        if (!windowOpen(messageNumber, now)) {
+          push({ ...base, outcome: "not_due_yet", detail: `message ${messageNumber} not until ${FOLLOWUP_HOUR}:00 Chicago` });
+          continue;
         }
 
         // Live re-read right before sending. Anything but past_due stops the
@@ -676,13 +810,33 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
         const user = await readUser(whopUserId);
         const username = user.username ?? whopUserId;
         const firstName = firstNameOf(user.name);
+
+        // Duplicate guard: a live membership elsewhere on this user means the
+        // past_due one is the extra, not a lapse. Never message; tell the mods
+        // once per failure sequence.
+        const other = await findOtherLiveMembership(whopUserId, membershipId);
+        if (!other.ok) {
+          push({ ...base, username, outcome: "error", detail: other.error });
+          continue;
+        }
+        if (other.other) {
+          const detail = `live ${other.other.planName} (${other.other.status}, ${other.other.id})`;
+          if (mode === "live" && !rec?.other_live_flagged_at) {
+            await postToModChannel(`Duplicate past_due: ${username} has a live ${other.other.planName} too, cancel the extra one in Whop.`);
+            await upsertRecord({ membershipId, whopUserId, planId, failedAt: failedAtIso, otherLiveFlagged: true });
+          }
+          push({ ...base, username, outcome: "has_other_live_membership", detail });
+          continue;
+        }
+
         const email = await readMemberEmail(idOf(m.member_id));
         const phone = await readPhone(whopUserId);
         const discord = await readDiscord(whopUserId);
         const link = live.manageUrl ?? FALLBACK_LINK;
-        const payload = buildGhlPayload({ day, firstName, email, phone, link, planName });
-        const smsPayload = phone ? buildGhlSmsPayload({ day, firstName, phone, link }) : null;
-        const dmText = buildMessages(day, firstName, link).text;
+        const msgInput: MessageInput = { day, messageNumber, firstName, link, when: base.when };
+        const payload = buildGhlPayload({ ...msgInput, email, phone, planName });
+        const smsPayload = phone ? buildGhlSmsPayload({ ...msgInput, phone }) : null;
+        const dmText = buildMessages(msgInput).text;
         const item: RecoveryItem = {
           ...base, username, hasEmail: email.length > 0, hasPhone: phone.length > 0, hasDiscord: discord.discordUserId !== null,
           ghl: email || phone ? "would_send" : "skipped",
@@ -698,7 +852,7 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
 
         // Claim the day on the ghl (email) channel first: a duplicate claim
         // means another run already owns this day for this membership.
-        const claim = await claimSend(membershipId, failedAtIso, day, "ghl");
+        const claim = await claimSend(membershipId, failedAtIso, day, messageNumber, "ghl");
         if (claim === "duplicate") {
           push({ ...item, outcome: "already_sent_today", ghl: null, ghlSms: null, discordDm: null });
           continue;
@@ -717,7 +871,7 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
         // SMS webhook: its own claim row, so an email failure never blocks
         // the text and vice versa.
         if (smsPayload) {
-          const smsClaim = await claimSend(membershipId, failedAtIso, day, "ghl_sms");
+          const smsClaim = await claimSend(membershipId, failedAtIso, day, messageNumber, "ghl_sms");
           if (smsClaim === "claimed") {
             const s = await postGhl("sms", smsPayload);
             item.ghlSms = s.ok ? "sent" : "failed";
@@ -730,7 +884,7 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
         }
 
         if (discord.discordUserId) {
-          const dmClaim = await claimSend(membershipId, failedAtIso, day, "discord_dm");
+          const dmClaim = await claimSend(membershipId, failedAtIso, day, messageNumber, "discord_dm");
           if (dmClaim === "claimed") {
             const ok = await sendDiscordDm(discord.discordUserId, dmText);
             item.discordDm = ok ? "sent" : "failed";
@@ -740,7 +894,7 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
           }
         }
 
-        if (ultra && day === 1) {
+        if (ultra && messageNumber === 1) {
           await postToModChannel(`Ultra payment issue: ${discord.discordUsername ?? username}. Henry, reach out personally.`);
         }
 
@@ -761,14 +915,14 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
 }
 
 // ---------------------------------------------------------------------------
-// Test mode: day N's real copy on all three channels, to the owner only.
+// Test mode: message N's real copy on all three channels, to the owner only.
 // Any RECOVERY_MODE. No Whop reads, no payment_recovery writes.
 // ---------------------------------------------------------------------------
 
 export type RecoveryTestResult =
   | {
       ok: true;
-      day: number;
+      messageNumber: number;
       ghl: "sent" | "failed";
       ghlError: string | null;
       ghlSms: "sent" | "failed";
@@ -779,8 +933,10 @@ export type RecoveryTestResult =
     }
   | { ok: false; status: 400; error: string };
 
-export async function runRecoveryTest(day: number): Promise<RecoveryTestResult> {
-  if (!Number.isInteger(day) || day < 1 || day > MAX_DAY) return { ok: false, status: 400, error: `test_day must be 1 to ${MAX_DAY}` };
+export async function runRecoveryTest(messageNumber: number): Promise<RecoveryTestResult> {
+  if (!Number.isInteger(messageNumber) || messageNumber < 1 || messageNumber > MAX_MESSAGE) {
+    return { ok: false, status: 400, error: `test_day must be 1 to ${MAX_MESSAGE} (message number)` };
+  }
   const rawPhone = process.env.RECOVERY_TEST_PHONE;
   const email = process.env.RECOVERY_TEST_EMAIL;
   const missing = [!rawPhone ? "RECOVERY_TEST_PHONE" : null, !email ? "RECOVERY_TEST_EMAIL" : null].filter((v): v is string => v !== null);
@@ -788,16 +944,18 @@ export async function runRecoveryTest(day: number): Promise<RecoveryTestResult> 
   const phone = toE164(rawPhone);
   if (!phone) return { ok: false, status: 400, error: "RECOVERY_TEST_PHONE is not a usable phone number" };
   const firstName = "Keegan";
+  // Test has no real failure: day = message number, {when} = "tomorrow".
+  const msgInput: MessageInput = { day: messageNumber, messageNumber, firstName, link: FALLBACK_LINK, when: "tomorrow" };
   // Test always has a phone, so this mirrors the live with-phone route:
   // SMS webhook gets the text, email webhook gets skip_sms "yes".
-  const payload = buildGhlPayload({ day, firstName, email: email as string, phone, link: FALLBACK_LINK, planName: "Test" });
-  const smsPayload = buildGhlSmsPayload({ day, firstName, phone, link: FALLBACK_LINK });
+  const payload = buildGhlPayload({ ...msgInput, email: email as string, phone, planName: "Test" });
+  const smsPayload = buildGhlSmsPayload({ ...msgInput, phone });
   const g = await postGhl("email", payload);
   const s = await postGhl("sms", smsPayload);
-  const dm = await sendDiscordDm(OWNER_DISCORD_USER_ID, buildMessages(day, firstName, FALLBACK_LINK).text);
+  const dm = await sendDiscordDm(OWNER_DISCORD_USER_ID, buildMessages(msgInput).text);
   return {
     ok: true,
-    day,
+    messageNumber,
     ghl: g.ok ? "sent" : "failed",
     ghlError: g.error,
     ghlSms: s.ok ? "sent" : "failed",
