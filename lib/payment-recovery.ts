@@ -34,6 +34,12 @@ import { WHOP_API_VERSION_DATE, rowOwner, rowProduct } from "../app/api/whop/who
 // plans/{id}) is used and a warning is logged; with neither the member is
 // reported as an error and not messaged (never a guessed number).
 //
+// {first_name}: resolveFirstName (Whop user.name, then
+// member_profiles.display_name, then profiles.full_name; first word, rejected
+// when it looks like a handle, matches the username or email, or is on a
+// blocklist). With no usable name every message has a hand-written no-name
+// variant; GHL gets first_name "".
+//
 // Three channels: email through the GHL inbound webhook
 // (GHL_RECOVERY_WEBHOOK_URL), SMS through a second GHL webhook
 // (GHL_RECOVERY_SMS_WEBHOOK_URL) when we have a phone, and a Discord DM
@@ -163,7 +169,10 @@ export const BRAND = "Real Venture Wholesaling";
 export const EMAIL_LOGO_URL = "https://realventure.io/logo.png";
 const BUTTON_COLOR = "#C9A14A";
 
-type CopyFn = (f: string, a: string, w: string | null, l: string) => string;
+// f = first name or null. Every message has a hand-written no-name variant
+// (not the named text with the name cut out). Messages whose named text never
+// uses the name (email 2, 3, 5+; SMS 3, 5+) read the same both ways.
+type CopyFn = (f: string | null, a: string, w: string | null, l: string) => string;
 type MessageCopy = { subject: string; headline: string; email: CopyFn; sms: CopyFn; dm: CopyFn };
 
 const COPY: Record<number, MessageCopy> = {
@@ -171,14 +180,15 @@ const COPY: Record<number, MessageCopy> = {
     subject: `Action required: Update your ${BRAND} payment`,
     headline: "We couldn't process your payment",
     email: (f, a, w) =>
-      `Hi ${f}, your ${BRAND} membership was due to renew, but the ${a} charge didn't go through. Usually the card was just a little short. ` +
+      (f ? `Hi ${f}, your ${BRAND} membership was due to renew` : `Your ${BRAND} membership was due to renew`) +
+      `, but the ${a} charge didn't go through. Usually the card was just a little short. ` +
       (w ? `We'll try again ${w}. Make sure ${a} is on your card by then, or update your payment details below.` : `Make sure ${a} is on your card for our next try, or update your payment details below.`),
     sms: (f, a, w, l) =>
-      `${BRAND}: Hey ${f}, your ${a} payment didn't go through. ` +
+      (f ? `${BRAND}: Hey ${f}, your ${a} payment didn't go through. ` : `${BRAND}: Your ${a} payment didn't go through. `) +
       (w ? `We'll try again ${w}, just make sure ${a} is on the card or update it here: ${l}` : `Just make sure ${a} is on the card or update it here: ${l}`) +
       " Reply STOP to opt out",
     dm: (f, a, w, l) =>
-      `Hey ${f}, your ${a} ${BRAND} renewal didn't go through. ` +
+      (f ? `Hey ${f}, your ${a} ${BRAND} renewal didn't go through. ` : `Hey, your ${a} ${BRAND} renewal didn't go through. `) +
       (w ? `We'll try again ${w}, just make sure it's on the card or update it here: <${l}>` : `Just make sure it's on the card or update it here: <${l}>`),
   },
   2: {
@@ -187,8 +197,12 @@ const COPY: Record<number, MessageCopy> = {
     email: (_f, a, w) =>
       `We're still having trouble processing your ${a} payment. Your Discord, live calls and Studio tools are all still on. ` +
       (w ? `Next try is ${w}. Get ${a} on your card before then and nothing changes.` : `Get ${a} on your card before our next try and nothing changes.`),
-    sms: (f, a, w, l) => `${BRAND}: ${f}, we still can't process your ${a} payment. ` + (w ? `Next try is ${w}: ${l}` : `Update your card here: ${l}`),
-    dm: (f, a, w, l) => `${f}, your ${a} payment still hasn't gone through. ${w ? `Next try is ${w}. ` : ""}Get it on the card and you keep the calls, the Discord, all of it: <${l}>`,
+    sms: (f, a, w, l) =>
+      (f ? `${BRAND}: ${f}, we still can't process your ${a} payment. ` : `${BRAND}: We still can't process your ${a} payment. `) +
+      (w ? `Next try is ${w}: ${l}` : `Update your card here: ${l}`),
+    dm: (f, a, w, l) =>
+      (f ? `${f}, your ${a} payment still hasn't gone through. ` : `Your ${a} payment still hasn't gone through. `) +
+      `${w ? `Next try is ${w}. ` : ""}Get it on the card and you keep the calls, the Discord, all of it: <${l}>`,
   },
   3: {
     subject: `We couldn't process your ${BRAND} payment`,
@@ -197,15 +211,22 @@ const COPY: Record<number, MessageCopy> = {
       `Your access is still on. ` +
       (w ? `We'll run your card again ${w}. If money's tight this week, all it takes is ${a} on the card by then.` : `If money's tight this week, all it takes is ${a} on the card for our next try.`),
     sms: (_f, a, w, l) => `${BRAND}: your access is still on. ` + (w ? `We'll run your card ${w}, just need ${a} on it: ${l}` : `Just need ${a} on the card: ${l}`),
-    dm: (f, a, w, l) => `Your access is still on ${f}. ` + (w ? `We'll run your card again ${w}, just need ${a} on it: <${l}>` : `Just need ${a} on the card: <${l}>`),
+    dm: (f, a, w, l) =>
+      (f ? `Your access is still on ${f}. ` : `Your access is still on. `) +
+      (w ? `We'll run your card again ${w}, just need ${a} on it: <${l}>` : `Just need ${a} on the card: <${l}>`),
   },
   4: {
     subject: "Last try before your access ends",
     headline: "This could be the last try",
     email: (f, a, w) =>
-      `Heads up ${f}, our next try on your card${w ? ` (${w})` : ""} could be the last one before your ${BRAND} access ends. Get ${a} on the card or update your payment details to stay in.`,
-    sms: (f, a, w, l) => `${BRAND}: ${f}, the next try${w ? ` (${w})` : ""} could be the last before your access ends. ${a} keeps you in: ${l}`,
-    dm: (f, a, w, l) => `Heads up ${f}, the next try${w ? ` (${w})` : ""} could be the last one before you lose access. ${a} keeps you in: <${l}>`,
+      (f ? `Heads up ${f}, our next try on your card` : `Heads up, our next try on your card`) +
+      `${w ? ` (${w})` : ""} could be the last one before your ${BRAND} access ends. Get ${a} on the card or update your payment details to stay in.`,
+    sms: (f, a, w, l) =>
+      (f ? `${BRAND}: ${f}, the next try` : `${BRAND}: The next try`) +
+      `${w ? ` (${w})` : ""} could be the last before your access ends. ${a} keeps you in: ${l}`,
+    dm: (f, a, w, l) =>
+      (f ? `Heads up ${f}, the next try` : `Heads up, the next try`) +
+      `${w ? ` (${w})` : ""} could be the last one before you lose access. ${a} keeps you in: <${l}>`,
   },
   5: {
     subject: `Don't lose your ${BRAND} access`,
@@ -214,7 +235,9 @@ const COPY: Record<number, MessageCopy> = {
       (w ? `We'll try your card again ${w}. If it doesn't go through, ` : `If our next try on your card doesn't go through, `) +
       `you lose the Discord, the live calls and your Studio tools. ${a} on the card and you're good.`,
     sms: (_f, a, w, l) => `${BRAND}: your spot's still open. ` + (w ? `Next try is ${w}, ${a} keeps you in: ${l}` : `${a} keeps you in: ${l}`),
-    dm: (f, a, w, l) => `${f}, your spot's still here. ` + (w ? `Next try is ${w}, ${a} and you're good: <${l}>` : `${a} and you're good: <${l}>`),
+    dm: (f, a, w, l) =>
+      (f ? `${f}, your spot's still here. ` : `Your spot's still here. `) +
+      (w ? `Next try is ${w}, ${a} and you're good: <${l}>` : `${a} and you're good: <${l}>`),
   },
 };
 
@@ -225,9 +248,69 @@ export function copyFor(messageNumber: number): MessageCopy {
   return c;
 }
 
-export function firstNameOf(name: string | null): string {
-  const first = (name ?? "").trim().split(/\s+/)[0];
-  return first && first.length > 0 ? first : "there";
+// ---------------------------------------------------------------------------
+// First name. Sources in order: Whop user.name, member_profiles.display_name,
+// profiles.full_name. The first word of a source is used only when it looks
+// like a real first name; otherwise the next source is tried, and with none
+// left the copy's no-name variant goes out (never "Hi there").
+// ---------------------------------------------------------------------------
+
+// Words that are not names, lowercased.
+const NAME_BLOCKLIST: ReadonlySet<string> = new Set([
+  "test", "testing", "user", "admin", "member", "there", "popsicle", "guest", "unknown", "name", "firstname", "first",
+  "none", "null", "undefined", "anonymous", "anon", "customer", "client", "hello", "hi", "hey", "mr", "mrs", "ms", "dr",
+  "sir", "bro", "whop", "discord", "real", "venture", "wholesaling", "nobody", "someone", "me", "you", "the", "and",
+  "friend", "player", "owner", "default", "temp", "demo", "sample", "example", "new", "account",
+]);
+
+export type FirstNameContext = { username: string | null; email: string };
+
+// The first word of `raw` as a properly capitalized first name, or null when
+// it is rejected: digits, @, _ or . in it; under 2 or over 15 letters; no
+// vowel or a letter tripled or inner capitals (handle shapes like svdg,
+// RoyallyClipd); equal to the Whop username or the email local part (digits
+// and dots ignored); or on the blocklist.
+export function acceptFirstName(raw: string | null | undefined, ctx: FirstNameContext): string | null {
+  const first = (raw ?? "").trim().split(/\s+/)[0] ?? "";
+  if (!first) return null;
+  if (/[0-9@_.]/.test(first)) return null;
+  if (!/^[\p{L}][\p{L}'-]*$/u.test(first)) return null;
+  const letters = first.replace(/[^\p{L}]/gu, "");
+  if (letters.length < 2 || letters.length > 15) return null;
+  if (!/[aeiouyAEIOUYÀ-ÿ]/.test(letters)) return null;
+  if (/(\p{L})\1\1/u.test(first)) return null;
+  if (/\p{Ll}\p{Lu}/u.test(first)) return null;
+  const lower = first.toLowerCase();
+  if (NAME_BLOCKLIST.has(lower)) return null;
+  const strip = (v: string) => v.toLowerCase().replace(/[0-9.]/g, "");
+  if (ctx.username && (lower === ctx.username.toLowerCase() || lower === strip(ctx.username))) return null;
+  const local = ctx.email.split("@")[0] ?? "";
+  if (local && (lower === local.toLowerCase() || lower === strip(local))) return null;
+  // "jadyn" -> "Jadyn", "mary-jo" -> "Mary-Jo", "d'angelo" -> "D'Angelo".
+  return lower.replace(/(^|[-'])(\p{L})/gu, (_m, sep: string, ch: string) => sep + ch.toUpperCase());
+}
+
+export type FirstNameSource = "whop" | "member_profiles" | "profiles";
+
+// Whop user.name first (already read), then member_profiles.display_name,
+// then profiles.full_name (one SELECT each, only when needed).
+export async function resolveFirstName(
+  whopUserId: string,
+  whopName: string | null,
+  ctx: FirstNameContext
+): Promise<{ firstName: string | null; source: FirstNameSource | null }> {
+  const fromWhop = acceptFirstName(whopName, ctx);
+  if (fromWhop) return { firstName: fromWhop, source: "whop" };
+  const supabase = createAdminClient();
+  const mp = await supabase.from("member_profiles").select("display_name").eq("whop_user_id", whopUserId).maybeSingle();
+  if (mp.error) console.error("[payment-recovery] member_profiles name read failed", mp.error.message);
+  const fromProfile = acceptFirstName(str(mp.data?.display_name), ctx);
+  if (fromProfile) return { firstName: fromProfile, source: "member_profiles" };
+  const pr = await supabase.from("profiles").select("full_name").eq("whop_user_id", whopUserId).limit(1).maybeSingle();
+  if (pr.error) console.error("[payment-recovery] profiles name read failed", pr.error.message);
+  const fromFull = acceptFirstName(str(pr.data?.full_name), ctx);
+  if (fromFull) return { firstName: fromFull, source: "profiles" };
+  return { firstName: null, source: null };
 }
 
 // {amount}: the payment's real total (including tax) as "$22.72". Any
@@ -306,7 +389,8 @@ export type GhlSmsPayload = {
   amount: string;
 };
 
-export type MessageInput = { day: number; messageNumber: number; firstName: string; amount: string; link: string; when: string | null };
+// firstName null = the no-name copy variant.
+export type MessageInput = { day: number; messageNumber: number; firstName: string | null; amount: string; link: string; when: string | null };
 
 // text = the Discord DM, sms = the SMS, emailBody = the branded HTML.
 export function buildMessages(input: MessageInput): { text: string; subject: string; emailBody: string; sms: string } {
@@ -323,7 +407,8 @@ export function buildMessages(input: MessageInput): { text: string; subject: str
 export function buildGhlPayload(input: MessageInput & { email: string; phone: string; planName: string }): GhlPayload {
   const m = buildMessages(input);
   return {
-    first_name: input.firstName,
+    // "" when no usable first name was found (GHL gets no name, not "there").
+    first_name: input.firstName ?? "",
     email: input.email,
     phone: input.phone,
     // Always the SMS copy, even with no phone; GHL decides what to do with
@@ -341,7 +426,7 @@ export function buildGhlPayload(input: MessageInput & { email: string; phone: st
 
 export function buildGhlSmsPayload(input: MessageInput & { phone: string }): GhlSmsPayload {
   const m = buildMessages(input);
-  return { first_name: input.firstName, phone: input.phone, sms_text: m.sms, day: input.day, message_number: input.messageNumber, amount: input.amount };
+  return { first_name: input.firstName ?? "", phone: input.phone, sms_text: m.sms, day: input.day, message_number: input.messageNumber, amount: input.amount };
 }
 
 // ---------------------------------------------------------------------------
@@ -1162,7 +1247,6 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
         // member, not the Whop user id (one GET per past_due member per run).
         const user = await readUser(whopUserId);
         const username = user.username ?? whopUserId;
-        const firstName = firstNameOf(user.name);
         base.username = username;
 
         // First sight of this failure sequence: record it (entered) so the
@@ -1225,6 +1309,9 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
         const email = await readMemberEmail(idOf(m.member_id));
         const phone = await readPhone(whopUserId);
         const discord = await readDiscord(whopUserId);
+        // First name after the email read: the email local part is one of
+        // the things a candidate name is checked against.
+        const { firstName } = await resolveFirstName(whopUserId, user.name, { username: user.username, email });
         const target = live.manageUrl ?? FALLBACK_LINK;
         // Live: one tracked link per channel (the email payload's sms_text
         // carries the email channel's link; GHL only texts from it when we
