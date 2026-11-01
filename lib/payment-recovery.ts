@@ -28,7 +28,11 @@ import { WHOP_API_VERSION_DATE, rowOwner, rowProduct } from "../app/api/whop/who
 // sequence + 1), not by calendar day, and names Whop's next retry: {when} is
 // next_payment_attempt_at in Chicago as "today", "tomorrow" or the weekday
 // name. With no usable next attempt (null, unparsable, or already in the
-// past) the retry sentence is dropped.
+// past) the retry sentence is dropped. {amount} is the failed renewal
+// payment's real total from Whop (payment.total, tax included) as "$22.72";
+// when the payment carries no total the plan's renewal_price (GET
+// plans/{id}) is used and a warning is logged; with neither the member is
+// reported as an error and not messaged (never a guessed number).
 //
 // Three channels: email through the GHL inbound webhook
 // (GHL_RECOVERY_WEBHOOK_URL), SMS through a second GHL webhook
@@ -78,7 +82,7 @@ import { WHOP_API_VERSION_DATE, rowOwner, rowProduct } from "../app/api/whop/who
 // Test mode (runRecoveryTest): message N's real copy (1 to 5) on all three
 // channels to the owner only (RECOVERY_TEST_PHONE, RECOVERY_TEST_EMAIL, the
 // owner's Discord id below). Any RECOVERY_MODE, no Whop reads, no table
-// writes. {when} is "tomorrow" in the test.
+// writes. {when} is "tomorrow" and {amount} is "$22.72" in the test.
 //
 // Mode: RECOVERY_MODE === "live" sends and writes the two tables. Anything
 // else is shadow: no sends, no table writes (reads only), one summary to the
@@ -148,40 +152,71 @@ export function parseMs(v: unknown): number | null {
 
 // ---------------------------------------------------------------------------
 // Copy, by message number. No em or en dashes anywhere in this file.
-// `when` is "today" / "tomorrow" / a weekday name, or null (retry sentence
-// dropped; messages 1 and 3 keep a short card line so the link survives).
+// Placeholders: {first_name}, {amount} (the failed renewal's real total,
+// formatted like $22.72), {when} ("today" / "tomorrow" / a weekday name, or
+// null: the retry phrase is dropped cleanly), {link} (the tracked link).
+// Three voices: email (branded template), SMS (neutral), Discord DM (loose,
+// link wrapped in <> so Discord shows no preview card).
 // ---------------------------------------------------------------------------
 
-type MessageCopy = { text: (first: string, link: string, when: string | null) => string; subject: string };
+export const BRAND = "Real Venture Wholesaling";
+export const EMAIL_LOGO_URL = "https://realventure.io/logo.png";
+const BUTTON_COLOR = "#C9A14A";
+
+type CopyFn = (f: string, a: string, w: string | null, l: string) => string;
+type MessageCopy = { subject: string; headline: string; email: CopyFn; sms: CopyFn; dm: CopyFn };
+
 const COPY: Record<number, MessageCopy> = {
   1: {
-    text: (f, l, w) =>
-      `Hey ${f}, William from Real Venture. We couldn't process your payment, usually just a card thing. ` +
-      (w ? `We'll try it again ${w}, so make sure it's covered or update your card here: ${l}` : `Make sure it's covered or update your card here: ${l}`),
-    subject: "We couldn't process your payment",
+    subject: `Action required: Update your ${BRAND} payment`,
+    headline: "We couldn't process your payment",
+    email: (f, a, w) =>
+      `Hi ${f}, your ${BRAND} membership was due to renew, but the ${a} charge didn't go through. Usually the card was just a little short. ` +
+      (w ? `We'll try again ${w}. Make sure ${a} is on your card by then, or update your payment details below.` : `Make sure ${a} is on your card for our next try, or update your payment details below.`),
+    sms: (f, a, w, l) =>
+      `${BRAND}: Hey ${f}, your ${a} payment didn't go through. ` +
+      (w ? `We'll try again ${w}, just make sure ${a} is on the card or update it here: ${l}` : `Just make sure ${a} is on the card or update it here: ${l}`) +
+      " Reply STOP to opt out",
+    dm: (f, a, w, l) =>
+      `Hey ${f}, your ${a} ${BRAND} renewal didn't go through. ` +
+      (w ? `We'll try again ${w}, just make sure it's on the card or update it here: <${l}>` : `Just make sure it's on the card or update it here: <${l}>`),
   },
   2: {
-    text: (f, l, w) =>
-      `Yo ${f}, we're still having trouble processing your payment. ${w ? `Next try is ${w}. ` : ""}Update your card here and nothing changes: ${l}`,
-    subject: "Update your payment info to keep your access",
+    subject: `Action required: Your ${BRAND} access is at risk`,
+    headline: "Don't lose your spot",
+    email: (_f, a, w) =>
+      `We're still having trouble processing your ${a} payment. Your Discord, live calls and Studio tools are all still on. ` +
+      (w ? `Next try is ${w}. Get ${a} on your card before then and nothing changes.` : `Get ${a} on your card before our next try and nothing changes.`),
+    sms: (f, a, w, l) => `${BRAND}: ${f}, we still can't process your ${a} payment. ` + (w ? `Next try is ${w}: ${l}` : `Update your card here: ${l}`),
+    dm: (f, a, w, l) => `${f}, your ${a} payment still hasn't gone through. ${w ? `Next try is ${w}. ` : ""}Get it on the card and you keep the calls, the Discord, all of it: <${l}>`,
   },
   3: {
-    text: (_f, l, w) =>
-      `Your Real Venture access is still on. ` +
-      (w ? `We'll run your card again ${w}, just make sure it's covered: ${l}` : `Just make sure your card's covered or update it here: ${l}`),
-    subject: "Your access is still on",
+    subject: `We couldn't process your ${BRAND} payment`,
+    headline: "Still here for you",
+    email: (_f, a, w) =>
+      `Your access is still on. ` +
+      (w ? `We'll run your card again ${w}. If money's tight this week, all it takes is ${a} on the card by then.` : `If money's tight this week, all it takes is ${a} on the card for our next try.`),
+    sms: (_f, a, w, l) => `${BRAND}: your access is still on. ` + (w ? `We'll run your card ${w}, just need ${a} on it: ${l}` : `Just need ${a} on the card: ${l}`),
+    dm: (f, a, w, l) => `Your access is still on ${f}. ` + (w ? `We'll run your card again ${w}, just need ${a} on it: <${l}>` : `Just need ${a} on the card: <${l}>`),
   },
   4: {
-    text: (f, l, w) =>
-      `Heads up ${f}, the next try on your card${w ? ` (${w})` : ""} could be the last one before your access ends. Update it here: ${l}`,
-    subject: "Your access ends soon",
+    subject: "Last try before your access ends",
+    headline: "This could be the last try",
+    email: (f, a, w) =>
+      `Heads up ${f}, our next try on your card${w ? ` (${w})` : ""} could be the last one before your ${BRAND} access ends. Get ${a} on the card or update your payment details to stay in.`,
+    sms: (f, a, w, l) => `${BRAND}: ${f}, the next try${w ? ` (${w})` : ""} could be the last before your access ends. ${a} keeps you in: ${l}`,
+    dm: (f, a, w, l) => `Heads up ${f}, the next try${w ? ` (${w})` : ""} could be the last one before you lose access. ${a} keeps you in: <${l}>`,
   },
   5: {
-    text: (f, l, w) => `${f}, your spot's still open. ${w ? `We'll try your card again ${w}. ` : ""}Update it here to keep it: ${l}`,
-    subject: "Your spot's still open",
+    subject: `Don't lose your ${BRAND} access`,
+    headline: "Your spot's still open",
+    email: (_f, a, w) =>
+      (w ? `We'll try your card again ${w}. If it doesn't go through, ` : `If our next try on your card doesn't go through, `) +
+      `you lose the Discord, the live calls and your Studio tools. ${a} on the card and you're good.`,
+    sms: (_f, a, w, l) => `${BRAND}: your spot's still open. ` + (w ? `Next try is ${w}, ${a} keeps you in: ${l}` : `${a} keeps you in: ${l}`),
+    dm: (f, a, w, l) => `${f}, your spot's still here. ` + (w ? `Next try is ${w}, ${a} and you're good: <${l}>` : `${a} and you're good: <${l}>`),
   },
 };
-const SMS_SUFFIX = " Reply STOP to opt out";
 
 // Message 5's copy repeats for every later message.
 export function copyFor(messageNumber: number): MessageCopy {
@@ -195,10 +230,58 @@ export function firstNameOf(name: string | null): string {
   return first && first.length > 0 ? first : "there";
 }
 
+// {amount}: the payment's real total (including tax) as "$22.72". Any
+// currency Whop may use is formatted the en-US way (usd gives "$").
+export function formatAmount(amount: number, currency: string | null): string {
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: (currency ?? "usd").toUpperCase() }).format(amount);
+  } catch {
+    return `$${amount.toFixed(2)}`;
+  }
+}
+
+function escapeHtml(v: string): string {
+  return v.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+// Branded email: table layout, inline styles only, 600px, works in Gmail and
+// iPhone Mail. A fragment (no html/head/body) because GHL wraps email_body in
+// its own document. Black header bar with the logo, headline, body, gold
+// button to the link, the link as plain text, sign-off, grey footer.
+export function buildEmailHtml(fields: { headline: string; body: string; link: string }): string {
+  const h = escapeHtml(fields.headline);
+  const b = escapeHtml(fields.body);
+  const l = escapeHtml(fields.link);
+  const font = "font-family:Helvetica,Arial,sans-serif;";
+  return (
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;background-color:#f4f4f4;margin:0;padding:0;">` +
+    `<tr><td align="center" style="padding:24px 12px;">` +
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#ffffff;border-radius:10px;overflow:hidden;">` +
+    `<tr><td align="center" style="background-color:#000000;padding:20px 24px;">` +
+    `<img src="${EMAIL_LOGO_URL}" width="104" height="104" alt="${BRAND}" style="display:block;width:104px;height:104px;border:0;outline:none;" />` +
+    `</td></tr>` +
+    `<tr><td style="padding:36px 32px 8px 32px;${font}font-size:28px;line-height:34px;font-weight:bold;color:#111111;">${h}</td></tr>` +
+    `<tr><td style="padding:8px 32px 28px 32px;${font}font-size:17px;line-height:26px;color:#333333;">${b}</td></tr>` +
+    `<tr><td align="center" style="padding:0 32px 18px 32px;">` +
+    `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>` +
+    `<td align="center" style="background-color:${BUTTON_COLOR};border-radius:10px;">` +
+    `<a href="${l}" target="_blank" style="display:inline-block;padding:18px 34px;${font}font-size:17px;line-height:20px;font-weight:bold;color:#000000;text-decoration:none;letter-spacing:0.5px;border-radius:10px;">UPDATE PAYMENT DETAILS</a>` +
+    `</td></tr></table>` +
+    `</td></tr>` +
+    `<tr><td align="center" style="padding:0 32px 28px 32px;${font}font-size:13px;line-height:20px;color:#555555;word-break:break-all;">` +
+    `<a href="${l}" target="_blank" style="color:#555555;text-decoration:underline;">${l}</a>` +
+    `</td></tr>` +
+    `<tr><td style="padding:0 32px 36px 32px;${font}font-size:16px;line-height:24px;color:#333333;">William,<br />${BRAND}</td></tr>` +
+    `<tr><td align="center" style="background-color:#f4f4f4;padding:18px 24px;${font}font-size:12px;line-height:18px;color:#888888;">${BRAND} &middot; realventure.io</td></tr>` +
+    `</table></td></tr></table>`
+  );
+}
+
 // Email webhook payload. skip_sms "yes" when the SMS webhook handles the
 // text (we have a phone), "" when GHL may text a phone it already has.
 // day = Chicago calendar day of the failure sequence (1 to 14);
 // message_number = which message of the sequence this is (1, 2, 3 ...).
+// amount = {amount} as printed in the copy.
 export type GhlPayload = {
   first_name: string;
   email: string;
@@ -209,6 +292,7 @@ export type GhlPayload = {
   day: number;
   message_number: number;
   plan_name: string;
+  amount: string;
   skip_sms: "yes" | "";
 };
 
@@ -219,14 +303,21 @@ export type GhlSmsPayload = {
   sms_text: string;
   day: number;
   message_number: number;
+  amount: string;
 };
 
-export type MessageInput = { day: number; messageNumber: number; firstName: string; link: string; when: string | null };
+export type MessageInput = { day: number; messageNumber: number; firstName: string; amount: string; link: string; when: string | null };
 
+// text = the Discord DM, sms = the SMS, emailBody = the branded HTML.
 export function buildMessages(input: MessageInput): { text: string; subject: string; emailBody: string; sms: string } {
   const c = copyFor(input.messageNumber);
-  const text = c.text(input.firstName, input.link, input.when);
-  return { text, subject: c.subject, emailBody: `${text}<br><br>William`, sms: text + SMS_SUFFIX };
+  const body = c.email(input.firstName, input.amount, input.when, input.link);
+  return {
+    text: c.dm(input.firstName, input.amount, input.when, input.link),
+    subject: c.subject,
+    emailBody: buildEmailHtml({ headline: c.headline, body, link: input.link }),
+    sms: c.sms(input.firstName, input.amount, input.when, input.link),
+  };
 }
 
 export function buildGhlPayload(input: MessageInput & { email: string; phone: string; planName: string }): GhlPayload {
@@ -235,21 +326,22 @@ export function buildGhlPayload(input: MessageInput & { email: string; phone: st
     first_name: input.firstName,
     email: input.email,
     phone: input.phone,
-    // Always the SMS copy (with the STOP suffix), even with no phone; GHL
-    // decides what to do with it. phone is "" when we have none.
+    // Always the SMS copy, even with no phone; GHL decides what to do with
+    // it. phone is "" when we have none.
     sms_text: m.sms,
     email_subject: m.subject,
     email_body: m.emailBody,
     day: input.day,
     message_number: input.messageNumber,
     plan_name: input.planName,
+    amount: input.amount,
     skip_sms: input.phone ? "yes" : "",
   };
 }
 
 export function buildGhlSmsPayload(input: MessageInput & { phone: string }): GhlSmsPayload {
   const m = buildMessages(input);
-  return { first_name: input.firstName, phone: input.phone, sms_text: m.sms, day: input.day, message_number: input.messageNumber };
+  return { first_name: input.firstName, phone: input.phone, sms_text: m.sms, day: input.day, message_number: input.messageNumber, amount: input.amount };
 }
 
 // ---------------------------------------------------------------------------
@@ -404,9 +496,8 @@ async function listPastDue(): Promise<{ ok: true; rows: Row[] } | { ok: false; e
 // created_at is the failure moment (last_payment_attempt_at moves with
 // Whop's own retries and would reset the day counter). Its
 // next_payment_attempt_at is Whop's next retry, used for {when}.
-async function findFailedRenewal(
-  membershipId: string
-): Promise<{ ok: true; failedAtMs: number | null; nextAttemptMs: number | null } | { ok: false; error: string }> {
+type FailedRenewal = { failedAtMs: number | null; nextAttemptMs: number | null; amount: number | null; currency: string | null };
+async function findFailedRenewal(membershipId: string): Promise<({ ok: true } & FailedRenewal) | { ok: false; error: string }> {
   const companyId = process.env.WHOP_COMPANY_ID;
   if (!companyId) return { ok: false, error: "WHOP_COMPANY_ID unset" };
   const params = new URLSearchParams({ account_id: companyId, membership_id: membershipId, first: "50" });
@@ -416,6 +507,8 @@ async function findFailedRenewal(
   const rows = (Array.isArray(data) ? data : []).filter((p): p is Row => !!p && typeof p === "object");
   let newest: number | null = null;
   let nextAttemptMs: number | null = null;
+  let amount: number | null = null;
+  let currency: string | null = null;
   for (const p of rows) {
     if (idOf(p.membership_id) !== membershipId) continue; // filter ignored: never trust
     const reason = str(p.billing_reason);
@@ -425,9 +518,33 @@ async function findFailedRenewal(
     if (ms !== null && (newest === null || ms > newest)) {
       newest = ms;
       nextAttemptMs = parseMs(p.next_payment_attempt_at);
+      // total = subtotal + tax (verified 2026-10-31 on past_due rows: amount
+      // is a decimal string like "21.64" with tax_amount "1.73" on a 19.99 plan).
+      const total = p.total && typeof p.total === "object" ? (p.total as Row) : null;
+      const n = total ? Number(total.amount) : NaN;
+      amount = Number.isFinite(n) && n > 0 ? n : null;
+      currency = total ? str(total.currency) : null;
     }
   }
-  return { ok: true, failedAtMs: newest, nextAttemptMs };
+  return { ok: true, failedAtMs: newest, nextAttemptMs, amount, currency };
+}
+
+// Plan renewal price, the {amount} fallback when the failed payment carries
+// no total. Cached per run (one GET per plan). null when unreadable.
+type PlanPrice = { amount: number; currency: string | null };
+async function readPlanPrice(planId: string | null, cache: Map<string, PlanPrice | null>): Promise<PlanPrice | null> {
+  if (!planId) return null;
+  const hit = cache.get(planId);
+  if (hit !== undefined) return hit;
+  let price: PlanPrice | null = null;
+  const { status, body } = await whopGet(`plans/${planId}`);
+  if (status === 200 && body && typeof body === "object") {
+    const plan = body as Row;
+    const n = Number(plan.renewal_price);
+    if (plan.id === planId && Number.isFinite(n) && n > 0) price = { amount: n, currency: str(plan.currency) };
+  }
+  cache.set(planId, price);
+  return price;
 }
 
 // The renewal payment Whop marked paid after the failure (the failed payment
@@ -837,6 +954,9 @@ export type RecoveryItem = {
   messageNumber: number;
   // {when} as the copy would print it, null = retry sentence dropped.
   when: string | null;
+  // {amount} as the copy prints it ("$22.72"); null until the failed payment
+  // is read, or when neither the payment nor the plan gave a price.
+  amount: string | null;
   // Exact Chicago time message `messageNumber` goes out ("this run" when it
   // is this one); null when the sequence has no day left or never got that far.
   nextSendAt: string | null;
@@ -897,7 +1017,7 @@ function formatSummary(s: RecoverySummary): string {
     ].filter(Boolean).join(" ");
     const list = perMessage.get(it.messageNumber) ?? [];
     list.push(
-      `${it.username}${it.ultra ? " (ULTRA)" : ""} [${it.planName}] day ${it.day} at ${it.nextSendAt ?? "this run"} retry ${it.when ?? "unknown"} ${ch}${it.hasPhone ? "" : " no-phone"}${it.hasEmail ? "" : " no-email"}`
+      `${it.username}${it.ultra ? " (ULTRA)" : ""} [${it.planName}] day ${it.day} at ${it.nextSendAt ?? "this run"} ${it.amount ?? "amount unknown"} retry ${it.when ?? "unknown"} ${ch}${it.hasPhone ? "" : " no-phone"}${it.hasEmail ? "" : " no-email"}`
     );
     perMessage.set(it.messageNumber, list);
   }
@@ -912,7 +1032,7 @@ function formatSummary(s: RecoverySummary): string {
     lines.push(
       `waiting (${waiting.length}): ` +
         waiting
-          .map((it) => `${it.username} [${it.planName}] day ${it.day} next message ${it.messageNumber} at ${it.nextSendAt ?? "none (sequence ends)"}`)
+          .map((it) => `${it.username} [${it.planName}] day ${it.day} next message ${it.messageNumber} at ${it.nextSendAt ?? "none (sequence ends)"} ${it.amount ?? "amount unknown"}`)
           .join("; ")
     );
   }
@@ -970,6 +1090,7 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
       return summary;
     }
     const records = loaded.byId;
+    const planPrices = new Map<string, PlanPrice | null>();
 
     for (const m of listed.rows) {
       const membershipId = String(m.id);
@@ -978,7 +1099,7 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
       const planName = (planId && PLAN_NAMES[planId]) || planId || "unknown";
       const ultra = planId !== null && ULTRA_PLANS.has(planId);
       const base: RecoveryItem = {
-        membershipId, username: whopUserId, planName, ultra, day: 0, messageNumber: 0, when: null, nextSendAt: null, outcome: "error", detail: null,
+        membershipId, username: whopUserId, planName, ultra, day: 0, messageNumber: 0, when: null, amount: null, nextSendAt: null, outcome: "error", detail: null,
         ghl: null, ghlSms: null, discordDm: null, hasEmail: false, hasPhone: false, hasDiscord: false,
       };
 
@@ -996,6 +1117,23 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
         const day = recoveryDay(failed.failedAtMs, now);
         base.day = day;
         base.when = whenLabel(failed.nextAttemptMs, now);
+
+        // {amount}: the failed payment's total, else the plan's renewal
+        // price (warned), else no message (never a guessed number).
+        if (failed.amount !== null) {
+          base.amount = formatAmount(failed.amount, failed.currency);
+        } else {
+          const plan = await readPlanPrice(planId, planPrices);
+          if (plan) {
+            base.amount = formatAmount(plan.amount, plan.currency);
+            console.warn(`[payment-recovery] ${membershipId}: failed payment has no total, using plan ${planId} renewal price`);
+          }
+        }
+        if (base.amount === null) {
+          push({ ...base, outcome: "error", detail: `amount unavailable (payment has no total, plan ${planId ?? "unknown"} price unreadable)` });
+          continue;
+        }
+        const amount = base.amount;
 
         // Stored row vs this failure: a newer failed_at is a new sequence
         // (reset, start again at message 1); otherwise a stopped row stays stopped.
@@ -1093,7 +1231,7 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
         // have no phone). Shadow: the raw target, nothing is sent or stored.
         const trackedLink = (channel: SendChannel) =>
           mode === "live" ? createTrackedLink(membershipId, failedAtIso, messageNumber, channel, target) : Promise.resolve(target);
-        const emailInput: MessageInput = { day, messageNumber, firstName, link: await trackedLink("ghl"), when: base.when };
+        const emailInput: MessageInput = { day, messageNumber, firstName, amount, link: await trackedLink("ghl"), when: base.when };
         const payload = buildGhlPayload({ ...emailInput, email, phone, planName });
         const smsPayload = phone ? buildGhlSmsPayload({ ...emailInput, link: await trackedLink("ghl_sms"), phone }) : null;
         const dmText = discord.discordUserId ? buildMessages({ ...emailInput, link: await trackedLink("discord_dm") }).text : "";
@@ -1240,8 +1378,9 @@ export async function runRecoveryTest(messageNumber: number): Promise<RecoveryTe
   const phone = toE164(rawPhone);
   if (!phone) return { ok: false, status: 400, error: "RECOVERY_TEST_PHONE is not a usable phone number" };
   const firstName = "Keegan";
-  // Test has no real failure: day = message number, {when} = "tomorrow".
-  const msgInput: MessageInput = { day: messageNumber, messageNumber, firstName, link: FALLBACK_LINK, when: "tomorrow" };
+  // Test has no real failure: day = message number, {when} = "tomorrow",
+  // {amount} = "$22.72".
+  const msgInput: MessageInput = { day: messageNumber, messageNumber, firstName, amount: "$22.72", link: FALLBACK_LINK, when: "tomorrow" };
   // Test always has a phone, so this mirrors the live with-phone route:
   // SMS webhook gets the text, email webhook gets skip_sms "yes".
   const payload = buildGhlPayload({ ...msgInput, email: email as string, phone, planName: "Test" });
