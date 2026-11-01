@@ -76,6 +76,7 @@ export default async function AdminDiscordPage() {
       <div className="admin-nav">
         <Link href="/dashboard/admin/onboarding" className="admin-nav-link">Onboarding</Link>
         <Link href="/dashboard/admin/discord" className="admin-nav-link active">Discord</Link>
+        <Link href="/dashboard/admin/recovery" className="admin-nav-link">Recovery</Link>
       </div>
       <div className="admin-header">
         <h1 className="admin-title">Discord Connection Status</h1>

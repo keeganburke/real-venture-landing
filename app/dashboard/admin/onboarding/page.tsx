@@ -67,6 +67,7 @@ export default async function AdminOnboardingPage() {
       <div className="admin-nav">
         <Link href="/dashboard/admin/onboarding" className="admin-nav-link active">Onboarding</Link>
         <Link href="/dashboard/admin/discord" className="admin-nav-link">Discord</Link>
+        <Link href="/dashboard/admin/recovery" className="admin-nav-link">Recovery</Link>
       </div>
       <div className="admin-header">
         <h1 className="admin-title">Onboarding Responses</h1>
