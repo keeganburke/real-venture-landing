@@ -29,7 +29,7 @@ const steps: {
   {
     target: "Livestreams",
     title: "Jump into Livestreams",
-    body: "Eleven live calls a week. Coaching, deal reviews, buyer sourcing, mindset. All in Discord voice, all times PST.",
+    body: "Fourteen live calls a week. Coaching, deal reviews, buyer sourcing, mindset. All in Discord voice, all times PST.",
     narrator: "keegan",
     href: "/dashboard/livestreams",
     linkLabel: "See the schedule",

@@ -4245,6 +4245,14 @@ a.tier-cta {
   text-decoration: underline;
 }
 
+.ls-footer-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 /* ============================================================================
    ONBOARDING TOUR (restored verbatim from cb9baa3^)
    ============================================================================ */
@@ -5075,6 +5083,14 @@ body:has(.hub-page) {
   font-size: 13px;
   letter-spacing: 0.02em;
   color: #F5C560;
+}
+/* What to bring or expect, one line, same weight as the host line above. */
+.ls-card-detail {
+  font-family: "Inter", sans-serif;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 8px;
 }
 
 @media (prefers-reduced-motion: reduce) {

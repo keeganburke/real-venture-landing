@@ -74,6 +74,15 @@ export const RESOURCES: Resource[] = [
     image: "/resources/pof.png"
   },
   {
+    id: "agent-assignment-objections",
+    section: "close",
+    emoji: "🙅",
+    title: "When Agents Say No to an Assignment",
+    description: "What to say, how to handle proof of funds, and how to double close or JV with us.",
+    href: "/resources/assignments-and-proof-of-funds.pdf",
+    external: true,
+  },
+  {
     id: "llc-and-bank-setup",
     section: "scale",
     emoji: "🏦",
@@ -97,14 +106,6 @@ export const RESOURCES: Resource[] = [
       { label: "VA System SOP", href: "/resources/va-sop.pdf" },
       { label: "VA Cold Call Script", href: "/resources/va-cold-call-script.pdf" }
     ]
-  },
-  {
-    id: "sprint",
-    emoji: "🏁",
-    title: "14-Day First Deal Sprint",
-    description: "The 7-milestone path from Day 1 to your first close.",
-    section: "start",
-    href: "/dashboard/sprint",
   },
   {
     id: "deal-analyzer",
@@ -136,7 +137,7 @@ export const RESOURCES: Resource[] = [
   {
     id: "live-calls",
     emoji: "🎥",
-    title: "7 Live Calls Per Week",
+    title: "14 Live Calls Per Week",
     description: "Coaching, cold calls, deal underwriting, Q&A.",
     section: "coach",
     href: "/dashboard",

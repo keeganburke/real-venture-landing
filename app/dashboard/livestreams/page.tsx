@@ -6,6 +6,8 @@ import { WEEKLY_SCHEDULE, type WeeklyCall } from "../hub-copy";
 import { getCallDurationMs, getCallStartMs } from "../lib/next-calls";
 
 const LA_TZ = "America/Los_Angeles";
+const RECORDINGS_URL =
+  "https://discord.com/channels/1268090071848980500/1522403978862657577";
 const DAY_SEQ = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 type Entry = {
@@ -82,15 +84,6 @@ export default function LivestreamsPage() {
           </p>
         </header>
 
-        <section className="livestreams-note">
-          <p>
-            Live streams are held in the Discord{" "}
-            <a href="/api/discord/connect" className="livestreams-note-link">
-              voice channel
-            </a>.
-          </p>
-        </section>
-
         <p className="ls-tz-note">{tzNote}</p>
 
         {dayGroups.map(({ dayName, items }) => (
@@ -101,41 +94,38 @@ export default function LivestreamsPage() {
                 <div className="ls-card-title">{call.type}</div>
                 <div className="ls-card-host">with {call.host}</div>
                 <div className="ls-card-time">{fmtClock(startMs)} - {fmtClock(endMs)}{suffix}</div>
+                {call.detail && <div className="ls-card-detail">{call.detail}</div>}
               </div>
             ))}
           </section>
         ))}
 
-        <section className="hub2-schedule-notes">
-          <div className="hub2-schedule-note">
-            <div className="hub2-schedule-note-icon" aria-hidden="true">🎙</div>
-            <div>
-              <div className="hub2-schedule-note-title">Coaching, Q&A + Deal Review</div>
-              <div className="hub2-schedule-note-body">
-                Get unstuck with the coaches: mentorship, questions answered, and your deals reviewed live.
-              </div>
-            </div>
-          </div>
-
-          <div className="hub2-schedule-note">
-            <div className="hub2-schedule-note-icon" aria-hidden="true">📞</div>
-            <div>
-              <div className="hub2-schedule-note-title">Buyer Outreach + Cold Calls</div>
-              <div className="hub2-schedule-note-body">
-                Hands-on working sessions: dial sellers and build your buyer list live alongside the team.
-              </div>
-            </div>
-          </div>
-
-          <div className="hub2-schedule-note">
-            <div className="hub2-schedule-note-icon" aria-hidden="true">📊</div>
-            <div>
-              <div className="hub2-schedule-note-title">Underwriting + Deal Breakdowns</div>
-              <div className="hub2-schedule-note-body">
-                Learn the numbers: watch real deals get analyzed and broken down step by step.
-              </div>
-            </div>
-          </div>
+        <section className="livestreams-note">
+          <ul className="ls-footer-list">
+            <li>
+              Check out past lives in{" "}
+              <a
+                href={RECORDINGS_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="livestreams-note-link"
+              >
+                #call-recordings
+              </a>
+            </li>
+            <li>
+              2 calls every single day. You don&apos;t need a deal to show up to any of
+              them. Members who join calls are exponentially more likely to close a
+              deal 💰
+            </li>
+            <li>
+              All livestreams are held in the{" "}
+              <a href="/api/discord/connect" className="livestreams-note-link">
+                #live-calls
+              </a>{" "}
+              channel in Discord
+            </li>
+          </ul>
         </section>
 
       </div>
