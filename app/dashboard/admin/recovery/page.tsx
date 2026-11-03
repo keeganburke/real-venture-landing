@@ -97,7 +97,7 @@ export default async function AdminRecoveryPage({ searchParams }: { searchParams
       {stats.errors.length > 0 && (
         <div className="admin-row-warn" style={{ padding: 10, marginBottom: 14, fontSize: 13 }}>
           {stats.errors.map((e) => <div key={e}>{e}</div>)}
-          <div>If migration 031 has not run yet, the links table is missing and clicks read as 0.</div>
+          <div>If migration 031 has not run yet, the links table is missing and clicks read as 0. If 032 has not run yet, the replies table is missing and replies read as 0.</div>
         </div>
       )}
 
@@ -153,11 +153,11 @@ export default async function AdminRecoveryPage({ searchParams }: { searchParams
         </section>
         <section style={section}>
           <h2 style={h2}>Per channel</h2>
-          <table className="admin-table"><thead><tr><th style={head}>Channel</th><th style={head}>Sent</th><th style={head}>Failed</th><th style={head}>Clicks</th><th style={head}>Clicked</th><th style={head}>Click rate</th></tr></thead>
+          <table className="admin-table"><thead><tr><th style={head}>Channel</th><th style={head}>Sent</th><th style={head}>Failed</th><th style={head}>Clicks</th><th style={head}>Clicked</th><th style={head}>Click rate</th><th style={head}>Replies</th></tr></thead>
             <tbody>{stats.perChannel.map((c) => (
-              <tr key={c.channel}><td style={cell}>{c.label}</td><td style={cell}>{c.sent}</td><td style={cell}>{c.failed}</td><td style={cell}>{c.clicks}</td><td style={cell}>{c.clicked}</td><td style={cell}>{pct(c.clickRate)}</td></tr>
+              <tr key={c.channel}><td style={cell}>{c.label}</td><td style={cell}>{c.sent}</td><td style={cell}>{c.failed}</td><td style={cell}>{c.clicks}</td><td style={cell}>{c.clicked}</td><td style={cell}>{pct(c.clickRate)}</td><td style={cell}>{c.replies === null ? "see GHL" : c.replies}</td></tr>
             ))}</tbody></table>
-          <p style={note}>Click rate = links clicked at least once / messages sent on that channel.</p>
+          <p style={note}>Click rate = links clicked at least once / messages sent on that channel. Replies: Discord DM replies the hourly cron captured (posted to the mod channel); email and SMS replies are in GHL.</p>
         </section>
         <section style={section}>
           <h2 style={h2}>Per send time (Chicago)</h2>
@@ -174,11 +174,11 @@ export default async function AdminRecoveryPage({ searchParams }: { searchParams
         <div className="admin-table-wrap">
           <table className="admin-table">
             <thead><tr>
-              <th style={head}>User</th><th style={head}>Plan</th><th style={head}>Entered</th><th style={head}>Failed</th><th style={head}>Messages sent</th><th style={head}>Clicked</th><th style={head}>Outcome</th><th style={head}>Paid</th><th style={head}>$</th>
+              <th style={head}>User</th><th style={head}>Plan</th><th style={head}>Entered</th><th style={head}>Failed</th><th style={head}>Messages sent</th><th style={head}>Clicked</th><th style={head}>DM replies</th><th style={head}>Outcome</th><th style={head}>Paid</th><th style={head}>$</th>
             </tr></thead>
             <tbody>
               {stats.sequences.length === 0 ? (
-                <tr><td style={cell} colSpan={9} className="admin-td-empty">No sequences in this range.</td></tr>
+                <tr><td style={cell} colSpan={10} className="admin-td-empty">No sequences in this range.</td></tr>
               ) : stats.sequences.map((s) => (
                 <tr key={`${s.membershipId}-${s.failedAt ?? ""}`} className={s.outcome === "paid" ? undefined : s.outcome === "open" ? undefined : "admin-row-warn"}>
                   <td style={cell}><span className="admin-td-name">{s.username}</span></td>
@@ -187,6 +187,7 @@ export default async function AdminRecoveryPage({ searchParams }: { searchParams
                   <td style={cell}>{fmtDateTime(s.failedAt)}</td>
                   <td style={cell}>{s.messagesSent}</td>
                   <td style={cell}>{s.clicked ? `y (${s.clicks})` : "n"}</td>
+                  <td style={cell}>{s.replies > 0 ? s.replies : "-"}</td>
                   <td style={cell} title={s.stopReason ?? ""}>{outcomeLabel(s.outcome)}</td>
                   <td style={cell}>{fmtDateTime(s.paidAt)}</td>
                   <td style={cell}>{s.amount !== null ? usd(s.amount) : "-"}</td>

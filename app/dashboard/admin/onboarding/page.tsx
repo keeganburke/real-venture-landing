@@ -12,8 +12,12 @@ import {
 
 export const dynamic = "force-dynamic";
 
+// The live 7-question intake (app/onboarding/intake-config.ts) as
+// app/api/intake/save/route.ts writes it, the five Sept 2026 columns rows
+// from the old flow still carry, and the Whop name / username from the
+// backfill (019) for the member cell.
 const INTAKE_COLUMNS =
-  "whop_user_id, display_name, intake_dream, intake_hours, intake_tried, intake_tried_failure, intake_worry, intake_identity, intake_invest, intake_seriousness, intake_completed_at";
+  "whop_user_id, display_name, whop_display_name, whop_username, intake_dream, whop_commitment_min, intake_tried, intake_tried_failure, intake_situation, intake_seriousness_scale, intake_seriousness_followup, intake_age, whop_phone, intake_hours, intake_worry, intake_identity, intake_invest, intake_seriousness, intake_completed_at";
 
 export default async function AdminOnboardingPage() {
   const cookieStore = await cookies();
@@ -41,7 +45,7 @@ export default async function AdminOnboardingPage() {
       .select(INTAKE_COLUMNS)
       .not("intake_completed_at", "is", null)
       .order("intake_completed_at", { ascending: false }),
-    supabase.from("discord_connections").select("whop_user_id, discord_user_id, connected_at"),
+    supabase.from("discord_connections").select("whop_user_id, discord_user_id, discord_username, connected_at"),
   ]);
   if (profilesRes.error) {
     console.error("[admin/onboarding page] member_profiles read failed", profilesRes.error.message);
@@ -54,6 +58,7 @@ export default async function AdminOnboardingPage() {
   for (const dc of discordRes.data ?? []) {
     discordByUser.set(dc.whop_user_id, {
       discord_user_id: dc.discord_user_id,
+      discord_username: dc.discord_username ?? null,
       connected_at: dc.connected_at,
     });
   }

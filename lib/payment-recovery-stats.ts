@@ -22,6 +22,10 @@ import { PLAN_NAMES, chicago, parseMs, whopGet, type StopOutcome } from "./payme
 //              status sent); before launch the window is the last 90 days.
 //   clicks     payment_recovery_links.click_count per (sequence, message,
 //              channel); "clicked" = links with at least one click.
+//   replies    payment_recovery_replies rows (migration 032) per sequence:
+//              Discord DM replies the cron captured. Email and SMS replies
+//              are not captured here (they live in GHL), so those channels
+//              read null = "see GHL".
 //   send slot  Chicago hour of sent_at: 10 to 13 = 10am, 14 to 17 = 2pm,
 //              18 = 6pm, anything else = other.
 // Reads only. SELECT on Supabase, GET on Whop.
@@ -43,6 +47,8 @@ export type SequenceRow = {
   messagesSent: number;
   clicks: number;
   clicked: boolean;
+  // Discord DM replies captured for this sequence (032).
+  replies: number;
   outcome: StopOutcome | "open";
   stopReason: string | null;
   paidAt: string | null;
@@ -64,7 +70,8 @@ export type RecoveryStats = {
   perMonth: { month: string; amount: number; count: number }[];
   paidAfterMessage: { message: number; count: number }[];
   hoursToPaid: { n: number; median: number | null; average: number | null };
-  perChannel: { channel: SendChannel; label: string; sent: number; failed: number; clicks: number; clicked: number; clickRate: number | null }[];
+  // replies: captured count for discord_dm, null for the GHL channels (see GHL).
+  perChannel: { channel: SendChannel; label: string; sent: number; failed: number; clicks: number; clicked: number; clickRate: number | null; replies: number | null }[];
   perSlot: { slot: Slot; sends: number; clicks: number; payments: number }[];
   sequences: SequenceRow[];
   errors: string[];
@@ -129,7 +136,7 @@ export async function loadRecoveryStats(fromMs: number, toMs: number): Promise<R
   const stats: RecoveryStats = {
     fromMs, toMs, entered: 0, messaged: 0, recovered: 0, lost: 0, other: 0, open: 0, rate: null, recoveredAmount: 0,
     perMonth: [], paidAfterMessage: [], hoursToPaid: { n: 0, median: null, average: null },
-    perChannel: (["ghl", "ghl_sms", "discord_dm"] as SendChannel[]).map((c) => ({ channel: c, label: CHANNEL_LABELS[c], sent: 0, failed: 0, clicks: 0, clicked: 0, clickRate: null })),
+    perChannel: (["ghl", "ghl_sms", "discord_dm"] as SendChannel[]).map((c) => ({ channel: c, label: CHANNEL_LABELS[c], sent: 0, failed: 0, clicks: 0, clicked: 0, clickRate: null, replies: c === "discord_dm" ? 0 : null })),
     perSlot: SLOTS.map((slot) => ({ slot, sends: 0, clicks: 0, payments: 0 })),
     sequences: [], errors,
   };
@@ -146,12 +153,23 @@ export async function loadRecoveryStats(fromMs: number, toMs: number): Promise<R
   }
   const recs = (recRes.data ?? []) as unknown as Row[];
   const ids = recs.map((r) => str(r.membership_id)).filter((v): v is string => v !== null);
-  const [sends, links] = await Promise.all([
+  const [sends, links, replies] = await Promise.all([
     selectIn("payment_recovery_sends", "membership_id, failed_at, day, message_number, channel, status, sent_at", ids),
     selectIn("payment_recovery_links", "token, membership_id, failed_at, message_number, channel, click_count, first_clicked_at", ids),
+    selectIn("payment_recovery_replies", "membership_id, channel, received_at", ids),
   ]);
   if (sends.error) errors.push(sends.error);
   if (links.error) errors.push(links.error);
+  if (replies.error) errors.push(replies.error);
+  // Replies per sequence: by membership and received after the failure (a
+  // reply to an older failure sequence of the same membership stays with it).
+  const repliesByMembership = new Map<string, number[]>();
+  for (const r of replies.rows) {
+    const m = str(r.membership_id);
+    const ms = parseMs(r.received_at);
+    if (!m || ms === null) continue;
+    repliesByMembership.set(m, [...(repliesByMembership.get(m) ?? []), ms]);
+  }
 
   const key = (m: string | null, f: string | null) => `${m}|${f ? parseMs(f) : "x"}`;
   const sendsBySeq = new Map<string, Row[]>();
@@ -180,6 +198,8 @@ export async function loadRecoveryStats(fromMs: number, toMs: number): Promise<R
     const sent = seqSends.filter((s) => s.status === "sent");
     const messagesSent = new Set(sent.map((s) => num(s.message_number) ?? num(s.day) ?? 0)).size;
     const clicks = seqLinks.reduce((acc, l) => acc + (num(l.click_count) ?? 0), 0);
+    const failedAtMs = failedAt ? parseMs(failedAt) : null;
+    const seqReplies = (repliesByMembership.get(membershipId) ?? []).filter((ms) => failedAtMs === null || ms >= failedAtMs).length;
     const stoppedAt = str(r.stopped_at);
     const rawOutcome = str(r.outcome);
     const outcome: SequenceRow["outcome"] = !stoppedAt
@@ -206,6 +226,8 @@ export async function loadRecoveryStats(fromMs: number, toMs: number): Promise<R
       if (s.status === "sent") stats.perChannel[ci].sent++;
       if (s.status === "failed") stats.perChannel[ci].failed++;
     }
+    const dmIdx = channelIdx("discord_dm");
+    if (dmIdx >= 0) stats.perChannel[dmIdx].replies = (stats.perChannel[dmIdx].replies ?? 0) + seqReplies;
     for (const l of seqLinks) {
       const ci = channelIdx(String(l.channel));
       const c = num(l.click_count) ?? 0;
@@ -254,6 +276,7 @@ export async function loadRecoveryStats(fromMs: number, toMs: number): Promise<R
       messagesSent,
       clicks,
       clicked: clicks > 0,
+      replies: seqReplies,
       outcome,
       stopReason: str(r.stop_reason),
       paidAt,

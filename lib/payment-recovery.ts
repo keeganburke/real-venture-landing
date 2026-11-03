@@ -1,7 +1,7 @@
 import { randomBytes } from "crypto";
 import { createAdminClient } from "./supabase/admin";
 import { postToModChannel } from "./discord-kick";
-import { sendDiscordDm } from "./discord-dm";
+import { sendDiscordDm, sendDiscordDmDetailed } from "./discord-dm";
 import { WHOP_API_VERSION_DATE, rowOwner, rowProduct } from "../app/api/whop/whop-membership";
 
 // Payment-recovery drip. Runs hourly (app/api/cron/payment-recovery).
@@ -63,7 +63,16 @@ import { WHOP_API_VERSION_DATE, rowOwner, rowProduct } from "../app/api/whop/who
 // Dedupe: payment_recovery_sends is unique on (membership_id, failed_at, day,
 // channel) where day is the Chicago calendar day index (1 to 14, migration
 // 030); message_number is recorded on every row and the next message number
-// is the count of distinct days already claimed + 1.
+// is the highest message number already sent + 1. A claim row left at status
+// pending for longer than STALE_CLAIM_MS (the run died between the claim and
+// the send: seen 2026-11-01 and 11-02, four rows each the last of its run)
+// is stale: it neither counts as a sent day nor as a message, and the next
+// run re-claims it and sends. So a killed run can no longer swallow a day.
+//
+// Discord DM channel memory (migration 032): every DM the drip sends records
+// the bot's DM channel with that member in payment_recovery_dm_channels, and
+// the cron polls those channels for replies after the sends
+// (lib/payment-recovery-replies.ts).
 //
 // Results tracking (migration 031, read by /dashboard/admin/recovery and the
 // Monday weekly post, lib/payment-recovery-stats.ts):
@@ -111,6 +120,9 @@ export const MAX_DAY = 14;
 export const MAX_MESSAGE = 5;
 export const FALLBACK_LINK = "https://whop.com/@me/settings/memberships";
 const GHL_TIMEOUT_MS = 5000;
+// A pending send claim older than this never finished (the run died): it is
+// re-claimable and does not count as sent.
+export const STALE_CLAIM_MS = 15 * 60 * 1000;
 // Guild member "keeganburke" (looked up 2026-10-26 via guild member search). Test sends go here only.
 export const OWNER_DISCORD_USER_ID = "1251247376031551577";
 
@@ -199,10 +211,12 @@ const COPY: Record<number, MessageCopy> = {
       (w ? `Next try is ${w}. Get ${a} on your card before then and nothing changes.` : `Get ${a} on your card before our next try and nothing changes.`),
     sms: (f, a, w, l) =>
       (f ? `${BRAND}: ${f}, we still can't process your ${a} payment. ` : `${BRAND}: We still can't process your ${a} payment. `) +
-      (w ? `Next try is ${w}: ${l}` : `Update your card here: ${l}`),
+      (w ? `Next try is ${w}: ${l}` : `Update your card here: ${l}`) +
+      " If something's up, just reply here.",
     dm: (f, a, w, l) =>
       (f ? `${f}, your ${a} payment still hasn't gone through. ` : `Your ${a} payment still hasn't gone through. `) +
-      `${w ? `Next try is ${w}. ` : ""}Get it on the card and you keep the calls, the Discord, all of it: <${l}>`,
+      `${w ? `Next try is ${w}. ` : ""}Get it on the card and you keep the calls, the Discord, all of it: <${l}>` +
+      "\nIf something's up, just reply here.",
   },
   3: {
     subject: `We couldn't process your ${BRAND} payment`,
@@ -805,26 +819,39 @@ async function loadOpenRecords(): Promise<{ ok: true; rows: RecoveryRecord[] } |
   return { ok: true, rows };
 }
 
-// Calendar days already claimed for this failure sequence (any channel, any
-// status). Its size is the number of messages already sent, so the next
-// message number is size + 1; membership of today's day is the per-day dedupe.
-async function loadSentDays(membershipId: string, failedAt: string): Promise<Set<number> | null> {
+// Calendar days already claimed for this failure sequence (any channel) and
+// the highest message number on those rows, so the next message number is
+// maxMessage + 1 and membership of today's day is the per-day dedupe. Stale
+// pending rows (claimed, never finished, older than STALE_CLAIM_MS) are left
+// out of both: that day was never actually sent.
+export type SentState = { days: Set<number>; maxMessage: number; stale: number };
+export function sentStateOf(rows: { day: unknown; status?: unknown; sent_at?: unknown; message_number?: unknown }[], nowMs: number): SentState {
+  const state: SentState = { days: new Set<number>(), maxMessage: 0, stale: 0 };
+  for (const r of rows) {
+    const d = Number(r.day);
+    const sentAt = parseMs(r.sent_at);
+    if (r.status === "pending" && sentAt !== null && nowMs - sentAt > STALE_CLAIM_MS) {
+      state.stale++;
+      continue;
+    }
+    if (Number.isInteger(d)) state.days.add(d);
+    const n = Number(r.message_number);
+    if (Number.isInteger(n) && n > state.maxMessage) state.maxMessage = n;
+  }
+  return state;
+}
+async function loadSentState(membershipId: string, failedAt: string, nowMs: number): Promise<SentState | null> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("payment_recovery_sends")
-    .select("day")
+    .select("day, status, sent_at, message_number")
     .eq("membership_id", membershipId)
     .eq("failed_at", failedAt);
   if (error) {
     console.error("[payment-recovery] sends read failed", error.message);
     return null;
   }
-  const days = new Set<number>();
-  for (const r of data ?? []) {
-    const d = Number(r.day);
-    if (Number.isInteger(d)) days.add(d);
-  }
-  return days;
+  return sentStateOf(data ?? [], nowMs);
 }
 
 // ---------------------------------------------------------------------------
@@ -836,22 +863,59 @@ type SendStatus = "pending" | "sent" | "failed" | "skipped";
 type SendChannel = "ghl" | "ghl_sms" | "discord_dm";
 
 // Claims (membership_id, failed_at, day, channel). "duplicate" means another
-// run got there first and this run must send nothing for that day.
+// run got there first and this run must send nothing for that day. A
+// duplicate whose row is still pending and older than STALE_CLAIM_MS is a
+// claim a dead run never finished: it is taken over ("reclaimed") with a
+// fresh sent_at and message number, so the message goes out after all.
 async function claimSend(
   membershipId: string,
   failedAt: string,
   day: number,
   messageNumber: number,
   channel: SendChannel
-): Promise<"claimed" | "duplicate" | "error"> {
+): Promise<"claimed" | "reclaimed" | "duplicate" | "error"> {
   const supabase = createAdminClient();
   const { error } = await supabase
     .from("payment_recovery_sends")
     .insert({ membership_id: membershipId, failed_at: failedAt, day, message_number: messageNumber, channel, status: "pending" });
   if (!error) return "claimed";
-  if (error.code === "23505") return "duplicate";
-  console.error("[payment-recovery] sends insert failed", error.message);
-  return "error";
+  if (error.code !== "23505") {
+    console.error("[payment-recovery] sends insert failed", error.message);
+    return "error";
+  }
+  const staleBefore = new Date(Date.now() - STALE_CLAIM_MS).toISOString();
+  const taken = await supabase
+    .from("payment_recovery_sends")
+    .update({ sent_at: new Date().toISOString(), message_number: messageNumber })
+    .eq("membership_id", membershipId)
+    .eq("failed_at", failedAt)
+    .eq("day", day)
+    .eq("channel", channel)
+    .eq("status", "pending")
+    .lt("sent_at", staleBefore)
+    .select("id");
+  if (taken.error) {
+    console.error("[payment-recovery] stale claim takeover failed", taken.error.message);
+    return "duplicate";
+  }
+  return (taken.data ?? []).length > 0 ? "reclaimed" : "duplicate";
+}
+
+// Remembers the bot's DM channel with a member (migration 032) so the reply
+// poll can read it. A new row starts last_seen at the DM just sent (older
+// history is not a reply); an existing row keeps its cursor.
+async function rememberDmChannel(discordUserId: string, channelId: string, whopUserId: string, messageId: string | null): Promise<void> {
+  const supabase = createAdminClient();
+  const existing = await supabase.from("payment_recovery_dm_channels").select("discord_user_id").eq("discord_user_id", discordUserId).maybeSingle();
+  if (existing.error) {
+    console.error("[payment-recovery] dm_channels read failed", existing.error.message);
+    return;
+  }
+  const row: Record<string, unknown> = { channel_id: channelId, whop_user_id: whopUserId, updated_at: new Date().toISOString() };
+  const res = existing.data
+    ? await supabase.from("payment_recovery_dm_channels").update(row).eq("discord_user_id", discordUserId)
+    : await supabase.from("payment_recovery_dm_channels").insert({ discord_user_id: discordUserId, last_seen_message_id: messageId, ...row });
+  if (res.error) console.error("[payment-recovery] dm_channels write failed", res.error.message);
 }
 
 async function finishSend(membershipId: string, failedAt: string, day: number, channel: SendChannel, status: SendStatus): Promise<void> {
@@ -1256,22 +1320,24 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
         }
 
         // Messages already sent in this sequence decide the next message
-        // number; today's day already claimed = nothing more today.
-        const sentDays = await loadSentDays(membershipId, failedAtIso);
-        if (sentDays === null) {
+        // number; today's day already claimed = nothing more today. Stale
+        // pending claims (a dead run) count for neither.
+        const sent = await loadSentState(membershipId, failedAtIso, now);
+        if (sent === null) {
           push({ ...base, outcome: "error", detail: "sends read failed" });
           continue;
         }
-        const messageNumber = sentDays.size + 1;
+        const messageNumber = sent.maxMessage + 1;
         base.messageNumber = messageNumber;
-        base.nextSendAt = nextSendLabel(messageNumber, day, sentDays.has(day), now);
+        base.nextSendAt = nextSendLabel(messageNumber, day, sent.days.has(day), now);
+        if (sent.stale > 0) base.detail = [base.detail, `${sent.stale} stale pending claim(s) ignored`].filter(Boolean).join("; ");
         const nextText = base.nextSendAt ? `message ${messageNumber} next at ${base.nextSendAt}` : `message ${messageNumber} never (day ${MAX_DAY} was the last)`;
-        if (sentDays.has(day)) {
-          push({ ...base, outcome: "already_sent_today", detail: nextText });
+        if (sent.days.has(day)) {
+          push({ ...base, outcome: "already_sent_today", detail: [base.detail, nextText].filter(Boolean).join("; ") });
           continue;
         }
         if (!windowOpen(messageNumber, now)) {
-          push({ ...base, outcome: "not_due_yet", detail: nextText });
+          push({ ...base, outcome: "not_due_yet", detail: [base.detail, nextText].filter(Boolean).join("; ") });
           continue;
         }
 
@@ -1346,6 +1412,7 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
           push({ ...item, outcome: "error", detail: "could not claim send row", ghl: null, ghlSms: null, discordDm: null });
           continue;
         }
+        if (claim === "reclaimed") item.detail = [item.detail, "re-claimed a stale pending email row"].filter(Boolean).join("; ");
         if (item.ghl === "would_send") {
           const g = await postGhl("email", payload);
           item.ghl = g.ok ? "sent" : "failed";
@@ -1357,7 +1424,7 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
         // the text and vice versa.
         if (smsPayload) {
           const smsClaim = await claimSend(membershipId, failedAtIso, day, messageNumber, "ghl_sms");
-          if (smsClaim === "claimed") {
+          if (smsClaim === "claimed" || smsClaim === "reclaimed") {
             const s = await postGhl("sms", smsPayload);
             item.ghlSms = s.ok ? "sent" : "failed";
             if (!s.ok) item.detail = [item.detail, `ghl sms ${s.error}`].filter(Boolean).join("; ");
@@ -1370,10 +1437,12 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
 
         if (discord.discordUserId) {
           const dmClaim = await claimSend(membershipId, failedAtIso, day, messageNumber, "discord_dm");
-          if (dmClaim === "claimed") {
-            const ok = await sendDiscordDm(discord.discordUserId, dmText);
-            item.discordDm = ok ? "sent" : "failed";
-            await finishSend(membershipId, failedAtIso, day, "discord_dm", ok ? "sent" : "failed");
+          if (dmClaim === "claimed" || dmClaim === "reclaimed") {
+            const dm = await sendDiscordDmDetailed(discord.discordUserId, dmText);
+            item.discordDm = dm.ok ? "sent" : "failed";
+            await finishSend(membershipId, failedAtIso, day, "discord_dm", dm.ok ? "sent" : "failed");
+            // Remember the DM channel so the reply poll can read it (032).
+            if (dm.ok && dm.channelId) await rememberDmChannel(discord.discordUserId, dm.channelId, whopUserId, dm.messageId);
           } else {
             item.discordDm = "skipped";
           }

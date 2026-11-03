@@ -3,6 +3,11 @@
 //
 // Bot DM = open (or reuse) the DM channel, then post to it. 403 on the
 // second call means the user has DMs from server members disabled.
+//
+// sendDiscordDmDetailed also returns the DM channel id and the posted
+// message id, so the payment-recovery drip can remember the channel and
+// poll it for replies (lib/payment-recovery-replies.ts). sendDiscordDm is
+// the boolean wrapper every existing caller uses.
 
 function idOf(value: unknown): string | null {
   if (typeof value === "string" && value.length > 0) return value;
@@ -13,11 +18,14 @@ function idOf(value: unknown): string | null {
   return null;
 }
 
-export async function sendDiscordDm(discordUserId: string, content: string): Promise<boolean> {
+export type DmResult = { ok: boolean; channelId: string | null; messageId: string | null };
+
+// Opens (or reuses) the bot's DM channel with a user. null on any failure.
+export async function openDmChannel(discordUserId: string): Promise<string | null> {
   const botToken = process.env.DISCORD_BOT_TOKEN;
   if (!botToken) {
     console.error("[webhook payment_failed] DISCORD_BOT_TOKEN unset, cannot DM");
-    return false;
+    return null;
   }
   const headers = { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" };
   try {
@@ -28,13 +36,26 @@ export async function sendDiscordDm(discordUserId: string, content: string): Pro
     });
     if (!chanRes.ok) {
       console.error("[webhook payment_failed] discord open DM failed", chanRes.status, await chanRes.text());
-      return false;
+      return null;
     }
     const channelId = idOf(await chanRes.json().catch(() => null));
     if (!channelId) {
       console.error("[webhook payment_failed] discord open DM returned no channel id");
-      return false;
+      return null;
     }
+    return channelId;
+  } catch (err) {
+    console.error("[webhook payment_failed] discord DM threw", err);
+    return null;
+  }
+}
+
+export async function sendDiscordDmDetailed(discordUserId: string, content: string): Promise<DmResult> {
+  const channelId = await openDmChannel(discordUserId);
+  if (!channelId) return { ok: false, channelId: null, messageId: null };
+  const botToken = process.env.DISCORD_BOT_TOKEN;
+  const headers = { Authorization: `Bot ${botToken}`, "Content-Type": "application/json" };
+  try {
     const msgRes = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
       method: "POST",
       headers,
@@ -42,11 +63,16 @@ export async function sendDiscordDm(discordUserId: string, content: string): Pro
     });
     if (!msgRes.ok) {
       console.error("[webhook payment_failed] discord send failed", msgRes.status, await msgRes.text());
-      return false;
+      return { ok: false, channelId, messageId: null };
     }
-    return true;
+    const messageId = idOf(await msgRes.json().catch(() => null));
+    return { ok: true, channelId, messageId };
   } catch (err) {
     console.error("[webhook payment_failed] discord DM threw", err);
-    return false;
+    return { ok: false, channelId, messageId: null };
   }
+}
+
+export async function sendDiscordDm(discordUserId: string, content: string): Promise<boolean> {
+  return (await sendDiscordDmDetailed(discordUserId, content)).ok;
 }
