@@ -79,6 +79,28 @@ export function getCallDurationMs(call: WeeklyCall): number {
   return Math.max(0, parseTimeToMinutes(call.endTime) - parseTimeToMinutes(call.startTime)) * 60000;
 }
 
+// The start of the occurrence happening RIGHT NOW, for a call getLiveCall has
+// already matched.
+//
+// getCallStartMs cannot answer this. A call that has already started today
+// fails its `startMinutes <= nowMinutes` test and projects to NEXT week,
+// which is the right answer for "when is this on again" and the wrong one for
+// "when did the call I am sitting in start". Measured: 7 days out on all 14
+// calls in both PST and PDT.
+//
+// Precondition: `call` is live now, so its day IS today's LA day. getLiveCall
+// only ever returns a call matching today's day index, and no call in the
+// schedule crosses midnight, so reading today's date off the clock is exact.
+export function getCurrentCallStartMs(call: WeeklyCall, now: Date = new Date()): number {
+  const nowLA = laParts(now);
+  return laWallTimeToDate(
+    nowLA.year,
+    nowLA.month,
+    nowLA.day,
+    parseTimeToMinutes(call.startTime)
+  ).getTime();
+}
+
 // The call happening right now in LA terms, if any. Additive helper for the
 // hub's live indicator; getNextCalls excludes in-progress calls by design.
 export function getLiveCall(schedule: WeeklyCall[], now: Date = new Date()): WeeklyCall | null {

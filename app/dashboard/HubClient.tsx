@@ -5,7 +5,7 @@ import Link from "next/link";
 import { TRUST_COUNTS } from "@/app/lib/whop-reviews";
 import { WEEKLY_SCHEDULE } from "./hub-copy";
 import type { Destination, FeedbackAction } from "./hub-copy";
-import { getCallDurationMs, getLiveCall, getNextCalls } from "./lib/next-calls";
+import { getCallDurationMs, getCurrentCallStartMs, getLiveCall, getNextCalls } from "./lib/next-calls";
 import SprintCard from "./SprintCard";
 import SpotlightTour from "./SpotlightTour";
 import ReferHubCard from "./refer/ReferHubCard";
@@ -232,8 +232,15 @@ export default function HubClient({
   const upcomingCalls = getNextCalls(WEEKLY_SCHEDULE, new Date(), 4);
   const liveCall = getLiveCall(WEEKLY_SCHEDULE);
   // A call in progress takes over the featured slot; otherwise next upcoming.
+  //
+  // occursAt is the SCHEDULED start of the occurrence in progress, not the
+  // current instant. It used to be `new Date()`, which made the card render
+  // its own render time as the start and the end an hour after that, so a
+  // 4:30 to 5:30 call read "4:37 PM - 5:37 PM" and drifted by a minute every
+  // minute. The date badge reads off the same value, so it has to be today's
+  // occurrence rather than next week's.
   const featuredEntry = liveCall
-    ? { call: liveCall, occursAt: new Date() }
+    ? { call: liveCall, occursAt: new Date(getCurrentCallStartMs(liveCall)) }
     : upcomingCalls[0];
   const featured = featuredEntry;
   const rest = liveCall ? upcomingCalls.slice(0, 3) : upcomingCalls.slice(1);
