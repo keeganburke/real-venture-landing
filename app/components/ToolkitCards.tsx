@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { TRUST_COUNTS } from "@/app/lib/whop-reviews";
 
 // After a manual tap, the observer leaves that card alone for 5s so scroll
 // auto-flip doesn't fight the user's choice.
@@ -54,7 +55,7 @@ const FRONTS = [
     title: "Discord community",
     desc: (
       <>
-        <strong>650+ members</strong>. <strong>24/7</strong> wins channel. Ask anything, get answers in minutes.
+        <strong>{TRUST_COUNTS.students}+ members</strong>. <strong>24/7</strong> wins channel. Ask anything, get answers in minutes.
       </>
     ),
     emoji: "💬",

@@ -330,7 +330,7 @@ export default function HubClient({
             </div>
             <div className="hub2-discord-title">Join the community</div>
             <p className="hub2-discord-sub">
-              {TRUST_COUNTS.students}+ members closing deals every week. Ask questions, share wins, get help.
+              {TRUST_COUNTS.students}+ members inside. Ask questions, share wins, get help.
             </p>
             <Link href="/dashboard/discord-help" className="hub2-discord-cta">
               <span>Join Discord</span>
