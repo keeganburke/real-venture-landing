@@ -38,9 +38,13 @@ import { WHOP_API_VERSION_DATE } from "../app/api/whop/whop-membership";
 // 028; the webhook kick path skips while a sweep holds it, and both fail
 // CLOSED when the table cannot be read); a live user count below 90% of the
 // last successful sweep means the Whop read is suspect and the sweep acts on
-// no one; more than 25 candidates in one sweep (cap override: ?cap=N, max 60,
-// on a manual authorized call only) means act on none; a Whop read that fails
-// or looks wrong means act on none; in live mode the first 403 from Discord
+// no one; more than 25 candidates in a nightly sweep means act on none. A
+// manual authorized call with ?cap=N (1..60) is a BATCH instead: the first N
+// candidates, oldest Whop period end first, are acted on (shadow: logged as
+// would_kick) and the rest are logged as deferred for the next batch. Every
+// decision inside the kick loop is logged the moment it happens, so a run
+// killed at maxDuration leaves no unlogged kick. A Whop read that fails or
+// looks wrong means act on none; in live mode the first 403 from Discord
 // stops the run.
 
 // ---------------------------------------------------------------------------
@@ -451,7 +455,17 @@ export function addToLiveness(sets: LivenessSets, owner: string, c: MembershipLi
 }
 
 export type LivenessResult =
-  | { ok: true; live: Set<string>; paused: Set<string>; paidTime: Set<string>; rows: number; pages: number }
+  | {
+      ok: true;
+      live: Set<string>;
+      paused: Set<string>;
+      paidTime: Set<string>;
+      // Latest parseable period end per Whop user (ms), any membership. Used
+      // only to order a manual batch: oldest end first. Liveness never reads it.
+      periodEnds: Map<string, number>;
+      rows: number;
+      pages: number;
+    }
   | { ok: false; error: string };
 
 // Every membership in the company, EVERY product, all statuses, paged. The
@@ -464,6 +478,7 @@ export async function loadLiveWhopUsers(): Promise<LivenessResult> {
   const companyId = process.env.WHOP_COMPANY_ID;
   if (!companyId) return { ok: false, error: "WHOP_COMPANY_ID unset" };
   const sets: LivenessSets = { live: new Set<string>(), paused: new Set<string>(), paidTime: new Set<string>() };
+  const periodEnds = new Map<string, number>();
   const now = Date.now();
   // Paused list first: primary paused signal. A failed read aborts the sweep
   // like any other bad Whop read.
@@ -490,6 +505,8 @@ export async function loadLiveWhopUsers(): Promise<LivenessResult> {
         if (!owner) continue;
         rows++;
         addToLiveness(sets, owner, classifyMembership(m, now, pausedIds));
+        const end = rowPeriodEnd(m);
+        if (end !== null) periodEnds.set(owner, Math.max(periodEnds.get(owner) ?? end, end));
       }
       const hasNext = page?.page_info?.has_next_page === true;
       const next = page?.page_info?.end_cursor ?? null;
@@ -502,7 +519,7 @@ export async function loadLiveWhopUsers(): Promise<LivenessResult> {
   }
   if (pages >= WHOP_MAX_PAGES) return { ok: false, error: `memberships read exceeded ${WHOP_MAX_PAGES} pages` };
   if (rows === 0) return { ok: false, error: "memberships read returned zero rows" };
-  return { ok: true, live: sets.live, paused: sets.paused, paidTime: sets.paidTime, rows, pages: pages + 1 };
+  return { ok: true, live: sets.live, paused: sets.paused, paidTime: sets.paidTime, periodEnds, rows, pages: pages + 1 };
 }
 
 // One user, every product: singular user_id filter plus an owner check on every
@@ -707,6 +724,10 @@ export type SweepSummary = {
   dm_failed: number;
   counts: Record<SkipReason | "cap_exceeded", number>;
   aborted: string | null;
+  // Manual ?cap=N call only: candidates acted on this run and the number
+  // left for the next batch. Both null on a nightly run.
+  batch: number | null;
+  deferred: number | null;
 };
 
 function emptyCounts(): SweepSummary["counts"] {
@@ -744,6 +765,13 @@ function formatSummary(source: LogSource, s: SweepSummary, guildName: string | n
   }
   const acted = s.mode === "live" ? s.kicked : s.would_kick;
   lines.push(`${s.mode === "live" ? "kicked" : "would kick"}: ${acted.length}${acted.length ? " -> " + acted.join(", ") : ""}`);
+  if (source === "sweep" && s.batch !== null && s.deferred !== null) {
+    lines.push(
+      s.mode === "live"
+        ? `Batch: ${s.kicked.length} kicked of ${s.batch}, ${s.deferred} candidates remaining.`
+        : `Batch (shadow): ${s.would_kick.length} would kick of ${s.batch}, ${s.deferred} candidates remaining.`
+    );
+  }
   if (s.mode === "live") lines.push(`kick DMs: sent ${s.dm_sent} | failed ${s.dm_failed}`);
   if (s.failed.length) lines.push(`failed: ${s.failed.length} -> ${s.failed.join(", ")}`);
   const c = s.counts;
@@ -755,11 +783,13 @@ function formatSummary(source: LogSource, s: SweepSummary, guildName: string | n
   return lines.join("\n");
 }
 
-// cap: candidate ceiling for this run; the route passes a value only for an
-// authorized manual call with ?cap=N. Clamped to 1..SWEEP_CAP_MAX.
+// cap: present only on an authorized manual call with ?cap=N (clamped to
+// 1..SWEEP_CAP_MAX) and then a BATCH SIZE: the first N candidates, oldest
+// period end first, are acted on and the rest are logged as deferred. Absent
+// on the nightly cron: more than SWEEP_CAP candidates aborts, nobody acted on.
 export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<SweepSummary> {
   const mode = kickMode();
-  const cap = Math.min(Math.max(Math.floor(opts.cap ?? SWEEP_CAP), 1), SWEEP_CAP_MAX);
+  const batchSize = opts.cap === undefined ? null : Math.min(Math.max(Math.floor(opts.cap), 1), SWEEP_CAP_MAX);
   const summary: SweepSummary = {
     mode,
     run_id: null,
@@ -775,6 +805,8 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
     dm_failed: 0,
     counts: emptyCounts(),
     aborted: null,
+    batch: null,
+    deferred: null,
   };
   let guildName: string | null = null;
   const logRows: Parameters<typeof logDecisions>[0] = [];
@@ -872,8 +904,9 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
     }
     summary.candidates = candidates.length;
 
-    if (candidates.length > cap) {
-      summary.aborted = `${candidates.length} kick candidates exceed the cap of ${cap}`;
+    // Nightly run: more than SWEEP_CAP candidates means act on no one.
+    if (batchSize === null && candidates.length > SWEEP_CAP) {
+      summary.aborted = `${candidates.length} kick candidates exceed the cap of ${SWEEP_CAP}`;
       summary.counts.cap_exceeded = candidates.length;
       for (const c of candidates) {
         logRows.push({ discord_user_id: c.id, whop_user_ids: c.whop, reason: "cap_exceeded", mode, action: "skipped", source: "sweep" });
@@ -883,11 +916,36 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
       return summary;
     }
 
+    // Manual batch: stable order, oldest Whop period end first (unknown end
+    // last, then by Discord id), the first batchSize acted on, the rest
+    // logged as deferred before anything happens.
+    let selected = candidates;
+    if (batchSize !== null) {
+      const endOf = (c: { whop: string[] }): number => {
+        const ends = c.whop.map((w) => liveness.periodEnds.get(w)).filter((e): e is number => e !== undefined);
+        return ends.length ? Math.max(...ends) : Number.POSITIVE_INFINITY;
+      };
+      const ordered = [...candidates].sort((a, b) => endOf(a) - endOf(b) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+      selected = ordered.slice(0, batchSize);
+      const deferred = ordered.slice(batchSize);
+      summary.batch = selected.length;
+      summary.deferred = deferred.length;
+      for (const c of deferred) {
+        logRows.push({ discord_user_id: c.id, whop_user_ids: c.whop, reason: "deferred", mode, action: "skipped", source: "sweep" });
+      }
+    }
+
+    // Everything decided so far (skips, deferred) goes to the log now; from
+    // here on each kick-loop decision is written the moment it happens, so a
+    // run killed at maxDuration leaves nothing unlogged.
+    await logDecisions(logRows);
+    logRows.length = 0;
+
     let consecutiveFailures = 0;
-    for (const c of candidates) {
+    for (const c of selected) {
       if (mode !== "live") {
         summary.would_kick.push(label(c.member));
-        logRows.push({ discord_user_id: c.id, whop_user_ids: c.whop, reason: "no_live_membership", mode, action: "would_kick", source: "sweep" });
+        await logDecisions([{ discord_user_id: c.id, whop_user_ids: c.whop, reason: "no_live_membership", mode, action: "would_kick", source: "sweep" }]);
         continue;
       }
       // DM first (a kicked member can no longer be DMed by the bot). Failure
@@ -897,20 +955,20 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
       const status = await kickMember(c.id);
       if (status === 204) {
         summary.kicked.push(label(c.member));
-        logRows.push({ discord_user_id: c.id, whop_user_ids: c.whop, reason: "no_live_membership", mode, action: "kicked", source: "sweep" });
+        await logDecisions([{ discord_user_id: c.id, whop_user_ids: c.whop, reason: "no_live_membership", mode, action: "kicked", source: "sweep" }]);
         await postToModChannel(`**Discord sweep** | mode **live** | kicked ${label(c.member)} (no_live_membership)`);
         consecutiveFailures = 0;
       } else if (status === 403) {
         summary.failed.push(label(c.member));
-        logRows.push({ discord_user_id: c.id, whop_user_ids: c.whop, reason: "discord_403", mode, action: "failed", source: "sweep" });
+        await logDecisions([{ discord_user_id: c.id, whop_user_ids: c.whop, reason: "discord_403", mode, action: "failed", source: "sweep" }]);
         summary.aborted = "Bot lost Kick Members or role too low (Discord 403). Run stopped";
         break;
       } else if (status === 404) {
         // Already gone; nothing to do.
-        logRows.push({ discord_user_id: c.id, whop_user_ids: c.whop, reason: "already_gone", mode, action: "skipped", source: "sweep" });
+        await logDecisions([{ discord_user_id: c.id, whop_user_ids: c.whop, reason: "already_gone", mode, action: "skipped", source: "sweep" }]);
       } else {
         summary.failed.push(label(c.member));
-        logRows.push({ discord_user_id: c.id, whop_user_ids: c.whop, reason: `discord_${status}`, mode, action: "failed", source: "sweep" });
+        await logDecisions([{ discord_user_id: c.id, whop_user_ids: c.whop, reason: `discord_${status}`, mode, action: "failed", source: "sweep" }]);
         consecutiveFailures++;
         if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
           summary.aborted = `${MAX_CONSECUTIVE_FAILURES} consecutive Discord failures. Run stopped`;
@@ -942,7 +1000,11 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
     });
   }
 
-  await logDecisions(logRows);
+  // Decisions are already in discord_kick_log (flushed before the loop, then
+  // one write per kick-loop decision). logRows is only non-empty here when the
+  // sweep threw before that flush; writing it keeps those skips logged as
+  // before and can never double-log a kick.
+  if (logRows.length) await logDecisions(logRows);
   await postToModChannel(formatSummary("sweep", summary, guildName));
   return summary;
 }

@@ -17,8 +17,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   }
 
-  // Manual cap override (?cap=N, 1..SWEEP_CAP_MAX), read only after the Bearer
-  // check above. The nightly cron never passes it, so it stays at SWEEP_CAP.
+  // Manual batch size (?cap=N, 1..SWEEP_CAP_MAX), read only after the Bearer
+  // check above: the first N candidates are acted on, the rest deferred. The
+  // nightly cron never passes it, so it keeps the SWEEP_CAP abort rule.
   const capParam = request.nextUrl.searchParams.get("cap");
   let cap: number | undefined;
   if (capParam !== null) {
