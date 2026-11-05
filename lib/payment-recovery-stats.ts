@@ -1,5 +1,6 @@
 import { createAdminClient } from "./supabase/admin";
-import { postToModChannel } from "./discord-kick";
+import { postRecoveryEmbed, recoveryWebhookUrl, type RecoveryEmbed } from "./discord-recovery-webhook";
+import { weeklyEmbed } from "./payment-recovery-post";
 import { PLAN_NAMES, chicago, parseMs, whopGet, type StopOutcome } from "./payment-recovery";
 
 // Payment-recovery results (migration 031). Read by /dashboard/admin/recovery
@@ -383,26 +384,17 @@ export function usd(v: number): string {
   return `$${v.toFixed(2)}`;
 }
 
-// Weekly mod post: the last 7 days against the baseline.
-export async function weeklySummaryText(nowMs: number = Date.now()): Promise<string> {
+// Weekly post: the last 7 days against the baseline, as one embed
+// (lib/payment-recovery-post.ts weeklyEmbed).
+export async function weeklySummary(nowMs: number = Date.now()): Promise<RecoveryEmbed> {
   const fromMs = nowMs - 7 * 86400000;
   const [stats, baseline] = await Promise.all([loadRecoveryStats(fromMs, nowMs), computeBaseline(nowMs)]);
-  const fmt = (ms: number) => new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric" }).format(new Date(ms));
-  const lines = [
-    `**Payment recovery, weekly** | ${fmt(fromMs)} to ${fmt(nowMs)} (Chicago)`,
-    `entered ${stats.entered} | messaged ${stats.messaged} | recovered ${stats.recovered} | lost ${stats.lost} | still open ${stats.open}`,
-    `recovery rate ${pct(stats.rate)} vs baseline ${baseline.ok ? pct(baseline.rate) : `unavailable (${baseline.error ?? "unknown"})`}` +
-      (baseline.ok ? ` (${baseline.paid} of ${baseline.failedRenewals} failed renewals paid, 90 days before ${baseline.launched ? "launch" : "today"})` : ""),
-    `$ recovered ${usd(stats.recoveredAmount)}`,
-  ];
-  if (stats.errors.length) lines.push(`errors: ${stats.errors.join("; ")}`);
-  return lines.join("\n");
+  return weeklyEmbed(stats, baseline, fromMs, nowMs);
 }
 
 export async function postWeeklySummary(nowMs: number = Date.now()): Promise<{ posted: boolean; text: string }> {
-  const text = await weeklySummaryText(nowMs);
-  // postToModChannel logs to the console when the webhook env is unset.
-  const posted = !!process.env.DISCORD_MOD_WEBHOOK_URL;
-  await postToModChannel(text);
-  return { posted, text };
+  const embed = await weeklySummary(nowMs);
+  // postRecoveryEmbed logs to the console when no webhook env is set.
+  const posted = (await postRecoveryEmbed(embed)) && !!recoveryWebhookUrl();
+  return { posted, text: embed.description ?? "" };
 }

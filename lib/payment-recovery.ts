@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 import { createAdminClient } from "./supabase/admin";
-import { postToModChannel } from "./discord-kick";
+import { postRecoveryText } from "./discord-recovery-webhook";
 import { sendDiscordDm, sendDiscordDmDetailed } from "./discord-dm";
 import { WHOP_API_VERSION_DATE, rowOwner, rowProduct } from "../app/api/whop/whop-membership";
 
@@ -100,9 +100,16 @@ import { WHOP_API_VERSION_DATE, rowOwner, rowProduct } from "../app/api/whop/who
 // writes. {when} is "tomorrow" and {amount} is "$22.72" in the test.
 //
 // Mode: RECOVERY_MODE === "live" sends and writes the two tables. Anything
-// else is shadow: no sends, no table writes (reads only), one summary to the
-// mod channel (usernames only) on the 10:00 Chicago run or when asked
-// (?post=1).
+// else is shadow: no sends, no table writes (reads only).
+//
+// Discord posts (lib/payment-recovery-post.ts, through
+// lib/discord-recovery-webhook.ts: DISCORD_RECOVERY_WEBHOOK_URL, falling back
+// to DISCORD_MOD_WEBHOOK_URL): the route posts one hourly embed after the run
+// when a sequence closed, a reply came in or an error happened (shadow: only
+// on the SUMMARY_HOUR run or ?post=1), the morning digest once a day, and
+// the weekly post. This module only posts the two one-liners below
+// (Duplicate past_due, Ultra payment issue). The RecoverySummary carries the
+// structured facts the posts are built from (stop, amountValue, closed).
 //
 // Verified 2026-10-26 against the live API: a failed renewal is a payment
 // with status "open", substatus "past_due", billing_reason
@@ -132,7 +139,7 @@ const SEND_UNTIL_HOUR = 19;
 // Follow-up slot hours, cycling from message 2: 10, 14, 18, 10, 14, 18, ...
 const SLOT_HOURS: readonly number[] = [10, 14, 18];
 // Chicago hour of the daily shadow summary post.
-const SUMMARY_HOUR = 10;
+export const SUMMARY_HOUR = 10;
 
 const ULTRA_PLANS: ReadonlySet<string> = new Set(["plan_mjpuBNS3KJqmw", "plan_MVEXluUMjBlxL", "plan_8CGnZkflAnXOe"]);
 export const PLAN_NAMES: Record<string, string> = {
@@ -996,6 +1003,15 @@ export function outcomeForStatus(status: string): StopOutcome {
   return "other";
 }
 
+// Plain words for a stop, from the Whop status (or "window_expired").
+export function stopReasonWords(status: string): string {
+  if (status === "window_expired") return `day ${MAX_DAY} passed, still past due`;
+  if (status === "canceled") return "canceled by Whop";
+  if (status === "expired") return "expired by Whop";
+  if (PAID_STATUSES.has(status)) return "paid";
+  return `Whop status ${status}`;
+}
+
 // Stops a sequence: looks up the paid renewal when the outcome is paid, then
 // writes stopped_at, stop_reason, outcome and the paid_* columns (live mode).
 // Returns what it found so the summary can say it.
@@ -1008,7 +1024,7 @@ async function recordStop(fields: {
   failedAt: string;
   failedAtMs: number;
   status: string;
-}): Promise<{ outcome: StopOutcome; paid: PaidRenewal | null; detail: string }> {
+}): Promise<{ outcome: StopOutcome; paid: PaidRenewal | null; detail: string; reason: string; status: string }> {
   const outcome = outcomeForStatus(fields.status);
   let paid: PaidRenewal | null = null;
   let detail = fields.status === "window_expired" ? `day ${MAX_DAY} passed, still past_due` : `whop status ${fields.status}`;
@@ -1032,7 +1048,7 @@ async function recordStop(fields: {
       paid,
     });
   }
-  return { outcome, paid, detail };
+  return { outcome, paid, detail, reason: stopReasonWords(fields.status), status: fields.status };
 }
 
 // ---------------------------------------------------------------------------
@@ -1091,8 +1107,14 @@ async function postGhl(target: GhlTarget, payload: GhlPayload | GhlSmsPayload): 
 
 export type ChannelOutcome = "sent" | "failed" | "skipped" | "would_send";
 
+// What this run recorded when it stopped a sequence (live re-read left
+// past_due, or day MAX_DAY passed): the facts the posts print.
+export type StopInfo = { outcome: StopOutcome; status: string; amount: number | null; currency: string | null; reason: string };
+
 export type RecoveryItem = {
   membershipId: string;
+  // Whop user behind the membership ("" when the row named none).
+  whopUserId: string;
   username: string;
   planName: string;
   ultra: boolean;
@@ -1106,6 +1128,9 @@ export type RecoveryItem = {
   // {amount} as the copy prints it ("$22.72"); null until the failed payment
   // is read, or when neither the payment nor the plan gave a price.
   amount: string | null;
+  // The number and currency behind `amount`, for totals in the posts.
+  amountValue: number | null;
+  amountCurrency: string | null;
   // Exact Chicago time message `messageNumber` goes out ("this run" when it
   // is this one); null when the sequence has no day left or never got that far.
   nextSendAt: string | null;
@@ -1121,6 +1146,8 @@ export type RecoveryItem = {
     | "no_failed_payment"
     | "error";
   detail: string | null;
+  // Set when this run stopped the sequence (outcome stopped_now or done).
+  stop: StopInfo | null;
   // ghl = email webhook, ghlSms = SMS webhook (null until we know the phone).
   ghl: ChannelOutcome | null;
   ghlSms: ChannelOutcome | null;
@@ -1132,7 +1159,20 @@ export type RecoveryItem = {
 
 // A sequence closed out at the end of the run: its membership left past_due
 // between runs (paid, canceled, expired on Whop).
-export type ClosedItem = { membershipId: string; username: string; outcome: StopOutcome; detail: string };
+export type ClosedItem = {
+  membershipId: string;
+  username: string;
+  whopUserId: string | null;
+  outcome: StopOutcome;
+  detail: string;
+  // The paid renewal's amount when the outcome is paid.
+  amount: number | null;
+  currency: string | null;
+  // Plain words for the post ("canceled by Whop").
+  reason: string;
+  // The live re-read failed, so the row stays open; the post counts it as an error.
+  notClosed: boolean;
+};
 
 export type RecoverySummary = {
   mode: RecoveryMode;
@@ -1142,6 +1182,7 @@ export type RecoverySummary = {
   // Open sequences whose membership is no longer past_due, closed (live) or
   // would be closed (shadow) this run, with why.
   closed: ClosedItem[];
+  // Set by the route once the hourly embed went out (lib/payment-recovery-post.ts).
   posted: boolean;
   aborted: string | null;
 };
@@ -1153,60 +1194,9 @@ function emptyCounts(): RecoverySummary["counts"] {
   };
 }
 
-function formatSummary(s: RecoverySummary): string {
-  const lines = [`**Payment recovery** | mode **${s.mode}** | past_due on Whop ${s.pastDue}`];
-  if (s.aborted) lines.push(`ALERT: ${s.aborted}. Sent nothing.`);
-  const perMessage = new Map<number, string[]>();
-  for (const it of s.items) {
-    if (it.outcome !== "sent" && it.outcome !== "would_send") continue;
-    const ch = [
-      it.ghl ? `email:${it.ghl}` : null,
-      it.ghlSms ? `sms:${it.ghlSms}` : null,
-      it.discordDm ? `dm:${it.discordDm}` : null,
-    ].filter(Boolean).join(" ");
-    const list = perMessage.get(it.messageNumber) ?? [];
-    list.push(
-      `${it.username}${it.ultra ? " (ULTRA)" : ""} [${it.planName}] day ${it.day} at ${it.nextSendAt ?? "this run"} ${it.amount ?? "amount unknown"} retry ${it.when ?? "unknown"} ${ch}${it.hasPhone ? "" : " no-phone"}${it.hasEmail ? "" : " no-email"}`
-    );
-    perMessage.set(it.messageNumber, list);
-  }
-  for (const n of Array.from(perMessage.keys()).sort((a, b) => a - b)) {
-    const list = perMessage.get(n) ?? [];
-    lines.push(`message ${n} (${list.length}): ${list.join("; ")}`);
-  }
-  // Members still in the drip but not sent this run: next message and the
-  // exact Chicago time it goes.
-  const waiting = s.items.filter((it) => it.outcome === "not_due_yet" || it.outcome === "already_sent_today");
-  if (waiting.length > 0) {
-    lines.push(
-      `waiting (${waiting.length}): ` +
-        waiting
-          .map((it) => `${it.username} [${it.planName}] day ${it.day} next message ${it.messageNumber} at ${it.nextSendAt ?? "none (sequence ends)"} ${it.amount ?? "amount unknown"}`)
-          .join("; ")
-    );
-  }
-  const c = s.counts;
-  lines.push(
-    `sent ${c.sent} | would send ${c.would_send} | not due yet ${c.not_due_yet} | already today ${c.already_sent_today} | ` +
-      `stopped now ${c.stopped_now} | stopped before ${c.stopped_previously} | other live membership ${c.has_other_live_membership} | ` +
-      `done (day ${MAX_DAY + 1}+) ${c.done} | no failed payment ${c.no_failed_payment} | errors ${c.error}`
-  );
-  for (const c of s.closed) {
-    lines.push(`${s.mode === "live" ? "closed" : "would close"}: ${c.username} (${c.membershipId}) ${c.outcome}, ${c.detail}`);
-  }
-  const stops = s.items.filter(
-    (it) =>
-      it.outcome === "stopped_now" ||
-      it.outcome === "has_other_live_membership" ||
-      it.outcome === "error" ||
-      it.outcome === "no_failed_payment" ||
-      (it.detail ?? "").startsWith("restarted")
-  );
-  for (const it of stops) lines.push(`${it.outcome}: ${it.username} (${it.membershipId}) ${it.detail ?? ""}`);
-  return lines.join("\n");
-}
-
-export async function runPaymentRecovery(opts: { now?: number; forcePost?: boolean } = {}): Promise<RecoverySummary> {
+// Posts nothing itself (except the two one-liners): the route builds the
+// hourly embed from the returned summary.
+export async function runPaymentRecovery(opts: { now?: number } = {}): Promise<RecoverySummary> {
   const now = opts.now ?? Date.now();
   const mode = recoveryMode();
   const summary: RecoverySummary = { mode, pastDue: 0, items: [], counts: emptyCounts(), closed: [], posted: false, aborted: null };
@@ -1214,18 +1204,14 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
     summary.items.push(it);
     summary.counts[it.outcome]++;
   };
-  const maybePost = async (force: boolean) => {
-    const shouldPost = force || (mode === "shadow" ? chicago(now).hour === SUMMARY_HOUR : summary.items.some((it) => it.outcome === "sent" || it.outcome === "stopped_now" || it.outcome === "error") || summary.closed.length > 0);
-    if (!shouldPost) return;
-    await postToModChannel(formatSummary(summary));
-    summary.posted = true;
-  };
+  const stopInfo = (s: { outcome: StopOutcome; paid: PaidRenewal | null; status: string }): StopInfo => ({
+    outcome: s.outcome, status: s.status, amount: s.paid?.amount ?? null, currency: s.paid?.currency ?? null, reason: stopReasonWords(s.status),
+  });
 
   try {
     const listed = await listPastDue();
     if (!listed.ok) {
       summary.aborted = `Whop past_due list failed: ${listed.error}`;
-      await maybePost(true);
       return summary;
     }
     summary.pastDue = listed.rows.length;
@@ -1235,7 +1221,6 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
     const loaded = await loadRecords(listed.rows.map((m) => String(m.id)));
     if (!loaded.ok) {
       summary.aborted = `Supabase read failed: ${loaded.error}`;
-      await maybePost(true);
       return summary;
     }
     const records = loaded.byId;
@@ -1248,7 +1233,8 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
       const planName = (planId && PLAN_NAMES[planId]) || planId || "unknown";
       const ultra = planId !== null && ULTRA_PLANS.has(planId);
       const base: RecoveryItem = {
-        membershipId, username: whopUserId, planName, ultra, day: 0, messageNumber: 0, when: null, amount: null, nextSendAt: null, outcome: "error", detail: null,
+        membershipId, whopUserId, username: whopUserId, planName, ultra, day: 0, messageNumber: 0, when: null, amount: null, amountValue: null, amountCurrency: null,
+        nextSendAt: null, outcome: "error", detail: null, stop: null,
         ghl: null, ghlSms: null, discordDm: null, hasEmail: false, hasPhone: false, hasDiscord: false,
       };
 
@@ -1271,10 +1257,14 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
         // price (warned), else no message (never a guessed number).
         if (failed.amount !== null) {
           base.amount = formatAmount(failed.amount, failed.currency);
+          base.amountValue = failed.amount;
+          base.amountCurrency = failed.currency;
         } else {
           const plan = await readPlanPrice(planId, planPrices);
           if (plan) {
             base.amount = formatAmount(plan.amount, plan.currency);
+            base.amountValue = plan.amount;
+            base.amountCurrency = plan.currency;
             console.warn(`[payment-recovery] ${membershipId}: failed payment has no total, using plan ${planId} renewal price`);
           }
         }
@@ -1299,7 +1289,7 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
 
         if (day > MAX_DAY) {
           const stop = await recordStop({ mode, membershipId, whopUserId, planId, username: rec?.whop_username ?? undefined, failedAt: failedAtIso, failedAtMs: failed.failedAtMs, status: "window_expired" });
-          push({ ...base, outcome: "done", detail: `day ${day}, ${stop.outcome}: ${stop.detail}` });
+          push({ ...base, outcome: "done", detail: `day ${day}, ${stop.outcome}: ${stop.detail}`, stop: stopInfo(stop) });
           continue;
         }
         if (day < 1) {
@@ -1350,7 +1340,7 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
         }
         if (live.status !== "past_due") {
           const stop = await recordStop({ mode, membershipId, whopUserId, planId, username, failedAt: failedAtIso, failedAtMs: failed.failedAtMs, status: live.status });
-          push({ ...base, outcome: "stopped_now", detail: `${stop.outcome}: ${stop.detail}` });
+          push({ ...base, outcome: "stopped_now", detail: `${stop.outcome}: ${stop.detail}`, stop: stopInfo(stop) });
           continue;
         }
 
@@ -1365,7 +1355,7 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
         if (other.other) {
           const detail = `live ${other.other.planName} (${other.other.status}, ${other.other.id})`;
           if (mode === "live" && !rec?.other_live_flagged_at) {
-            await postToModChannel(`Duplicate past_due: ${username} has a live ${other.other.planName} too, cancel the extra one in Whop.`);
+            await postRecoveryText(`Duplicate past_due: ${username} has a live ${other.other.planName} too, cancel the extra one in Whop.`);
             await upsertRecord({ membershipId, whopUserId, planId, username, failedAt: failedAtIso, otherLiveFlagged: true });
           }
           push({ ...base, username, outcome: "has_other_live_membership", detail });
@@ -1449,7 +1439,7 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
         }
 
         if (ultra && messageNumber === 1) {
-          await postToModChannel(`Ultra payment issue: ${discord.discordUsername ?? username}. Henry, reach out personally.`);
+          await postRecoveryText(`Ultra payment issue: ${discord.discordUsername ?? username}. Henry, reach out personally.`);
         }
 
         await upsertRecord({ membershipId, whopUserId, planId, username, failedAt: failedAtIso, lastDaySent: day });
@@ -1474,7 +1464,7 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
         try {
           const live = await readMembership(rec.membership_id);
           if (!live.ok) {
-            summary.closed.push({ membershipId: rec.membership_id, username, outcome: "other", detail: `not closed, ${live.error}` });
+            summary.closed.push({ membershipId: rec.membership_id, username, whopUserId: rec.whop_user_id, outcome: "other", detail: `not closed, ${live.error}`, amount: null, currency: null, reason: "not closed", notClosed: true });
             continue;
           }
           if (live.status === "past_due") continue; // listing lag; still in the drip
@@ -1488,18 +1478,19 @@ export async function runPaymentRecovery(opts: { now?: number; forcePost?: boole
             failedAtMs,
             status: live.status,
           });
-          summary.closed.push({ membershipId: rec.membership_id, username, outcome: stop.outcome, detail: stop.detail });
+          summary.closed.push({
+            membershipId: rec.membership_id, username, whopUserId: rec.whop_user_id, outcome: stop.outcome, detail: stop.detail,
+            amount: stop.paid?.amount ?? null, currency: stop.paid?.currency ?? null, reason: stop.reason, notClosed: false,
+          });
         } catch (err) {
-          summary.closed.push({ membershipId: rec.membership_id, username, outcome: "other", detail: `not closed, ${err instanceof Error ? err.message : "unknown"}` });
+          summary.closed.push({ membershipId: rec.membership_id, username, whopUserId: rec.whop_user_id, outcome: "other", detail: `not closed, ${err instanceof Error ? err.message : "unknown"}`, amount: null, currency: null, reason: "not closed", notClosed: true });
         }
       }
     }
 
-    await maybePost(opts.forcePost === true);
     return summary;
   } catch (err) {
     summary.aborted = `threw: ${err instanceof Error ? err.message : "unknown"}`;
-    await maybePost(true);
     return summary;
   }
 }

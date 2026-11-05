@@ -1,7 +1,8 @@
 import { createAdminClient } from "./supabase/admin";
-import { postToModChannel } from "./discord-kick";
 import { openDmChannel } from "./discord-dm";
-import { PLAN_NAMES, parseMs } from "./payment-recovery";
+import { PLAN_NAMES, parseMs, recoveryDay } from "./payment-recovery";
+import { postRecoveryEmbed } from "./discord-recovery-webhook";
+import { looksLikeId, memberName, replyEmbed } from "./payment-recovery-post";
 
 // Payment-recovery Discord DM reply capture (migration 032). Runs at the end
 // of the hourly payment-recovery cron, after the sends, live mode only.
@@ -16,9 +17,11 @@ import { PLAN_NAMES, parseMs } from "./payment-recovery";
 //      first. GET /channels/{id}/messages?after=<last_seen>&limit=100, REST
 //      only, no gateway. Every message not written by the bot is a reply:
 //      saved to payment_recovery_replies (discord_message_id unique, so a
-//      re-read never duplicates) and posted to the mod channel as
-//      "DM reply from {discord username} ({plan}, recovery message {n},
-//      {time ago}): {text}". last_seen moves to the newest id read, bot
+//      re-read never duplicates) and posted at once to the recovery webhook
+//      as its own embed (lib/payment-recovery-post.ts replyEmbed): "{name}
+//      ({tier}, day {d}) replied:" and the text quoted, cut at 500 chars.
+//      Name = Whop username, else member_profiles.display_name, else the
+//      Discord username. last_seen moves to the newest id read, bot
 //      messages included, so each message is looked at once.
 //   429: one retry after retry_after; a second 429 ends the poll for this run
 //   (the rest wait for the next hour). A deadline (ms) stops the poll early so
@@ -32,7 +35,6 @@ const DISCORD_API = "https://discord.com/api/v10";
 const DISCORD_EPOCH_MS = 1420070400000;
 export const CHANNEL_CAP = 50;
 const BACKFILL_CAP = 25;
-const MOD_TEXT_MAX = 1200;
 
 type Row = Record<string, unknown>;
 type DiscordMessage = {
@@ -52,16 +54,6 @@ function str(v: unknown): string | null {
 // Discord snowflake whose timestamp is `ms`: usable as an `after` cursor.
 export function snowflakeFromMs(ms: number): string {
   return (BigInt(Math.max(0, Math.floor(ms - DISCORD_EPOCH_MS))) << BigInt(22)).toString();
-}
-
-export function timeAgo(fromMs: number, nowMs: number): string {
-  const s = Math.max(0, Math.round((nowMs - fromMs) / 1000));
-  if (s < 60) return `${s}s ago`;
-  const m = Math.round(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.round(m / 60);
-  if (h < 48) return `${h}h ago`;
-  return `${Math.round(h / 24)}d ago`;
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -173,19 +165,22 @@ async function backfillChannels(summary: ReplyCaptureSummary, deadlineMs: number
 }
 
 // The member's current sequence (newest payment_recovery row for the Whop
-// user) and the latest message number sent to them by `atMs`.
-async function sequenceFor(whopUserId: string | null, atMs: number): Promise<{ membershipId: string | null; plan: string; messageNumber: number }> {
-  if (!whopUserId) return { membershipId: null, plan: "unknown", messageNumber: 0 };
+// user), its Whop username and failure time, and the latest message number
+// sent to them by `atMs`.
+type Sequence = { membershipId: string | null; plan: string; messageNumber: number; username: string | null; failedAtMs: number | null };
+async function sequenceFor(whopUserId: string | null, atMs: number): Promise<Sequence> {
+  const none: Sequence = { membershipId: null, plan: "unknown", messageNumber: 0, username: null, failedAtMs: null };
+  if (!whopUserId) return none;
   const supabase = createAdminClient();
   const rec = await supabase
     .from("payment_recovery")
-    .select("membership_id, plan_id, failed_at")
+    .select("membership_id, plan_id, failed_at, whop_username")
     .eq("whop_user_id", whopUserId)
     .order("started_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   const membershipId = str(rec.data?.membership_id);
-  if (rec.error || !membershipId) return { membershipId: null, plan: "unknown", messageNumber: 0 };
+  if (rec.error || !membershipId) return none;
   const planId = str(rec.data?.plan_id);
   const plan = (planId && PLAN_NAMES[planId]) || planId || "unknown";
   let q = supabase.from("payment_recovery_sends").select("message_number, sent_at").eq("membership_id", membershipId).lte("sent_at", new Date(atMs).toISOString());
@@ -197,7 +192,16 @@ async function sequenceFor(whopUserId: string | null, atMs: number): Promise<{ m
     const n = Number(s.message_number);
     if (Number.isInteger(n) && n > messageNumber) messageNumber = n;
   }
-  return { membershipId, plan, messageNumber };
+  return { membershipId, plan, messageNumber, username: str(rec.data?.whop_username), failedAtMs: failedAt ? parseMs(failedAt) : null };
+}
+
+// member_profiles.display_name for the post when the Whop username is unknown.
+async function displayNameFor(whopUserId: string | null): Promise<string | null> {
+  if (!whopUserId) return null;
+  const supabase = createAdminClient();
+  const { data, error } = await supabase.from("member_profiles").select("display_name").eq("whop_user_id", whopUserId).maybeSingle();
+  if (error) return null;
+  return str(data?.display_name);
 }
 
 function replyText(m: DiscordMessage): string {
@@ -295,9 +299,10 @@ export async function captureDmReplies(opts: { now?: number; deadlineMs?: number
           continue;
         }
         summary.replies++;
-        const who = usernames.get(row.discord_user_id) ?? m.author?.username ?? row.discord_user_id;
-        const shown = text.length > MOD_TEXT_MAX ? `${text.slice(0, MOD_TEXT_MAX)}...` : text;
-        await postToModChannel(`💬 DM reply from ${who} (${seq.plan}, recovery message ${seq.messageNumber}, ${timeAgo(receivedMs, now)}): ${shown}`);
+        const fallback = looksLikeId(seq.username) ? (await displayNameFor(row.whop_user_id)) ?? usernames.get(row.discord_user_id) ?? m.author?.username ?? null : null;
+        const name = memberName(seq.username, fallback);
+        const day = seq.failedAtMs === null ? null : recoveryDay(seq.failedAtMs, receivedMs);
+        await postRecoveryEmbed(replyEmbed({ name, tier: seq.plan, day, text }));
       }
       const { error } = await supabase
         .from("payment_recovery_dm_channels")
