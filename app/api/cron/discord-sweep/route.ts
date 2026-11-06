@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runDiscordSweep, SWEEP_CAP_MAX } from "../../../../lib/discord-kick";
+import { runDiscordSweep, SWEEP_CAP_MAX, SWEEP_IDS_MAX } from "../../../../lib/discord-kick";
 
 // Nightly Discord sweep (vercel.json: 09:00 UTC). Vercel sends
 // "Authorization: Bearer <CRON_SECRET>" on scheduled invocations; anything
@@ -29,6 +29,26 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const summary = await runDiscordSweep({ cap });
+  // Manual exact-ID run (?ids=a,b,c), also read only after the Bearer check:
+  // 1..SWEEP_IDS_MAX Discord ids, digits only. Only those members are
+  // evaluated, each through the full decideKick; nobody is forced. Cannot be
+  // combined with ?cap. The nightly cron never passes it.
+  const idsParam = request.nextUrl.searchParams.get("ids");
+  let ids: string[] | undefined;
+  if (idsParam !== null) {
+    if (capParam !== null) {
+      return NextResponse.json({ ok: false, error: "ids and cap cannot be combined" }, { status: 400 });
+    }
+    const parts = idsParam.split(",");
+    if (parts.length > SWEEP_IDS_MAX || parts.some((part) => !/^\d{5,25}$/.test(part))) {
+      return NextResponse.json(
+        { ok: false, error: `ids must be 1..${SWEEP_IDS_MAX} comma-separated Discord ids, digits only` },
+        { status: 400 }
+      );
+    }
+    ids = Array.from(new Set(parts));
+  }
+
+  const summary = await runDiscordSweep({ cap, ids });
   return NextResponse.json({ ok: true, ...summary });
 }

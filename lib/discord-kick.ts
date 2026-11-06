@@ -26,8 +26,11 @@ import { WHOP_API_VERSION_DATE } from "../app/api/whop/whop-membership";
 //   Founder, Group Coach, Real Venture Underwriter, Moderator, Guest, plus
 //   anything DISCORD_PROTECTED_ROLE_IDS adds) or any role carrying kick / ban /
 //   admin / manage-guild / manage-roles bits, members with no member role (New
-//   Member only, Guest only, boosters, none), members with no link, and anyone
-//   who joined the server in the last 7 days.
+//   Member only, Guest only, boosters, none), members with no link, anyone who
+//   joined the server in the last 7 days, and anyone with a payment in the
+//   last 35 days that succeeded and was not refunded or disputed
+//   (recent_payment: an immediate cancel leaves cancel_at_period_end false and
+//   reads as ended while the month that was paid for is still running).
 // Mode: DISCORD_KICK_MODE === "live" AND VERCEL_ENV === "production" removes
 // people; anything else (unset, preview, local) is shadow: log + mod post, no
 // DELETE. Every sweep posts one summary to DISCORD_MOD_WEBHOOK_URL, and in
@@ -45,7 +48,10 @@ import { WHOP_API_VERSION_DATE } from "../app/api/whop/whop-membership";
 // decision inside the kick loop is logged the moment it happens, so a run
 // killed at maxDuration leaves no unlogged kick. A Whop read that fails or
 // looks wrong means act on none; in live mode the first 403 from Discord
-// stops the run.
+// stops the run. The payments read is held to the same rule: no payment data,
+// no kicks. A manual authorized call with ?ids=a,b,c (1..25 Discord ids)
+// evaluates ONLY those members, each through every rule above; an id that is
+// not a candidate is skipped and reported, never forced.
 
 // ---------------------------------------------------------------------------
 // Constants (env first, snapshot literals as fallbacks)
@@ -66,6 +72,17 @@ const AUDIT_REASON = "Membership ended (auto sweep)";
 const SWEEP_LEASE_MS = 10 * 60 * 1000;
 // A live user count below this share of the last successful sweep's aborts the run.
 const LIVE_DROP_RATIO = 0.9;
+// A payment this recent that still stands keeps the member (recent_payment).
+export const RECENT_PAYMENT_DAYS = 35;
+// Whop filters payments by created_at, but a failed renewal that is paid on a
+// later retry keeps its original created_at. So the read reaches further back
+// than the window and every row is judged by its paid moment.
+const PAYMENT_LOOKBACK_DAYS = 50;
+const PAYMENTS_MAX_PAGES = 60;
+const USER_PAYMENTS_MAX_PAGES = 5;
+const DAY_MS = 24 * 60 * 60 * 1000;
+// Exact-ID manual run (?ids=): at most this many Discord ids per call.
+export const SWEEP_IDS_MAX = 25;
 export const KICK_DM =
   "Your Real Venture membership ended, so you've been removed from the Discord. Want back in? https://realventure.io/pricing";
 
@@ -165,7 +182,8 @@ export type SkipReason =
   | "no_link"
   | "live_membership"
   | "paused"
-  | "paid_time_left";
+  | "paid_time_left"
+  | "recent_payment";
 
 export type KickDecision =
   | { action: "kick"; reason: "no_live_membership" }
@@ -186,6 +204,9 @@ export type DecideInput = {
   pausedWhopUserIds?: ReadonlySet<string>;
   // Whop users whose only membership is ended in status but not yet past its period end.
   paidTimeWhopUserIds?: ReadonlySet<string>;
+  // Whop users with a succeeded, unrefunded, undisputed payment in the last
+  // RECENT_PAYMENT_DAYS (loadRecentPayers / hasRecentPayment).
+  recentPayerWhopUserIds?: ReadonlySet<string>;
   now?: number;
   rules?: {
     memberRoleIds: ReadonlySet<string>;
@@ -240,6 +261,10 @@ export function decideKick(input: DecideInput): KickDecision {
   const paid = input.paidTimeWhopUserIds;
   if (paid && input.linkedWhopUserIds.some((id) => paid.has(id))) {
     return { action: "skip", reason: "paid_time_left" };
+  }
+  const payers = input.recentPayerWhopUserIds;
+  if (payers && input.linkedWhopUserIds.some((id) => payers.has(id))) {
+    return { action: "skip", reason: "recent_payment" };
   }
   return { action: "kick", reason: "no_live_membership" };
 }
@@ -522,6 +547,126 @@ export async function loadLiveWhopUsers(): Promise<LivenessResult> {
   return { ok: true, live: sets.live, paused: sets.paused, paidTime: sets.paidTime, periodEnds, rows, pages: pages + 1 };
 }
 
+// ---------------------------------------------------------------------------
+// Whop payments: who paid recently
+// ---------------------------------------------------------------------------
+
+// A payment that still stands: status "paid" with substatus exactly
+// "succeeded". refunded, auto_refunded, partially_refunded and every dispute_*
+// / resolution_* substatus are out, and so is any row that carries a refund or
+// dispute timestamp.
+export function isKeptPayment(p: MembershipRow): boolean {
+  return (
+    p.status === "paid" &&
+    p.substatus === "succeeded" &&
+    toMs(p.refunded_at) === null &&
+    toMs(p.dispute_created_at) === null &&
+    toMs(p.dispute_alerted_at) === null
+  );
+}
+
+// When the money arrived: last_payment_attempt_at, else paid_at, else created_at.
+export function paymentPaidMs(p: MembershipRow): number | null {
+  return toMs(p.last_payment_attempt_at) ?? toMs(p.paid_at) ?? toMs(p.created_at);
+}
+
+function isRecentKeptPayment(p: MembershipRow, now: number): boolean {
+  if (!isKeptPayment(p)) return false;
+  const paid = paymentPaidMs(p);
+  return paid !== null && paid >= now - RECENT_PAYMENT_DAYS * DAY_MS;
+}
+
+function paymentOwner(p: MembershipRow): string | null {
+  return idOf(p.user) ?? idOf(p.user_id);
+}
+
+export type RecentPayersResult =
+  | { ok: true; payers: Set<string>; rows: number; pages: number }
+  | { ok: false; error: string };
+
+// Every payment in the company, EVERY product, created in the last
+// PAYMENT_LOOKBACK_DAYS, paged. Returns the Whop users with at least one
+// payment that still stands and whose paid moment is inside
+// RECENT_PAYMENT_DAYS. A non-2xx, a throw, a body without a data array, a
+// cursor that does not advance, too many pages or zero rows means the read
+// cannot be trusted and the caller acts on no one.
+export async function loadRecentPayers(now: number = Date.now()): Promise<RecentPayersResult> {
+  const companyId = process.env.WHOP_COMPANY_ID;
+  if (!companyId) return { ok: false, error: "WHOP_COMPANY_ID unset" };
+  const createdAfter = new Date(now - PAYMENT_LOOKBACK_DAYS * DAY_MS).toISOString();
+  const payers = new Set<string>();
+  let rows = 0;
+  let after: string | null = null;
+  let pages = 0;
+  try {
+    for (; pages < PAYMENTS_MAX_PAGES; pages++) {
+      const params = new URLSearchParams({ account_id: companyId, created_after: createdAfter, first: String(WHOP_PAGE_LIMIT) });
+      if (after) params.set("after", after);
+      const res = await fetch(`${WHOP_API}/payments?${params.toString()}`, { headers: whopHeaders(), cache: "no-store" });
+      if (!res.ok) return { ok: false, error: `payments read HTTP ${res.status}` };
+      const page = (await res.json().catch(() => null)) as
+        | { data?: unknown[]; page_info?: { has_next_page?: boolean; end_cursor?: string | null } }
+        | null;
+      if (!page || !Array.isArray(page.data)) return { ok: false, error: "payments read returned no data array" };
+      const data = page.data.filter((p): p is MembershipRow => !!p && typeof p === "object");
+      for (const p of data) {
+        rows++;
+        const owner = paymentOwner(p);
+        if (owner && isRecentKeptPayment(p, now)) payers.add(owner);
+      }
+      const hasNext = page.page_info?.has_next_page === true;
+      const next = page.page_info?.end_cursor ?? null;
+      if (!hasNext || data.length === 0) break;
+      if (!next || next === after) return { ok: false, error: "payments cursor did not advance" };
+      after = next;
+    }
+  } catch (err) {
+    return { ok: false, error: `payments read threw: ${err instanceof Error ? err.message : "unknown"}` };
+  }
+  if (pages >= PAYMENTS_MAX_PAGES) return { ok: false, error: `payments read exceeded ${PAYMENTS_MAX_PAGES} pages` };
+  if (rows === 0) return { ok: false, error: "payments read returned zero rows" };
+  return { ok: true, payers, rows, pages: pages + 1 };
+}
+
+// One user (webhook path): singular user_id filter plus an owner check on
+// every row, same reason as isWhopUserLive. recent = at least one payment that
+// still stands inside RECENT_PAYMENT_DAYS. Zero rows is a real answer here (a
+// user who never paid), so it is ok with recent false.
+export async function hasRecentPayment(
+  whopUserId: string,
+  now: number = Date.now()
+): Promise<{ ok: true; recent: boolean } | { ok: false; error: string }> {
+  const companyId = process.env.WHOP_COMPANY_ID;
+  if (!companyId) return { ok: false, error: "WHOP_COMPANY_ID unset" };
+  const createdAfter = new Date(now - PAYMENT_LOOKBACK_DAYS * DAY_MS).toISOString();
+  let after: string | null = null;
+  try {
+    for (let page = 0; page < USER_PAYMENTS_MAX_PAGES; page++) {
+      const params = new URLSearchParams({ account_id: companyId, user_id: whopUserId, created_after: createdAfter, first: String(WHOP_PAGE_LIMIT) });
+      if (after) params.set("after", after);
+      const res = await fetch(`${WHOP_API}/payments?${params.toString()}`, { headers: whopHeaders(), cache: "no-store" });
+      if (!res.ok) return { ok: false, error: `payments read HTTP ${res.status}` };
+      const body = (await res.json().catch(() => null)) as
+        | { data?: unknown[]; page_info?: { has_next_page?: boolean; end_cursor?: string | null } }
+        | null;
+      if (!body || !Array.isArray(body.data)) return { ok: false, error: "payments read returned no data array" };
+      const data = body.data.filter((p): p is MembershipRow => !!p && typeof p === "object");
+      for (const p of data) {
+        if (paymentOwner(p) !== whopUserId) return { ok: false, error: "foreign user in payments read (user_id filter ignored)" };
+        if (isRecentKeptPayment(p, now)) return { ok: true, recent: true };
+      }
+      const hasNext = body.page_info?.has_next_page === true;
+      const next = body.page_info?.end_cursor ?? null;
+      if (!hasNext || data.length === 0) return { ok: true, recent: false };
+      if (!next || next === after) return { ok: false, error: "payments cursor did not advance" };
+      after = next;
+    }
+  } catch (err) {
+    return { ok: false, error: `payments read threw: ${err instanceof Error ? err.message : "unknown"}` };
+  }
+  return { ok: false, error: `payments read exceeded ${USER_PAYMENTS_MAX_PAGES} pages` };
+}
+
 // One user, every product: singular user_id filter plus an owner check on every
 // row, since the plural user_ids filter has been seen ignored on newer Whop API
 // versions.
@@ -709,6 +854,14 @@ async function sweepLeaseState(): Promise<"running" | "idle" | "unknown"> {
 // Sweep
 // ---------------------------------------------------------------------------
 
+// Exact-ID run (?ids=): what happened to each requested Discord id.
+export type SweepIdReport = {
+  id: string;
+  username: string | null;
+  action: LogAction | "not_in_server";
+  reason: string;
+};
+
 export type SweepSummary = {
   mode: KickMode;
   run_id: number | null;
@@ -716,6 +869,8 @@ export type SweepSummary = {
   candidates: number;
   whop_rows: number | null;
   whop_live: number | null;
+  // Whop users with a recent payment that still stands; null until that read is accepted.
+  whop_recent_payers: number | null;
   previous_live: number | null;
   kicked: string[];
   would_kick: string[];
@@ -728,6 +883,8 @@ export type SweepSummary = {
   // left for the next batch. Both null on a nightly run.
   batch: number | null;
   deferred: number | null;
+  // Exact-ID run only: one entry per requested id. null on every other run.
+  ids: SweepIdReport[] | null;
 };
 
 function emptyCounts(): SweepSummary["counts"] {
@@ -744,6 +901,7 @@ function emptyCounts(): SweepSummary["counts"] {
     live_membership: 0,
     paused: 0,
     paid_time_left: 0,
+    recent_payment: 0,
     cap_exceeded: 0,
   };
 }
@@ -761,7 +919,9 @@ function formatSummary(source: LogSource, s: SweepSummary, guildName: string | n
   ];
   if (s.aborted) lines.push(`ALERT: ${s.aborted}. Acted on no one.`);
   if (source === "sweep") {
-    lines.push(`whop: rows ${s.whop_rows ?? "?"} | live users ${s.whop_live ?? "?"} | previous run ${s.previous_live ?? "none"}`);
+    lines.push(
+      `whop: rows ${s.whop_rows ?? "?"} | live users ${s.whop_live ?? "?"} | previous run ${s.previous_live ?? "none"} | recent payers ${s.whop_recent_payers ?? "?"}`
+    );
   }
   const acted = s.mode === "live" ? s.kicked : s.would_kick;
   lines.push(`${s.mode === "live" ? "kicked" : "would kick"}: ${acted.length}${acted.length ? " -> " + acted.join(", ") : ""}`);
@@ -772,11 +932,17 @@ function formatSummary(source: LogSource, s: SweepSummary, guildName: string | n
         : `Batch (shadow): ${s.would_kick.length} would kick of ${s.batch}, ${s.deferred} candidates remaining.`
     );
   }
+  if (source === "sweep" && s.ids !== null) {
+    lines.push(`Exact-ID run: ${s.ids.length} requested, nobody else was evaluated.`);
+    for (const r of s.ids) {
+      lines.push(`${r.id}${r.username ? ` (${r.username})` : ""}: ${r.action}${r.reason === r.action ? "" : ` (${r.reason})`}`);
+    }
+  }
   if (s.mode === "live") lines.push(`kick DMs: sent ${s.dm_sent} | failed ${s.dm_failed}`);
   if (s.failed.length) lines.push(`failed: ${s.failed.length} -> ${s.failed.join(", ")}`);
   const c = s.counts;
   lines.push(
-    `skips: no_link ${c.no_link} | new_member_only ${c.new_member_only} | live_membership ${c.live_membership} | paused ${c.paused} | paid_time_left ${c.paid_time_left} | ` +
+    `skips: no_link ${c.no_link} | new_member_only ${c.new_member_only} | live_membership ${c.live_membership} | paused ${c.paused} | paid_time_left ${c.paid_time_left} | recent_payment ${c.recent_payment} | ` +
       `protected ${c.protected_role + c.protected_permission} | allowlisted ${c.allowlisted} | recent_join ${c.recent_join} | ` +
       `cap_exceeded ${c.cap_exceeded} | no_member_role ${c.no_member_role} | bots ${c.bot} | owner ${c.guild_owner}`
   );
@@ -787,9 +953,14 @@ function formatSummary(source: LogSource, s: SweepSummary, guildName: string | n
 // 1..SWEEP_CAP_MAX) and then a BATCH SIZE: the first N candidates, oldest
 // period end first, are acted on and the rest are logged as deferred. Absent
 // on the nightly cron: more than SWEEP_CAP candidates aborts, nobody acted on.
-export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<SweepSummary> {
+// ids: present only on an authorized manual call with ?ids= (at most
+// SWEEP_IDS_MAX). Only those Discord ids are evaluated, each through the full
+// decideKick; everyone else in the server is left out of the run entirely.
+export async function runDiscordSweep(opts: { cap?: number; ids?: string[] } = {}): Promise<SweepSummary> {
   const mode = kickMode();
   const batchSize = opts.cap === undefined ? null : Math.min(Math.max(Math.floor(opts.cap), 1), SWEEP_CAP_MAX);
+  const idList = opts.ids === undefined ? null : Array.from(new Set(opts.ids)).slice(0, SWEEP_IDS_MAX);
+  const idSet = idList === null ? null : new Set(idList);
   const summary: SweepSummary = {
     mode,
     run_id: null,
@@ -797,6 +968,7 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
     candidates: 0,
     whop_rows: null,
     whop_live: null,
+    whop_recent_payers: null,
     previous_live: null,
     kicked: [],
     would_kick: [],
@@ -807,6 +979,19 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
     aborted: null,
     batch: null,
     deferred: null,
+    ids: idList === null ? null : [],
+  };
+  // Exact-ID run: record (or overwrite) what happened to one requested id.
+  const report = (id: string, username: string | null, action: SweepIdReport["action"], reason: string) => {
+    if (summary.ids === null) return;
+    const hit = summary.ids.find((r) => r.id === id);
+    if (hit) {
+      hit.username = username ?? hit.username;
+      hit.action = action;
+      hit.reason = reason;
+    } else {
+      summary.ids.push({ id, username, action, reason });
+    }
   };
   let guildName: string | null = null;
   const logRows: Parameters<typeof logDecisions>[0] = [];
@@ -824,7 +1009,7 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
   let paidTimeCount: number | null = null;
 
   try {
-    const [guild, roles, members, links, allowlist, liveness, previous] = await Promise.all([
+    const [guild, roles, members, links, allowlist, liveness, previous, payments] = await Promise.all([
       fetchGuild(),
       fetchRoles(),
       fetchAllMembers(),
@@ -832,6 +1017,7 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
       loadAllowlist(),
       loadLiveWhopUsers(),
       lastAcceptedLiveCount(),
+      loadRecentPayers(),
     ]);
     guildName = guild.name;
     summary.scanned = members.length;
@@ -862,6 +1048,15 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
     }
     whopReadOk = true;
 
+    // No payment data, no kicks: a payments read that failed aborts the run
+    // exactly like a failed membership read.
+    if (!payments.ok) {
+      summary.aborted = `Whop payments read failed: ${payments.error}`;
+      await postToModChannel(formatSummary("sweep", summary, guildName));
+      return summary;
+    }
+    summary.whop_recent_payers = payments.payers.size;
+
     const rules = { memberRoleIds: memberRoleIds(), newMemberRoleId: newMemberRoleId(), protectedRoleIds: protectedRoleIds() };
     const everyone = roles.get(guildId());
     const candidates: { member: DiscordMember; id: string; whop: string[] }[] = [];
@@ -869,6 +1064,7 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
     for (const m of members) {
       const id = m.user?.id;
       if (!id) continue;
+      if (idSet && !idSet.has(id)) continue;
       const roleIds = m.roles ?? [];
       const rolePermissions: Record<string, string> = {};
       for (const rid of roleIds) {
@@ -889,10 +1085,12 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
         liveWhopUserIds: liveness.live,
         pausedWhopUserIds: liveness.paused,
         paidTimeWhopUserIds: liveness.paidTime,
+        recentPayerWhopUserIds: payments.payers,
         rules,
       });
       if (decision.action === "skip") {
         summary.counts[decision.reason]++;
+        report(id, m.user?.username ?? null, "skipped", decision.reason);
         // Log skips of people who hold a member role (the interesting ones).
         const holdsMemberRole = roleIds.some((rid) => rules.memberRoleIds.has(rid));
         if (holdsMemberRole && decision.reason !== "no_member_role") {
@@ -903,6 +1101,12 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
       candidates.push({ member: m, id, whop });
     }
     summary.candidates = candidates.length;
+    if (idList) {
+      const present = new Set(members.map((m) => m.user?.id));
+      for (const id of idList) {
+        if (!present.has(id)) report(id, null, "not_in_server", "not_in_server");
+      }
+    }
 
     // Nightly run: more than SWEEP_CAP candidates means act on no one.
     if (batchSize === null && candidates.length > SWEEP_CAP) {
@@ -943,8 +1147,10 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
 
     let consecutiveFailures = 0;
     for (const c of selected) {
+      const username = c.member.user?.username ?? null;
       if (mode !== "live") {
         summary.would_kick.push(label(c.member));
+        report(c.id, username, "would_kick", "no_live_membership");
         await logDecisions([{ discord_user_id: c.id, whop_user_ids: c.whop, reason: "no_live_membership", mode, action: "would_kick", source: "sweep" }]);
         continue;
       }
@@ -955,19 +1161,23 @@ export async function runDiscordSweep(opts: { cap?: number } = {}): Promise<Swee
       const status = await kickMember(c.id);
       if (status === 204) {
         summary.kicked.push(label(c.member));
+        report(c.id, username, "kicked", "no_live_membership");
         await logDecisions([{ discord_user_id: c.id, whop_user_ids: c.whop, reason: "no_live_membership", mode, action: "kicked", source: "sweep" }]);
         await postToModChannel(`**Discord sweep** | mode **live** | kicked ${label(c.member)} (no_live_membership)`);
         consecutiveFailures = 0;
       } else if (status === 403) {
         summary.failed.push(label(c.member));
+        report(c.id, username, "failed", "discord_403");
         await logDecisions([{ discord_user_id: c.id, whop_user_ids: c.whop, reason: "discord_403", mode, action: "failed", source: "sweep" }]);
         summary.aborted = "Bot lost Kick Members or role too low (Discord 403). Run stopped";
         break;
       } else if (status === 404) {
         // Already gone; nothing to do.
+        report(c.id, username, "skipped", "already_gone");
         await logDecisions([{ discord_user_id: c.id, whop_user_ids: c.whop, reason: "already_gone", mode, action: "skipped", source: "sweep" }]);
       } else {
         summary.failed.push(label(c.member));
+        report(c.id, username, "failed", `discord_${status}`);
         await logDecisions([{ discord_user_id: c.id, whop_user_ids: c.whop, reason: `discord_${status}`, mode, action: "failed", source: "sweep" }]);
         consecutiveFailures++;
         if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
@@ -1071,7 +1281,7 @@ export async function checkOneFromWebhook(whopUserId: string, discordUserId: str
     const everyone = roles.get(guildId());
     if (everyone) rolePermissions[everyone.id] = everyone.permissions;
 
-    const decision = decideKick({
+    const decideInput: DecideInput = {
       discordUserId,
       isBot: member.user?.bot === true,
       isGuildOwner: guild.owner_id !== null && discordUserId === guild.owner_id,
@@ -1083,7 +1293,25 @@ export async function checkOneFromWebhook(whopUserId: string, discordUserId: str
       liveWhopUserIds: live,
       pausedWhopUserIds: paused,
       paidTimeWhopUserIds: paidTime,
-    });
+    };
+    let decision = decideKick(decideInput);
+
+    // Would kick: first make sure none of the linked Whop users paid recently
+    // (an immediate cancel reads as ended while the paid month is still
+    // running). A payments read that fails means do NOT kick.
+    if (decision.action === "kick") {
+      const recentPayers = new Set<string>();
+      for (const w of whop) {
+        const r = await hasRecentPayment(w);
+        if (!r.ok) {
+          await logDecisions([{ discord_user_id: discordUserId, whop_user_ids: whop, reason: "payments_read_failed", mode, action: "skipped", source: "webhook" }]);
+          await line(`ALERT: ${label(member)}: Whop payments read failed (${r.error}). Not kicked.`);
+          return { action: "skipped", reason: "payments_read_failed", mode };
+        }
+        if (r.recent) recentPayers.add(w);
+      }
+      decision = decideKick({ ...decideInput, recentPayerWhopUserIds: recentPayers });
+    }
 
     if (decision.action === "skip") {
       await logDecisions([{ discord_user_id: discordUserId, whop_user_ids: whop, reason: decision.reason, mode, action: "skipped", source: "webhook" }]);
