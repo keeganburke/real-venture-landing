@@ -245,7 +245,6 @@ export default function CancelFlow({
   };
 
   const close = pauseDone ? closeAfterPause : onClose;
-  const resumeLabel = pauseDone ? formatDate(pauseDone.resumesAt) : null;
 
   return (
     <>
@@ -266,9 +265,7 @@ export default function CancelFlow({
             <div className="cf-modal-eyeb">Done</div>
             <div className="cf-modal-h">{"You're paused."}</div>
             <div className="cf-modal-sub">
-              {resumeLabel
-                ? `You won't be charged until ${resumeLabel}. You keep full access.`
-                : "You won't be charged while paused. You keep full access."}
+              {"You won't be charged while paused. You keep full access."}
             </div>
             <a className="cf-btn-primary link" href="/dashboard">
               Back to my dashboard

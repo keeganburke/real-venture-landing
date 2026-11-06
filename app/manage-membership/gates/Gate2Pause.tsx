@@ -53,7 +53,7 @@ export default function Gate2Pause({
       <div className="cf-modal-eyeb">Need a break?</div>
       <div className="cf-modal-h">Take 14 days on us</div>
       <div className="cf-modal-sub">
-        {"Your next payment moves back two weeks. Nothing else changes."}
+        {"You keep full access the whole time."}
       </div>
 
       <div className="cf-pause-keeps">
@@ -99,7 +99,7 @@ export default function Gate2Pause({
             {"Pausing\u2026"}
           </>
         ) : (
-          "Push my payment 14 days"
+          "Pause for 14 days"
         )}
       </button>
       <button className="cf-btn-secondary" onClick={onDecline} disabled={pausing}>
