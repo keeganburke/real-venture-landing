@@ -14,6 +14,13 @@
 const BASE = 'https://services.leadconnectorhq.com'
 const VERSION = '2021-07-28'
 const TAG = 'joined-free-discord'
+const SMS_TAG = 'joined-discord-sms'
+
+// Every join gets the base tag; SMS joins also get the source tag, so joins
+// from the SMS nurture can be counted apart from /free-page joins.
+function tagsForSrc(src?: string | null): string[] {
+  return src === 'sms' ? [TAG, SMS_TAG] : [TAG]
+}
 
 // Copied verbatim from rv-discord-gateway/src/ghl.js — Cloudflare fronts the
 // GHL API and rejects a non-browser fingerprint with Error 1010.
@@ -32,6 +39,7 @@ type Logger = { error?: (message: string, meta?: unknown) => void }
 type Options = {
   cid?: string | null
   email?: string | null
+  src?: string | null
   apiKey?: string
   locationId?: string
   fetchImpl?: typeof fetch
@@ -58,15 +66,16 @@ async function findContactIdByEmail(
   return typeof id === 'string' && id.length > 0 ? id : null
 }
 
-async function addTag(
+async function addTags(
   fetchImpl: typeof fetch,
   apiKey: string,
   contactId: string,
+  tags: string[],
 ): Promise<void> {
   const res = await fetchImpl(`${BASE}/contacts/${encodeURIComponent(contactId)}/tags`, {
     method: 'POST',
     headers: { ...authHeaders(apiKey), 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tags: [TAG] }),
+    body: JSON.stringify({ tags }),
   })
   if (!res.ok) throw new Error(`GHL tag ${res.status}`)
 }
@@ -88,7 +97,7 @@ export async function tagJoinedFreeDiscord(opts: Options): Promise<TagResult> {
       if (!found) return { tagged: false, contactId: null, reason: 'contact_not_found' }
       contactId = found
     }
-    await addTag(fetchImpl, apiKey, contactId)
+    await addTags(fetchImpl, apiKey, contactId, tagsForSrc(opts.src))
     return { tagged: true, contactId }
   } catch (err) {
     // Message only — never the api key, never the request.
@@ -98,4 +107,14 @@ export async function tagJoinedFreeDiscord(opts: Options): Promise<TagResult> {
     )
     return { tagged: false, contactId: null, reason: 'error' }
   }
+}
+
+// Compact label for the one-line auth log. ok = tagged, not_found = no GHL
+// contact matched, failed = the GHL call errored, skipped = nothing to do
+// (no credentials, or neither cid nor email).
+export function tagResultLabel(result: TagResult): 'ok' | 'not_found' | 'failed' | 'skipped' {
+  if (result.tagged) return 'ok'
+  if (result.reason === 'contact_not_found') return 'not_found'
+  if (result.reason === 'error') return 'failed'
+  return 'skipped'
 }

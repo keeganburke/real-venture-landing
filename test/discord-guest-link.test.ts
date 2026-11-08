@@ -4,6 +4,9 @@ import {
   encodeGuestState,
   decodeGuestState,
   guestStartPath,
+  freeRedirectPath,
+  preAuthOutcome,
+  joinOutcome,
 } from '../lib/discord-guest-link.ts'
 
 test('encode -> decode round-trips nonce, src and cid', () => {
@@ -44,4 +47,41 @@ test('guestStartPath forwards only src and cid to the guest start route', () => 
 
 test('guestStartPath returns the bare path when no src/cid present', () => {
   assert.equal(guestStartPath(new URLSearchParams('utm_source=ads')), '/api/discord/guest/start')
+})
+
+// ── freeRedirectPath: where the callback sends the browser ──────────────────
+test('freeRedirectPath carries the status and, when given, src and cid', () => {
+  assert.equal(freeRedirectPath('joined', { src: 'sms' }), '/free?discord=joined&src=sms')
+  assert.equal(
+    freeRedirectPath('cancelled', { src: 'sms', cid: 'ghl_9' }),
+    '/free?discord=cancelled&src=sms&cid=ghl_9',
+  )
+})
+
+test('freeRedirectPath omits empty src/cid', () => {
+  assert.equal(freeRedirectPath('already', {}), '/free?discord=already')
+  assert.equal(freeRedirectPath('error', { src: null, cid: '' }), '/free?discord=error')
+})
+
+// ── preAuthOutcome: cancel vs error vs proceed, before any Discord call ──────
+test('preAuthOutcome: a Discord error param (e.g. access_denied) is cancelled', () => {
+  assert.equal(preAuthOutcome({ oauthError: 'access_denied', hasCode: false, csrfOk: true }), 'cancelled')
+  assert.equal(preAuthOutcome({ oauthError: 'server_error', hasCode: false, csrfOk: true }), 'cancelled')
+})
+
+test('preAuthOutcome: missing code or failed CSRF is an error', () => {
+  assert.equal(preAuthOutcome({ oauthError: null, hasCode: false, csrfOk: true }), 'error')
+  assert.equal(preAuthOutcome({ oauthError: null, hasCode: true, csrfOk: false }), 'error')
+})
+
+test('preAuthOutcome: a valid code with matching state proceeds', () => {
+  assert.equal(preAuthOutcome({ oauthError: null, hasCode: true, csrfOk: true }), 'proceed')
+})
+
+// ── joinOutcome: Discord guild-add status -> redirect status ────────────────
+test('joinOutcome maps guild-add status to a redirect status', () => {
+  assert.equal(joinOutcome(201), 'joined')
+  assert.equal(joinOutcome(204), 'already')
+  assert.equal(joinOutcome(403), 'error')
+  assert.equal(joinOutcome(500), 'error')
 })
