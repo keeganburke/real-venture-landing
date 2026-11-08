@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { guestRedirectUri, guestSiteUrl } from "../site-url";
+import { encodeGuestState } from "../../../../../lib/discord-guest-link";
 
 // Free Discord door for /free leads. No Whop login, no session: one Discord
 // "Authorize" tap, then the guest callback adds them with the Guest role only.
@@ -17,7 +18,16 @@ export async function GET(request: NextRequest) {
 
   // Same helper as the callback's token exchange, so the two always match.
   const redirectUri = guestRedirectUri(request);
-  const state = crypto.randomUUID();
+  // The OAuth `state` doubles as the CSRF token AND the carrier for the two
+  // attribution params. The whole string is still stored in the one-shot
+  // cookie, so the callback's `state === cookie` check is unchanged; the
+  // callback also decodes it to recover src/cid.
+  const { searchParams } = request.nextUrl;
+  const state = encodeGuestState({
+    nonce: crypto.randomUUID(),
+    src: searchParams.get("src"),
+    cid: searchParams.get("cid"),
+  });
 
   const params = new URLSearchParams({
     client_id: clientId,
