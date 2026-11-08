@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "../../../../../lib/supabase/admin";
 import { guestRedirectUri, guestSiteUrl } from "../site-url";
+import { decodeGuestState } from "../../../../../lib/discord-guest-link";
+import { tagJoinedFreeDiscord } from "../../../../../lib/discord-guest-ghl";
 
 // Free Discord door, step 2. No Whop login, no session. Exchanges the code,
 // reads the Discord user, and has the bot add them with the Guest role only.
@@ -77,6 +79,10 @@ export async function GET(request: NextRequest) {
     return redirectTo("error");
   }
 
+  // `state` passed the CSRF check above, so it is our own value: decode the
+  // attribution params (src, cid) that /discord carried through it.
+  const linkState = decodeGuestState(state);
+
   const clientId = process.env.DISCORD_CLIENT_ID;
   const clientSecret = process.env.DISCORD_CLIENT_SECRET;
   const botToken = process.env.DISCORD_BOT_TOKEN;
@@ -150,6 +156,9 @@ export async function GET(request: NextRequest) {
         already_in_server: false,
         source: "free_page",
       });
+      // Best-effort GHL stamp. Awaited so it finishes before the serverless
+      // function is frozen, but it never throws and never blocks the redirect.
+      await tagJoinedFreeDiscord({ cid: linkState?.cid ?? null, email: discordEmail });
       return redirectTo("joined", { joined: true });
     }
 
@@ -163,6 +172,9 @@ export async function GET(request: NextRequest) {
         already_in_server: true,
         source: "free_page",
       });
+      // Already in the server, but they still came through the free door: stamp
+      // the GHL contact the same way. Idempotent — GHL ignores a duplicate tag.
+      await tagJoinedFreeDiscord({ cid: linkState?.cid ?? null, email: discordEmail });
       return redirectTo("already", { joined: true });
     }
 
