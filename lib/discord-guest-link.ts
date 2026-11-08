@@ -60,3 +60,44 @@ export function guestStartPath(search: URLSearchParams): string {
   const qs = out.toString()
   return qs ? `/api/discord/guest/start?${qs}` : '/api/discord/guest/start'
 }
+
+// Where the guest callback sends the browser. `cancelled`/`error` carry src+cid
+// so /free can render a "Try again" button that re-enters /discord with the
+// same attribution; `joined`/`already` carry src so /free can hide the call
+// banner for SMS joins.
+export type FreeDiscordStatus = 'joined' | 'already' | 'error' | 'cancelled'
+
+export function freeRedirectPath(
+  status: FreeDiscordStatus,
+  attr: { src?: string | null; cid?: string | null } = {},
+): string {
+  const out = new URLSearchParams({ discord: status })
+  const src = clean(attr.src)
+  if (src) out.set('src', src)
+  const cid = clean(attr.cid)
+  if (cid) out.set('cid', cid)
+  return `/free?${out.toString()}`
+}
+
+// Decide what to do before any Discord call, from the callback's query:
+//  - a Discord `error` param (user hit Cancel = access_denied, or any OAuth
+//    error) -> 'cancelled' (friendly retry, never a raw error page)
+//  - no code, or a state that fails the CSRF match -> 'error'
+//  - a real code with a matching state -> 'proceed'
+export function preAuthOutcome(input: {
+  oauthError?: string | null
+  hasCode: boolean
+  csrfOk: boolean
+}): 'cancelled' | 'error' | 'proceed' {
+  if (input.oauthError) return 'cancelled'
+  if (!input.hasCode || !input.csrfOk) return 'error'
+  return 'proceed'
+}
+
+// Discord's guild-add status -> the /free status. 201 = fresh join, 204 =
+// already in the server; anything else is a failure.
+export function joinOutcome(addStatus: number): 'joined' | 'already' | 'error' {
+  if (addStatus === 201) return 'joined'
+  if (addStatus === 204) return 'already'
+  return 'error'
+}

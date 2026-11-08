@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { tagJoinedFreeDiscord } from '../lib/discord-guest-ghl.ts'
+import { tagJoinedFreeDiscord, tagResultLabel } from '../lib/discord-guest-ghl.ts'
 
 type Call = { url: string; method: string; headers: Record<string, string>; body: unknown }
 
@@ -85,4 +85,36 @@ test('never throws when the network fails', async () => {
   }) as unknown as typeof fetch
   const r = await tagJoinedFreeDiscord({ cid: 'ghl_1', ...CREDS, fetchImpl })
   assert.deepEqual(r, { tagged: false, contactId: null, reason: 'error' })
+})
+
+test('src=sms also applies the joined-discord-sms source tag (one POST)', async () => {
+  const { fetchImpl, calls } = makeFetch({})
+  const r = await tagJoinedFreeDiscord({ cid: 'ghl_42', src: 'sms', ...CREDS, fetchImpl })
+  assert.equal(r.tagged, true)
+  assert.equal(calls.length, 1)
+  assert.match(calls[0].url, /\/contacts\/ghl_42\/tags$/)
+  assert.deepEqual(calls[0].body, { tags: ['joined-free-discord', 'joined-discord-sms'] })
+})
+
+test('non-sms src applies only the base tag', async () => {
+  const { fetchImpl, calls } = makeFetch({})
+  await tagJoinedFreeDiscord({ cid: 'ghl_42', src: 'free_page', ...CREDS, fetchImpl })
+  assert.deepEqual(calls[0].body, { tags: ['joined-free-discord'] })
+})
+
+test('src=sms applies both tags on the email-lookup path too', async () => {
+  const { fetchImpl, calls } = makeFetch({
+    'GET /contacts/search/duplicate': { json: { contact: { id: 'found_7' } } },
+  })
+  const r = await tagJoinedFreeDiscord({ email: 'lead@x.com', src: 'sms', ...CREDS, fetchImpl })
+  assert.equal(r.tagged, true)
+  assert.deepEqual(calls[1].body, { tags: ['joined-free-discord', 'joined-discord-sms'] })
+})
+
+test('tagResultLabel maps a result to a loggable label', () => {
+  assert.equal(tagResultLabel({ tagged: true, contactId: 'x' }), 'ok')
+  assert.equal(tagResultLabel({ tagged: false, contactId: null, reason: 'contact_not_found' }), 'not_found')
+  assert.equal(tagResultLabel({ tagged: false, contactId: null, reason: 'error' }), 'failed')
+  assert.equal(tagResultLabel({ tagged: false, contactId: null, reason: 'no_credentials' }), 'skipped')
+  assert.equal(tagResultLabel({ tagged: false, contactId: null, reason: 'no_cid_or_email' }), 'skipped')
 })

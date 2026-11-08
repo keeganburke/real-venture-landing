@@ -12,6 +12,7 @@ import VideoWalkthrough from "./components/VideoWalkthrough";
 import Reviews from "./components/Reviews";
 import { REVIEW_STATS, TRUST_COUNTS } from "./lib/whop-reviews";
 import { getReferralCode, sanitizeReferralCode, setReferralCode as storeReferralCode } from "../lib/referral";
+import { isSmsSrc, discordEntryHref } from "../lib/discord-free-ui";
 
 // Whop Elements SDK loader, created once per page load (loadWhop injects one
 // script tag and shares one promise). Only ever called in the browser: the
@@ -286,12 +287,25 @@ export default function LandingClient({ variant, discordUrl = "https://discord.c
   // /free Discord door. "joined" swaps the button for the green card; "error"
   // adds one line under the button. Resolved AFTER mount from ?discord= and
   // the rv_guest cookie so the server and client first paint match.
-  const [freeDiscord, setFreeDiscord] = useState<"none" | "joined" | "error">("none");
+  const [freeDiscord, setFreeDiscord] = useState<"none" | "joined" | "error" | "cancelled">("none");
+  // SMS joins must NOT see the "we're calling you" banner — nobody is calling
+  // them. Resolved AFTER mount (like the discord status below) so the server
+  // and client first paint match and normal /free visitors are untouched.
+  const [hideCallBanner, setHideCallBanner] = useState(false);
+  // Where the "Try again" button points after a cancel/error: back through
+  // /discord with the same src and cid, so attribution survives the retry.
+  const [retryHref, setRetryHref] = useState("/discord");
   useEffect(() => {
     if (variant !== "free") return;
-    const status = new URLSearchParams(window.location.search).get("discord");
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("discord");
+    const src = params.get("src");
+    const cid = params.get("cid");
     const hasGuestCookie = document.cookie.split("; ").some((c) => c.startsWith("rv_guest="));
+    if (isSmsSrc(src)) setHideCallBanner(true);
+    setRetryHref(discordEntryHref({ src, cid }));
     if (status === "joined" || status === "already" || hasGuestCookie) setFreeDiscord("joined");
+    else if (status === "cancelled") setFreeDiscord("cancelled");
     else if (status === "error") setFreeDiscord("error");
   }, [variant]);
   // /free sticky button (phones): shows ONLY once the hero button has
@@ -665,14 +679,16 @@ export default function LandingClient({ variant, discordUrl = "https://discord.c
                   call covers. Only this section is "free" copy; everything
                   below it is the homepage. The pulse on the box animates
                   border colour and glow only (see the lp-hero-callout rules). */}
-              <div className="lp-hero-callout lp-free-callout-xl">
-                <p className="lp-hero-callout-main">
-                  {"We're calling you in the next few minutes."}
-                </p>
-                <p className="lp-hero-callout-second lp-free-callout-last">
-                  {"Unknown number. That's us. Pick up."}
-                </p>
-              </div>
+              {!hideCallBanner && (
+                <div className="lp-hero-callout lp-free-callout-xl">
+                  <p className="lp-hero-callout-main">
+                    {"We're calling you in the next few minutes."}
+                  </p>
+                  <p className="lp-hero-callout-second lp-free-callout-last">
+                    {"Unknown number. That's us. Pick up."}
+                  </p>
+                </div>
+              )}
               {/* Only shown OUTSIDE calling hours. Someone opting in at 2am
                   needs to know they were not ignored; someone opting in at 1pm
                   does not need the line at all. */}
@@ -710,6 +726,17 @@ export default function LandingClient({ variant, discordUrl = "https://discord.c
                     {"Open Discord \u2192"}
                   </a>
                 </div>
+              ) : freeDiscord === "cancelled" || freeDiscord === "error" ? (
+                <div className="lp-free-door" ref={freeCtaRef}>
+                  <a className="lp-cta-primary lp-cta-hero" href={retryHref} data-cta="free-discord-retry">
+                    {"Try again \u2192"}
+                  </a>
+                  <div className="lp-free-error">
+                    {freeDiscord === "cancelled"
+                      ? "No problem \u2014 tap to try again when you're ready."
+                      : "That did not work. Tap to try again."}
+                  </div>
+                </div>
               ) : (
                 <div className="lp-free-door" ref={freeCtaRef}>
                   <a className="lp-cta-primary lp-cta-hero" href={FREE_DISCORD_START} data-cta="free-discord">
@@ -719,9 +746,6 @@ export default function LandingClient({ variant, discordUrl = "https://discord.c
                     <span className="lp-free-online-dot" aria-hidden="true" />
                     {FREE_ONLINE_COUNT} members online right now
                   </div>
-                  {freeDiscord === "error" && (
-                    <div className="lp-free-error">That did not work. Tap the button to try again.</div>
-                  )}
                 </div>
               )}
               {/* White label bar sitting on the top edge of the player. Kept

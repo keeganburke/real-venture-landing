@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "../../../../../lib/supabase/admin";
 import { guestRedirectUri, guestSiteUrl } from "../site-url";
-import { decodeGuestState } from "../../../../../lib/discord-guest-link";
-import { tagJoinedFreeDiscord } from "../../../../../lib/discord-guest-ghl";
+import {
+  decodeGuestState,
+  freeRedirectPath,
+  preAuthOutcome,
+  joinOutcome,
+  type FreeDiscordStatus,
+} from "../../../../../lib/discord-guest-link";
+import { tagJoinedFreeDiscord, tagResultLabel } from "../../../../../lib/discord-guest-ghl";
 
 // Free Discord door, step 2. No Whop login, no session. Exchanges the code,
 // reads the Discord user, and has the bot add them with the Guest role only.
@@ -14,12 +20,19 @@ const GUEST_STATE_COOKIE = "rv_guest_state";
 const GUEST_COOKIE = "rv_guest";
 const SECURE = process.env.NODE_ENV === "production";
 
-type GuestStatus = "joined" | "already" | "error";
+type Attribution = { src: string | null; cid: string | null };
 
 // Every exit lands on /free (same site base as the start route) and clears
-// the one-shot state cookie.
-function redirectToOn(siteUrl: string, status: GuestStatus, opts: { joined?: boolean } = {}) {
-  const response = NextResponse.redirect(new URL(`/free?discord=${status}`, siteUrl));
+// the one-shot state cookie. `attr` rides along in the URL: src so /free can
+// hide the call banner for SMS joins, and (on cancel/error) cid so the
+// "Try again" button can re-enter /discord with the same attribution.
+function redirectToOn(
+  siteUrl: string,
+  status: FreeDiscordStatus,
+  attr: Attribution,
+  opts: { joined?: boolean } = {},
+) {
+  const response = NextResponse.redirect(new URL(freeRedirectPath(status, attr), siteUrl));
   response.cookies.set(GUEST_STATE_COOKIE, "", {
     httpOnly: true,
     sameSite: "lax",
@@ -38,6 +51,20 @@ function redirectToOn(siteUrl: string, status: GuestStatus, opts: { joined?: boo
     });
   }
   return response;
+}
+
+// One structured line per auth. NEVER includes the api key, tokens, email, or
+// phone — only the path, the source label, whether a cid was present, and how
+// the GHL tag landed.
+function logAuth(path: FreeDiscordStatus, attr: Attribution, tag: string) {
+  console.log(
+    `[discord/guest/callback] ${JSON.stringify({
+      path,
+      src: attr.src,
+      cid: Boolean(attr.cid),
+      tag,
+    })}`,
+  );
 }
 
 type GuestRow = {
@@ -70,18 +97,38 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get("code");
   const state = searchParams.get("state");
+  const oauthError = searchParams.get("error");
   const cookieState = request.cookies.get(GUEST_STATE_COOKIE)?.value;
   const siteUrl = guestSiteUrl(request);
-  const redirectTo = (status: GuestStatus, opts: { joined?: boolean } = {}) =>
-    redirectToOn(siteUrl, status, opts);
 
-  if (!code || !state || !cookieState || state !== cookieState) {
-    return redirectTo("error");
+  // Trust src/cid ONLY when `state` is our own (CSRF match). On a cancel,
+  // Discord echoes our state back, so the retry link still recovers src/cid.
+  const csrfOk = Boolean(state && cookieState && state === cookieState);
+  const link = csrfOk ? decodeGuestState(state) : null;
+  const attr: Attribution = { src: link?.src ?? null, cid: link?.cid ?? null };
+
+  // Redirect + log in one place. `cancelled`/`error` keep cid in the URL for
+  // the retry link; success states keep only src (banner hiding). The log line
+  // always records whether a cid was present.
+  const finish = (status: FreeDiscordStatus, tag: string, opts: { joined?: boolean } = {}) => {
+    logAuth(status, attr, tag);
+    const urlAttr: Attribution =
+      status === "cancelled" || status === "error" ? attr : { src: attr.src, cid: null };
+    return redirectToOn(siteUrl, status, urlAttr, opts);
+  };
+
+  // Cancel (error=access_denied) or any OAuth error -> friendly "cancelled".
+  // Missing code or a state that fails CSRF -> "error". Neither path shows a
+  // raw error page; both land on /free with a "Try again" button.
+  const pre = preAuthOutcome({ oauthError, hasCode: Boolean(code), csrfOk });
+  if (pre !== "proceed") {
+    return finish(pre, "none");
   }
-
-  // `state` passed the CSRF check above, so it is our own value: decode the
-  // attribution params (src, cid) that /discord carried through it.
-  const linkState = decodeGuestState(state);
+  // preAuthOutcome only returns "proceed" when a code is present; this narrows
+  // `code` from string|null to string for the token exchange below.
+  if (!code) {
+    return finish("error", "none");
+  }
 
   const clientId = process.env.DISCORD_CLIENT_ID;
   const clientSecret = process.env.DISCORD_CLIENT_SECRET;
@@ -92,7 +139,7 @@ export async function GET(request: NextRequest) {
 
   if (!clientId || !clientSecret || !botToken || !guildId) {
     console.error("[discord/guest/callback] Discord env vars missing");
-    return redirectTo("error");
+    return finish("error", "none");
   }
 
   try {
@@ -110,12 +157,12 @@ export async function GET(request: NextRequest) {
     });
     if (!tokenRes.ok) {
       console.error("[discord/guest/callback] token exchange failed", tokenRes.status);
-      return redirectTo("error");
+      return finish("error", "none");
     }
     const tokenData = (await tokenRes.json()) as { access_token?: unknown };
     const userAccessToken = typeof tokenData.access_token === "string" ? tokenData.access_token : null;
     if (!userAccessToken) {
-      return redirectTo("error");
+      return finish("error", "none");
     }
 
     // Step 2: who is this (id, username, email).
@@ -124,12 +171,12 @@ export async function GET(request: NextRequest) {
     });
     if (!userRes.ok) {
       console.error("[discord/guest/callback] user fetch failed", userRes.status);
-      return redirectTo("error");
+      return finish("error", "none");
     }
     const userData = (await userRes.json()) as { id?: unknown; username?: unknown; email?: unknown };
     const discordUserId = typeof userData.id === "string" ? userData.id : null;
     if (!discordUserId) {
-      return redirectTo("error");
+      return finish("error", "none");
     }
     const discordUsername = typeof userData.username === "string" && userData.username.length > 0 ? userData.username : null;
     const discordEmail = typeof userData.email === "string" && userData.email.length > 0 ? userData.email : null;
@@ -147,41 +194,31 @@ export async function GET(request: NextRequest) {
       }),
     });
 
-    // 201 = fresh join, Guest role rode along in the body.
-    if (addRes.status === 201) {
-      await recordGuest({
-        discord_user_id: discordUserId,
-        discord_username: discordUsername,
-        discord_email: discordEmail,
-        already_in_server: false,
-        source: "free_page",
-      });
-      // Best-effort GHL stamp. Awaited so it finishes before the serverless
-      // function is frozen, but it never throws and never blocks the redirect.
-      await tagJoinedFreeDiscord({ cid: linkState?.cid ?? null, email: discordEmail });
-      return redirectTo("joined", { joined: true });
+    // 201 = fresh join, 204 = already in the server, anything else = failure.
+    const status = joinOutcome(addRes.status);
+    if (status === "error") {
+      console.error("[discord/guest/callback] guild add failed", addRes.status);
+      return finish("error", "none");
     }
 
-    // 204 = already in the server. Change NOTHING on Discord: no Guest role,
-    // no role of any kind. Just remember we saw them.
-    if (addRes.status === 204) {
-      await recordGuest({
-        discord_user_id: discordUserId,
-        discord_username: discordUsername,
-        discord_email: discordEmail,
-        already_in_server: true,
-        source: "free_page",
-      });
-      // Already in the server, but they still came through the free door: stamp
-      // the GHL contact the same way. Idempotent — GHL ignores a duplicate tag.
-      await tagJoinedFreeDiscord({ cid: linkState?.cid ?? null, email: discordEmail });
-      return redirectTo("already", { joined: true });
-    }
+    // Success. 201 added the Guest role in the body; 204 changes NOTHING on
+    // Discord (no role of any kind) — we only remember we saw them.
+    await recordGuest({
+      discord_user_id: discordUserId,
+      discord_username: discordUsername,
+      discord_email: discordEmail,
+      already_in_server: status === "already",
+      source: "free_page",
+    });
 
-    console.error("[discord/guest/callback] guild add failed", addRes.status);
-    return redirectTo("error");
+    // Tag the GHL contact on BOTH fresh-join and already-in-server. SMS joins
+    // also get the source tag. Best-effort: never throws, never changes what
+    // the user sees — a tag miss still lands them on the success state.
+    const tagResult = await tagJoinedFreeDiscord({ cid: attr.cid, email: discordEmail, src: attr.src });
+
+    return finish(status, tagResultLabel(tagResult), { joined: true });
   } catch (err) {
     console.error("[discord/guest/callback] threw", err instanceof Error ? err.message : "unknown");
-    return redirectTo("error");
+    return finish("error", "none");
   }
 }
