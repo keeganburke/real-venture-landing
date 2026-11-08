@@ -733,7 +733,7 @@ export default function LandingClient({ variant, discordUrl = "https://discord.c
                   </a>
                   <div className="lp-free-error">
                     {freeDiscord === "cancelled"
-                      ? "No problem \u2014 tap to try again when you're ready."
+                      ? "No problem, tap to try again when you're ready."
                       : "That did not work. Tap to try again."}
                   </div>
                 </div>
