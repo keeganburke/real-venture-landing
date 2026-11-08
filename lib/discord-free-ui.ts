@@ -20,3 +20,17 @@ export function discordEntryHref(
   const qs = out.toString()
   return qs ? `/discord?${qs}` : '/discord'
 }
+
+// GHL contact ids are alphanumeric, 15-30 chars. A /d/[cid] value that does not
+// match is treated as missing, so a bad or guessed link never carries a junk id
+// into GHL — the alias still starts the SMS flow, just without a cid.
+export function isValidGhlContactId(cid: string | null | undefined): boolean {
+  return typeof cid === "string" && /^[A-Za-z0-9]{15,30}$/.test(cid)
+}
+
+// Where the short /d/[cid] alias sends the browser: exactly
+// /discord?src=sms&cid=<cid> for a valid id, falling back to /discord?src=sms
+// when the id is missing or malformed. /discord itself is unchanged.
+export function dAliasTarget(cid: string | null | undefined): string {
+  return discordEntryHref({ src: "sms", cid: isValidGhlContactId(cid) ? cid : null })
+}
