@@ -23,12 +23,20 @@
 //           it: a Whop outage must never lock out a paying member.
 
 import { rowOwner, rowProduct, WHOP_API_VERSION_DATE } from "@/app/api/whop/whop-membership";
+import { isAdmin } from "@/lib/admin-allowlist";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export type WhopAccess =
   | { kind: "member"; oldestCreatedAtMs: number | null }
   | { kind: "ended" }
   | { kind: "none" }
+  // Whop answered, but with strangers' rows and none of the caller's own live
+  // ones: the user filter was ignored again (the original bug). Not an outage,
+  // so not a free pass: see the callers.
+  | { kind: "untrusted" }
   | { kind: "error"; reason: string };
+
+const KNOWN_STATUSES: ReadonlySet<string> = new Set(["active", "trialing", "completed", "past_due", "canceled", "expired", "drafted"]);
 
 export const LIVE_STATUSES: ReadonlySet<string> = new Set(["active", "trialing", "completed", "past_due"]);
 
@@ -64,7 +72,7 @@ export function grantsAccess(m: Record<string, unknown>, now = Date.now()): bool
 }
 
 /** One read of the user's memberships on the product (every page). Never throws. */
-export async function readWhopAccess(whopUserId: string, opts: { timeoutMs?: number; now?: number } = {}): Promise<WhopAccess> {
+export async function readWhopAccess(whopUserId: string, opts: { timeoutMs?: number; now?: number; deadlineAt?: number } = {}): Promise<WhopAccess> {
   const productId = process.env.WHOP_PRODUCT_ID;
   const companyId = process.env.WHOP_COMPANY_ID;
   const apiKey = process.env.WHOP_API_KEY;
@@ -75,12 +83,15 @@ export async function readWhopAccess(whopUserId: string, opts: { timeoutMs?: num
     const all: Record<string, unknown>[] = [];
     let after: string | null = null;
     for (let pageNo = 1; pageNo <= MAX_PAGES; pageNo++) {
+      // one time budget for every page of this read
+      const left = opts.deadlineAt ? opts.deadlineAt - Date.now() : Infinity;
+      if (left < 500) return { kind: "error", reason: "whop read ran out of time" };
       const params = new URLSearchParams({ company_id: companyId, user_id: whopUserId, product_id: productId, first: "50" });
       if (after) params.set("after", after);
       const res = await fetch(`https://api.whop.com/api/v1/memberships?${params.toString()}`, {
         headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json", "Api-Version-Date": WHOP_API_VERSION_DATE },
         cache: "no-store",
-        signal: AbortSignal.timeout(opts.timeoutMs ?? READ_TIMEOUT_MS),
+        signal: AbortSignal.timeout(Math.min(opts.timeoutMs ?? READ_TIMEOUT_MS, left)),
       });
       if (!res.ok) return { kind: "error", reason: `whop http ${res.status}` };
       const page = await res.json();
@@ -96,6 +107,8 @@ export async function readWhopAccess(whopUserId: string, opts: { timeoutMs?: num
       const product = rowProduct(m);
       return product === null || product === productId;
     });
+    const odd = own.filter((m) => !KNOWN_STATUSES.has(String(m.status)));
+    if (odd.length) console.warn("[whop-access] membership status we don't know; not counted as access", { whopUserId, statuses: odd.map((m) => m.status) });
     const granting = own.filter((m) => grantsAccess(m, now));
     if (granting.length > 0) {
       // the caller's own membership counts even if strangers' rows came back too
@@ -109,7 +122,10 @@ export async function readWhopAccess(whopUserId: string, opts: { timeoutMs?: num
     // A row for anyone else means the user filter was ignored again: we can't
     // tell this person's rows from strangers', so we don't decide "ended" or
     // "none" from it.
-    if (all.some((m) => rowOwner(m) !== whopUserId)) return { kind: "error", reason: "foreign or ownerless row (user_id filter ignored?)" };
+    if (all.some((m) => rowOwner(m) !== whopUserId)) {
+      console.error("[whop-access] strangers' rows in a single user read (user_id filter ignored?)", { whopUserId });
+      return { kind: "untrusted" };
+    }
     return own.length > 0 ? { kind: "ended" } : { kind: "none" };
   } catch (err) {
     const reason = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError") ? "whop timed out" : `whop read threw: ${err instanceof Error ? err.message : String(err)}`;
@@ -133,20 +149,63 @@ export async function waitForWhopAccess(
 ): Promise<WhopAccess & { tries: number }> {
   const steps = opts.steps ?? WAIT_STEPS_MS;
   const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
-  const deadline = Date.now() + (opts.deadlineMs ?? WAIT_DEADLINE_MS);
+  const deadlineAt = Date.now() + (opts.deadlineMs ?? WAIT_DEADLINE_MS);
+  const read = () => readWhopAccess(whopUserId, { timeoutMs: opts.timeoutMs, deadlineAt });
   let tries = 1;
-  let access = await readWhopAccess(whopUserId, { timeoutMs: opts.timeoutMs });
-  if (access.kind === "member" || access.kind === "error") return { ...access, tries };
+  let access = await read();
+  // one error alone (a rate limit, a blip) is not enough to let someone in:
+  // ask once more before treating Whop as down
+  if (access.kind === "error" && Date.now() + 1000 < deadlineAt) {
+    await sleep(1000);
+    tries++;
+    access = await read();
+  }
+  if (access.kind === "member" || access.kind === "error" || access.kind === "untrusted") return { ...access, tries };
   let definite: WhopAccess = access;
   for (const ms of steps) {
-    if (Date.now() + ms >= deadline) break;
+    if (Date.now() + ms >= deadlineAt) break;
     await sleep(ms);
     tries++;
-    access = await readWhopAccess(whopUserId, { timeoutMs: Math.min(opts.timeoutMs ?? READ_TIMEOUT_MS, Math.max(1000, deadline - Date.now())) });
-    if (access.kind === "member") return { ...access, tries };
+    access = await read();
+    if (access.kind === "member" || access.kind === "untrusted") return { ...access, tries };
     if (access.kind !== "error") definite = access;
   }
   return { ...definite, tries };
+}
+
+/** True if this person has been a member before by our own records: a saved
+    plan tier or a finished intake. Used only when Whop's answer can't be
+    trusted, so a real member can still sign in while a stranger can't. */
+export async function hadMembership(whopUserId: string): Promise<boolean> {
+  try {
+    const { data, error } = await createAdminClient()
+      .from("member_profiles")
+      .select("whop_tier, intake_completed_at")
+      .eq("whop_user_id", whopUserId)
+      .maybeSingle();
+    if (error || !data) return false;
+    return Boolean(data.whop_tier || data.intake_completed_at);
+  } catch {
+    return false;
+  }
+}
+
+/** Admins, plus the people on the Discord "never kick" list (staff, coaches,
+    guests: discord_kick_allowlist, matched through discord_connections). They
+    keep the hub without a membership on the product. */
+export async function hubAllowlisted(whopUserId: string): Promise<boolean> {
+  if (isAdmin(whopUserId)) return true;
+  try {
+    const supabase = createAdminClient();
+    const { data: links, error } = await supabase.from("discord_connections").select("discord_user_id").eq("whop_user_id", whopUserId);
+    if (error || !links?.length) return false;
+    const ids = links.map((l) => l.discord_user_id).filter((x): x is string => typeof x === "string");
+    if (!ids.length) return false;
+    const { data: allowed, error: e2 } = await supabase.from("discord_kick_allowlist").select("discord_user_id").in("discord_user_id", ids);
+    return !e2 && (allowed?.length ?? 0) > 0;
+  } catch {
+    return false;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -161,7 +220,18 @@ const memberUntil = new Map<string, number>();
 export async function dashboardAccess(whopUserId: string, now = Date.now()): Promise<"member" | "ended" | "none" | "error"> {
   const until = memberUntil.get(whopUserId);
   if (until !== undefined && until > now) return "member";
-  const access = await readWhopAccess(whopUserId, { timeoutMs: 5000 });
+  let access = await readWhopAccess(whopUserId, { timeoutMs: 5000 });
+  // a brand new buyer can reach the hub a moment before every Whop server
+  // lists the membership: ask once more before sending anyone out
+  if (access.kind === "ended" || access.kind === "none") {
+    await new Promise((r) => setTimeout(r, 1500));
+    access = await readWhopAccess(whopUserId, { timeoutMs: 5000 });
+  }
+  if ((access.kind === "ended" || access.kind === "none") && (await hubAllowlisted(whopUserId))) return "member";
+  if (access.kind === "untrusted") {
+    console.error("[whop-access] dashboard re-check untrusted, letting in (the session came from a passed login)", { whopUserId });
+    return "error";
+  }
   if (access.kind === "member") {
     if (memberUntil.size >= MAX_ENTRIES) memberUntil.clear();
     memberUntil.set(whopUserId, now + MEMBER_TTL_MS);

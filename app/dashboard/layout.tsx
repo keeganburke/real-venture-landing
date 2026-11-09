@@ -27,6 +27,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
   // the hub now, not at their next login. Admins skip it; a Whop error lets
   // the person in.
   if (!isAdmin(session.whopUserId)) {
+    // (the never-kick list is checked inside dashboardAccess)
     const access = await dashboardAccess(session.whopUserId);
     if (access === "ended") redirect("/membership-ended");
     if (access === "none") redirect("/login?auth=denied");

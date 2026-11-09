@@ -4,7 +4,7 @@ import { isAdmin } from "@/lib/admin-allowlist";
 import { setIntakeCookie } from "../../../../../lib/intake-cookie";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getWhopMemberDetail } from "@/lib/whop-member-detail";
-import { waitForWhopAccess } from "@/lib/whop-access";
+import { hadMembership, hubAllowlisted, waitForWhopAccess, type WhopAccess } from "@/lib/whop-access";
 
 // the membership check can wait up to about 20 seconds for a brand new
 // purchase to show up on Whop; leave room for it and the token exchange
@@ -103,15 +103,34 @@ export async function GET(request: NextRequest) {
   // Whop's memberships list is eventually consistent right after checkout, so
   // "ended" and "none" are asked again for up to about 20 seconds before they
   // are believed (lib/whop-access.ts). A Whop error lets the person in.
-  // admins on the allowlist skip the gate (the dashboard re-check skips them too)
-  const access = isAdmin(whopUserId) ? ({ kind: "member", oldestCreatedAtMs: null, tries: 0 } as const) : await waitForWhopAccess(whopUserId);
+  // admins skip the gate (the dashboard re-check skips them too)
+  let access = isAdmin(whopUserId) ? ({ kind: "member", oldestCreatedAtMs: null, tries: 0 } as WhopAccess & { tries: number }) : await waitForWhopAccess(whopUserId);
+  // staff, coaches and guests on the Discord "never kick" list keep the hub
+  // without a membership on the product
+  if ((access.kind === "ended" || access.kind === "none") && (await hubAllowlisted(whopUserId))) {
+    console.log("[whop/callback] no membership, on the never-kick list: letting in", { whopUserId });
+    access = { kind: "member", oldestCreatedAtMs: null, tries: access.tries };
+  }
+  // Whop answered with strangers' rows (the user filter ignored, the original
+  // bug): someone our own records show as a member before gets a 1 hour
+  // session; anyone else is asked to try again in a minute (not let in)
+  let untrustedButKnown = false;
+  if (access.kind === "untrusted") {
+    if (await hadMembership(whopUserId)) {
+      untrustedButKnown = true;
+      console.error("[whop/callback] Whop answer untrusted, known member: letting in for 1 hour", { whopUserId });
+    } else {
+      console.error("[whop/callback] Whop answer untrusted, no member record: try again", { whopUserId });
+      return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=whop_error`));
+    }
+  }
   // let in because Whop could not answer: a 1 hour session, so they are
   // checked again soon instead of holding a week long pass
-  const sessionTtl = access.kind === "error" ? 60 * 60 : SESSION_TTL_SECONDS;
+  const sessionTtl = access.kind === "error" || untrustedButKnown ? 60 * 60 : SESSION_TTL_SECONDS;
   if (access.kind === "error") {
     console.error("[whop/callback] membership check unavailable, letting in", { whopUserId, reason: access.reason, tries: access.tries });
   } else if (access.kind === "ended") {
-    // owned memberships, none live: the friendly win back page, not an error
+    // owned memberships, none granting access: the friendly win back page
     console.log("[whop/callback] membership ended", { whopUserId, tries: access.tries });
     return clearSession(clearOAuthCookies(NextResponse.redirect(`${origin}/membership-ended`)));
   } else if (access.kind === "none") {

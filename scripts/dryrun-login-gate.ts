@@ -6,7 +6,7 @@ import fs from "node:fs";
 // a server keeps its event loop alive; this script has to do it itself so
 // AbortSignal.timeout can fire
 const keepAlive = setInterval(() => {}, 1000);
-import { readWhopAccess, waitForWhopAccess, dashboardAccess, grantsAccess } from "../lib/whop-access";
+import { readWhopAccess, waitForWhopAccess, dashboardAccess, grantsAccess, hadMembership, hubAllowlisted } from "../lib/whop-access";
 const { WHOP_PRODUCT_ID: prod, WHOP_COMPANY_ID: co, WHOP_API_KEY: key } = process.env;
 const LIVE = ["active", "trialing", "completed", "past_due"];
 const all: any[] = []; let after: string | null = null;
@@ -69,6 +69,18 @@ await tally("canceled at period end, paid time left", paidLeftU, "member");
   globalThis.fetch = realF;
   console.log(`${r.kind === "member" && k === 2 ? "PASS" : "FAIL"}  live membership on the second page: ${r.kind} after ${k} pages`);
 }
+// one blip, then a real answer: the real answer wins (no lucky let in)
+{
+  const realF = globalThis.fetch; let k = 0;
+  globalThis.fetch = (async (url: any, init: any) => { k++; return k === 1 ? new Response("slow down", { status: 429 }) : realF(url, init); }) as any;
+  const r = await waitForWhopAccess(endedU[0], { sleep: async () => {} });
+  globalThis.fetch = realF;
+  console.log(`${r.kind === "ended" ? "PASS" : "FAIL"}  a 429 then a real answer for an ended member: ${r.kind} (not let in)`);
+}
+const hm1 = await hadMembership(activeU[0]); const hm2 = await hadMembership("user_ZZZZnotarealuser01");
+console.log(`${!hm2 ? "PASS" : "FAIL"}  member record check: a made-up id has none (${hm2}); a real member: ${hm1}`);
+const al = await hubAllowlisted("user_ZZZZnotarealuser01");
+console.log(`${!al ? "PASS" : "FAIL"}  never-kick list: a made-up id is not on it (${al})`);
 // waiting: a made-up id waits the full budget, then "none" (timed for real)
 let t = Date.now(); const w = await waitForWhopAccess("user_ZZZZnotarealuser01");
 console.log(`${w.kind === "none" && w.tries === 7 ? "PASS" : "FAIL"}  made up id waits before believing "none": ${w.kind}, ${w.tries} reads, ${((Date.now() - t) / 1000).toFixed(1)} s`);
@@ -82,7 +94,7 @@ globalThis.fetch = ((url: any, init: any) => new Promise((_, rej) => init?.signa
 t = Date.now(); const to = await readWhopAccess(activeU[0], { timeoutMs: 1500 });
 console.log(`${to.kind === "error" ? "PASS" : "FAIL"}  forced Whop timeout: ${to.kind} (${(to as any).reason}) in ${((Date.now() - t) / 1000).toFixed(1)} s -> let in`);
 const tw = await waitForWhopAccess(activeU[0], { timeoutMs: 500, sleep: async () => {} });
-console.log(`${tw.kind === "error" && tw.tries === 1 ? "PASS" : "FAIL"}  timeout during the login wait stops at once: ${tw.kind} after ${tw.tries} read`);
+console.log(`${tw.kind === "error" && tw.tries === 2 ? "PASS" : "FAIL"}  Whop down during the login: asked twice, then ${tw.kind} (let in for 1 hour)`);
 const dt = await dashboardAccess(endedU[0]);
 console.log(`${dt === "error" ? "PASS" : "FAIL"}  dashboard re-check during a timeout: ${dt} -> let in`);
 // Whop 500
@@ -92,7 +104,7 @@ console.log(`${e5.kind === "error" ? "PASS" : "FAIL"}  Whop 500: ${e5.kind} -> l
 // filter ignored again: rows for strangers come back
 globalThis.fetch = (async () => new Response(JSON.stringify({ data: [{ user_id: "user_someoneelse", product_id: prod, status: "active" }] }), { status: 200 })) as any;
 const fi = await readWhopAccess("user_ZZZZnotarealuser01");
-console.log(`${fi.kind === "error" ? "PASS" : "FAIL"}  user filter ignored (stranger's active row): ${fi.kind}, never "member" from a stranger`);
+console.log(`${fi.kind === "untrusted" ? "PASS" : "FAIL"}  user filter ignored (stranger's active row): ${fi.kind} (not "member", not a free pass)`);
 globalThis.fetch = realFetch;
 // dashboard cache: member kept 10 min, ended never kept
 const d1 = await dashboardAccess(activeU[0]); globalThis.fetch = (async () => new Response("down", { status: 500 })) as any;
