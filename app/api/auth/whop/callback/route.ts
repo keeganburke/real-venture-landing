@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSessionToken, SESSION_COOKIE_NAME, sessionCookieOptions } from "../../../../../lib/session";
+import { createSessionToken, SESSION_COOKIE_NAME, SESSION_TTL_SECONDS, sessionCookieOptions } from "../../../../../lib/session";
+import { isAdmin } from "@/lib/admin-allowlist";
 import { setIntakeCookie } from "../../../../../lib/intake-cookie";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getWhopMemberDetail } from "@/lib/whop-member-detail";
@@ -8,6 +9,12 @@ import { waitForWhopAccess } from "@/lib/whop-access";
 // the membership check can wait up to about 20 seconds for a brand new
 // purchase to show up on Whop; leave room for it and the token exchange
 export const maxDuration = 60;
+
+// someone turned away keeps no session from an earlier sign in
+function clearSession(response: NextResponse): NextResponse {
+  response.cookies.set(SESSION_COOKIE_NAME, "", { maxAge: 0, path: "/" });
+  return response;
+}
 
 function clearOAuthCookies(response: NextResponse): NextResponse {
   const clear = { maxAge: 0, path: "/" };
@@ -48,6 +55,7 @@ export async function GET(request: NextRequest) {
   let accessToken: string;
   try {
     const tokenRes = await fetch("https://api.whop.com/oauth/token", {
+      signal: AbortSignal.timeout(10_000),
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -77,6 +85,7 @@ export async function GET(request: NextRequest) {
   let whopUserId: string;
   try {
     const userinfoRes = await fetch("https://api.whop.com/oauth/userinfo", {
+      signal: AbortSignal.timeout(10_000),
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!userinfoRes.ok) {
@@ -94,17 +103,21 @@ export async function GET(request: NextRequest) {
   // Whop's memberships list is eventually consistent right after checkout, so
   // "ended" and "none" are asked again for up to about 20 seconds before they
   // are believed (lib/whop-access.ts). A Whop error lets the person in.
-  const access = await waitForWhopAccess(whopUserId);
+  // admins on the allowlist skip the gate (the dashboard re-check skips them too)
+  const access = isAdmin(whopUserId) ? ({ kind: "member", oldestCreatedAtMs: null, tries: 0 } as const) : await waitForWhopAccess(whopUserId);
+  // let in because Whop could not answer: a 1 hour session, so they are
+  // checked again soon instead of holding a week long pass
+  const sessionTtl = access.kind === "error" ? 60 * 60 : SESSION_TTL_SECONDS;
   if (access.kind === "error") {
     console.error("[whop/callback] membership check unavailable, letting in", { whopUserId, reason: access.reason, tries: access.tries });
   } else if (access.kind === "ended") {
     // owned memberships, none live: the friendly win back page, not an error
     console.log("[whop/callback] membership ended", { whopUserId, tries: access.tries });
-    return clearOAuthCookies(NextResponse.redirect(`${origin}/membership-ended`));
+    return clearSession(clearOAuthCookies(NextResponse.redirect(`${origin}/membership-ended`)));
   } else if (access.kind === "none") {
     // nothing on the product: usually the wrong Whop account (unchanged screen)
     console.log("[whop/callback] no membership on this account", { whopUserId, tries: access.tries });
-    return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=denied`));
+    return clearSession(clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=denied`)));
   }
   const membership = { oldestCreatedAtMs: access.kind === "member" ? access.oldestCreatedAtMs : null };
 
@@ -142,7 +155,7 @@ export async function GET(request: NextRequest) {
     console.error("[whop-callback] whop detail stamp failed", err);
   }
 
-  const sessionToken = await createSessionToken(whopUserId);
+  const sessionToken = await createSessionToken(whopUserId, sessionTtl);
   if (!sessionToken) {
     return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=whop_error`));
   }
@@ -164,7 +177,7 @@ export async function GET(request: NextRequest) {
   if (decision === "bypass") {
     const now = new Date().toISOString();
     const response = NextResponse.redirect(`${origin}/dashboard`);
-    response.cookies.set(SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions());
+    response.cookies.set(SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions(sessionTtl));
     // Mark intake complete so no later code path pulls them into onboarding.
     const signed = await setIntakeCookie(response, { completedAt: now, tourCompletedAt: now });
     if (signed) return clearOAuthCookies(response);
@@ -173,6 +186,6 @@ export async function GET(request: NextRequest) {
   }
 
   const response = NextResponse.redirect(`${origin}/onboarding`);
-  response.cookies.set(SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions());
+  response.cookies.set(SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions(sessionTtl));
   return clearOAuthCookies(response);
 }

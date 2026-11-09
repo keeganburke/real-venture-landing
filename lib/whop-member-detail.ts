@@ -38,6 +38,8 @@ const STATUS_RANK: Record<string, number> = {
   trialing: 1,
   paid: 2,
   completed: 3,
+  // a failed renewal still in its grace window (still a member)
+  past_due: 4,
 };
 
 export type WhopMemberDetail = {
@@ -158,8 +160,10 @@ export async function getWhopMemberDetail(
   return {
     whopDisplayName: str(user?.name),
     whopUsername: str(user?.username),
+    // tier and plan id go together: a plan we can't name writes neither, so
+    // the saved pair never mixes an old tier with a new plan
     whopTier: tier,
-    whopPlanId: planId,
+    whopPlanId: tier ? planId : null,
     whopJoinedAt: toIso(winner.joined_at) ?? toIso(winner.created_at),
   };
 }

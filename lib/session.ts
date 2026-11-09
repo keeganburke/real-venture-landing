@@ -6,11 +6,14 @@ export type SessionPayload = {
   exp: number;
 };
 
-export function sessionCookieOptions() {
+/** ttlSeconds: shorter for a session given while Whop could not confirm the
+    membership (the login callback lets people in when Whop is down), so they
+    are checked again soon. Default: the normal 7 days. */
+export function sessionCookieOptions(ttlSeconds: number = SESSION_TTL_SECONDS) {
   return {
     httpOnly: true,
     sameSite: "lax" as const,
-    maxAge: SESSION_TTL_SECONDS,
+    maxAge: ttlSeconds,
     path: "/",
     secure: process.env.NODE_ENV === "production",
   };
@@ -28,12 +31,12 @@ async function getHmacKey(): Promise<CryptoKey | null> {
   );
 }
 
-export async function createSessionToken(whopUserId: string): Promise<string | null> {
+export async function createSessionToken(whopUserId: string, ttlSeconds: number = SESSION_TTL_SECONDS): Promise<string | null> {
   const key = await getHmacKey();
   if (!key) return null;
   const payload: SessionPayload = {
     whopUserId,
-    exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
+    exp: Math.floor(Date.now() / 1000) + ttlSeconds,
   };
   const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
   const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(body));

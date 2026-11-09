@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { dashboardAccess } from "@/lib/whop-access";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "../../../../lib/session";
 import { createAdminClient } from "../../../../lib/supabase/server";
 import {
@@ -52,6 +53,16 @@ export async function GET(request: NextRequest) {
   const session = token ? await verifySessionToken(token) : null;
   if (!session) return NextResponse.json({ ok: false }, { status: 401 });
   const whopUserId = session.whopUserId;
+
+  // members only: this route sets up a paid Whop affiliate link (50% of the
+  // first payment). A session alone is not enough (a former member can still
+  // hold one), so the membership is checked first, and here a Whop error
+  // means "try again later", not "go ahead".
+  const access = await dashboardAccess(whopUserId);
+  if (access !== "member") {
+    if (access === "error") console.error("[referral/me] membership check unavailable", { whopUserId });
+    return NextResponse.json({ status: "error" } satisfies ReferralResponse);
+  }
 
   const cached = cache.get(whopUserId);
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) {

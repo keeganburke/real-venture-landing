@@ -6,7 +6,7 @@ import fs from "node:fs";
 // a server keeps its event loop alive; this script has to do it itself so
 // AbortSignal.timeout can fire
 const keepAlive = setInterval(() => {}, 1000);
-import { readWhopAccess, waitForWhopAccess, dashboardAccess } from "../lib/whop-access";
+import { readWhopAccess, waitForWhopAccess, dashboardAccess, grantsAccess } from "../lib/whop-access";
 const { WHOP_PRODUCT_ID: prod, WHOP_COMPANY_ID: co, WHOP_API_KEY: key } = process.env;
 const LIVE = ["active", "trialing", "completed", "past_due"];
 const all: any[] = []; let after: string | null = null;
@@ -18,7 +18,9 @@ for (let i = 0; i < 100; i++) {
 const by = new Map<string, any[]>(); for (const m of all) if (m.product_id === prod) by.set(m.user_id, [...(by.get(m.user_id) ?? []), m]);
 const pick = (f: (ms: any[]) => boolean, n: number) => [...by.entries()].filter(([, ms]) => f(ms)).slice(0, n).map(([u]) => u);
 const activeU = pick((ms) => ms.some((m) => m.status === "active"), 20);
-const endedU = pick((ms) => !ms.some((m) => LIVE.includes(m.status)), 20);
+// ended = nothing that grants access (not by status alone: a cancel at period
+// end with paid time left is still a member)
+const endedU = pick((ms) => !ms.some((m) => grantsAccess(m)), 20);
 const pastDueU = pick((ms) => ms.some((m) => m.status === "past_due") && !ms.some((m) => ["active", "trialing", "completed"].includes(m.status)), 20);
 const since = Date.now() - 48 * 3600e3;
 const newest = all.filter((m) => m.product_id === prod && new Date(m.created_at).getTime() > since).sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)).slice(0, 10);
@@ -37,6 +39,36 @@ await tally("made up ids", ["user_ZZZZnotarealuser01", "user_notadmin00000"], "n
 const newestStatus: Record<string, number> = {}; for (const m of newest) newestStatus[m.status] = (newestStatus[m.status] ?? 0) + 1;
 console.log(`      newest memberships in the last 48h: ${newest.length}, statuses ${JSON.stringify(newestStatus)}`);
 await tally("owners of the 10 newest memberships (live ones)", newest.filter((m) => LIVE.includes(m.status)).map((m) => m.user_id), "member");
+// canceled at period end with paid time left: still a member (Discord's rule)
+const nowMs = Date.now();
+const paidLeftU = [...by.entries()].filter(([, ms]) => !ms.some((m) => LIVE.includes(m.status)) && ms.some((m) => grantsAccess(m, nowMs))).map(([u]) => u);
+await tally("canceled at period end, paid time left", paidLeftU, "member");
+// a definite "no" then a Whop error: the "no" stands (no let-in on a lucky error)
+{
+  const realF = globalThis.fetch; let k = 0;
+  globalThis.fetch = (async (url: any, init: any) => { k++; return k === 1 ? realF(url, init) : new Response("down", { status: 503 }); }) as any;
+  const r = await waitForWhopAccess(endedU[0], { sleep: async () => {} });
+  globalThis.fetch = realF;
+  console.log(`${r.kind === "ended" ? "PASS" : "FAIL"}  ended, then Whop errors on the retries: ${r.kind} after ${r.tries} reads (no let-in)`);
+}
+// strangers' rows plus the caller's own live row: member
+{
+  const realF = globalThis.fetch;
+  globalThis.fetch = (async () => new Response(JSON.stringify({ data: [{ user_id: "user_someoneelse", product_id: prod, status: "canceled" }, { user_id: activeU[0], product_id: prod, status: "active", created_at: "2026-09-01T00:00:00Z" }] }), { status: 200 })) as any;
+  const r = await readWhopAccess(activeU[0]);
+  globalThis.fetch = realF;
+  console.log(`${r.kind === "member" ? "PASS" : "FAIL"}  strangers' rows plus the caller's own active row: ${r.kind}`);
+}
+// the live membership is on page 2: still a member
+{
+  const realF = globalThis.fetch; let k = 0;
+  globalThis.fetch = (async () => { k++; return new Response(JSON.stringify(k === 1
+    ? { data: [{ user_id: activeU[0], product_id: prod, status: "canceled" }], page_info: { has_next_page: true, end_cursor: "c1" } }
+    : { data: [{ user_id: activeU[0], product_id: prod, status: "active" }], page_info: { has_next_page: false } }), { status: 200 }); }) as any;
+  const r = await readWhopAccess(activeU[0]);
+  globalThis.fetch = realF;
+  console.log(`${r.kind === "member" && k === 2 ? "PASS" : "FAIL"}  live membership on the second page: ${r.kind} after ${k} pages`);
+}
 // waiting: a made-up id waits the full budget, then "none" (timed for real)
 let t = Date.now(); const w = await waitForWhopAccess("user_ZZZZnotarealuser01");
 console.log(`${w.kind === "none" && w.tries === 7 ? "PASS" : "FAIL"}  made up id waits before believing "none": ${w.kind}, ${w.tries} reads, ${((Date.now() - t) / 1000).toFixed(1)} s`);
