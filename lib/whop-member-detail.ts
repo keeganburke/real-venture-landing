@@ -6,6 +6,8 @@
 // (which picks "Pro always wins" for tier display in the manage page).
 // Do not merge the two - they answer different questions.
 
+import { rowOwner, rowProduct, WHOP_API_VERSION_DATE } from "@/app/api/whop/whop-membership";
+
 const WHOP_API_BASE = "https://api.whop.com/api/v1";
 
 export type WhopTier = "Base" | "Pro" | "Ultra";
@@ -77,25 +79,40 @@ export async function getWhopMemberDetail(
   const apiKey = process.env.WHOP_API_KEY;
   if (!companyId || !productId || !apiKey) return null;
 
+  // SINGULAR user_id / product_id with the pinned API version, then an owner
+  // check: the plural user_ids / product_ids / statuses filters are ignored
+  // by the key's API version and returned the company's newest memberships,
+  // so login stamped strangers' plans onto member_profiles. Statuses are
+  // filtered below (STATUS_RANK). Anything foreign: no stamp at all.
   const url = new URL(`${WHOP_API_BASE}/memberships`);
   url.searchParams.set("company_id", companyId);
-  url.searchParams.set("user_ids", whopUserId);
-  url.searchParams.set("product_ids", productId);
-  url.searchParams.append("statuses", "active");
-  url.searchParams.append("statuses", "trialing");
-  url.searchParams.append("statuses", "completed");
+  url.searchParams.set("user_id", whopUserId);
+  url.searchParams.set("product_id", productId);
+  url.searchParams.set("first", "50");
 
   const res = await fetch(url.toString(), {
     headers: {
       Authorization: `Bearer ${apiKey}`,
       Accept: "application/json",
+      "Api-Version-Date": WHOP_API_VERSION_DATE,
     },
     cache: "no-store",
+    signal: AbortSignal.timeout(8000),
   });
   if (!res.ok) return null;
 
   const body = (await res.json()) as { data?: unknown[] };
-  const rows = Array.isArray(body?.data) ? body.data : [];
+  const all = (Array.isArray(body?.data) ? body.data : []).filter(
+    (m): m is Record<string, unknown> => !!m && typeof m === "object",
+  );
+  if (all.some((m) => rowOwner(m) !== whopUserId)) {
+    console.error("[whop-member-detail] foreign or ownerless row (user_id filter ignored?), skipping the stamp");
+    return null;
+  }
+  const rows = all.filter((m) => {
+    const product = rowProduct(m);
+    return product === null || product === productId;
+  });
   if (rows.length === 0) return null;
 
   // Pick winner: lowest STATUS_RANK, then highest tier (Ultra > Pro > Base),

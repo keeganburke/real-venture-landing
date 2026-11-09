@@ -5,6 +5,8 @@ import { SESSION_COOKIE_NAME, verifySessionToken } from "../../lib/session";
 import { getIntakeCookie } from "../../lib/intake-cookie";
 import { createAdminClient } from "../../lib/supabase/server";
 import { getWhopMemberSummary, resolveDisplayName } from "../../lib/whop-member";
+import { dashboardAccess } from "../../lib/whop-access";
+import { isAdmin } from "../../lib/admin-allowlist";
 import DashboardNav from "./DashboardNav";
 import InstallBanner from "./InstallBanner";
 
@@ -20,6 +22,15 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
   const session = token ? await verifySessionToken(token) : null;
 
   if (!session) redirect("/api/auth/whop/start");
+
+  // Membership re-check (lib/whop-access.ts): a member whose plan ended loses
+  // the hub now, not at their next login. Admins skip it; a Whop error lets
+  // the person in.
+  if (!isAdmin(session.whopUserId)) {
+    const access = await dashboardAccess(session.whopUserId);
+    if (access === "ended") redirect("/membership-ended");
+    if (access === "none") redirect("/login?auth=denied");
+  }
 
   // One profile read serves both the intake gate and the nav identity.
   // Nav identity: saved profile wins, Whop's embedded user record fills gaps.
