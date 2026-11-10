@@ -8,7 +8,8 @@ import { NextRequest } from "next/server";
 import { GET as callback } from "../app/api/auth/whop/callback/route";
 import { GET as purchaseStatus } from "../app/api/auth/whop/purchase-status/route";
 import { createPendingToken, verifyPendingToken, verifySessionToken, createSessionToken } from "../lib/session";
-import { readWhopAccess, waitForWhopAccess } from "../lib/whop-access";
+import { readWhopAccess, waitForWhopAccess, paidInLastHour, dashboardAccess } from "../lib/whop-access";
+import { createAdminClient } from "../lib/supabase/admin";
 
 const prod = process.env.WHOP_PRODUCT_ID!;
 const realFetch = globalThis.fetch;
@@ -18,7 +19,7 @@ const T0 = Date.now();
 
 // the fake Whop: per user, when their account was made and what memberships
 // the list shows at a given moment
-type FakeUser = { accountCreatedMs: number; rows: (now: number) => Record<string, unknown>[] };
+type FakeUser = { accountCreatedMs: number; rows: (now: number) => Record<string, unknown>[]; payments?: Record<string, unknown>[] };
 const users = new Map<string, FakeUser>();
 let whopStatus: number | null = null; // force an HTTP status for the memberships list
 let currentSub = "";
@@ -42,6 +43,10 @@ globalThis.fetch = (async (input: any, init: any = {}) => {
       return Response.json({ data: u ? u.rows(Date.now()) : [], page_info: { has_next_page: false } });
     }
     if (url.pathname.startsWith("/api/v1/memberships/")) return new Response("{}", { status: 404 });
+    if (url.pathname === "/api/v1/payments") {
+      const id = url.searchParams.get("user_id") ?? "";
+      return Response.json({ data: users.get(id)?.payments ?? [], page_info: { has_next_page: false } });
+    }
     return new Response("{}", { status: 404 });
   }
   // Supabase and anything else: reads only. A write is answered here and
@@ -82,8 +87,10 @@ const pass = (ok: boolean, label: string) => console.log(`${ok ? "PASS" : "FAIL"
 // capture the loud config log
 const realError = console.error;
 let configLines = 0;
+let rateLines = 0;
 console.error = (...args: unknown[]) => {
   if (typeof args[0] === "string" && args[0].includes("[WHOP_GATE_CONFIG_ERROR]")) configLines++;
+  if (typeof args[0] === "string" && args[0].includes("[WHOP_GATE_RATE_LIMITED]")) rateLines++;
   realError(...(args.map((a) => (typeof a === "object" && a && "whopUserId" in a ? { ...(a as object), whopUserId: "<id>" } : a)) as []));
 };
 const realLog = console.log;
@@ -203,6 +210,52 @@ console.log = quietLog;
 {
   const w = await waitForWhopAccess("user_testNever", { sleep: async () => {}, isRecentBuyer: async () => true });
   pass((w.kind === "none" || w.kind === "ended") && w.recentBuyer === true && w.tries === 1, `d) recent buyer stops waiting after the first answer: ${w.kind}, ${w.tries} read`);
+}
+
+// ---------------- review round 1 fixes
+// a 429 (anyone can cause one by hammering our routes) is not a free pass
+{
+  addUser("user_testRate429", 400 * DAY, () => [active(T0 - 90 * DAY)]);
+  whopStatus = 429;
+  rateLines = 0;
+  const r = await signIn("user_testRate429");
+  whopStatus = null;
+  pass(r.to.endsWith("/finishing-purchase") && !r.cookies.rv_session && !!r.cookies.rv_pending_purchase && rateLines === 1, `fix) Whop 429, no member record: ${new URL(r.to).pathname} (no session, waits for Whop), ${rateLines} WHOP_GATE_RATE_LIMITED line`);
+  // someone our records show as a member (read only: one real profile id)
+  const { data } = await createAdminClient().from("member_profiles").select("whop_user_id").not("intake_completed_at", "is", null).limit(1).maybeSingle();
+  const known = data?.whop_user_id as string;
+  addUser(known, 400 * DAY, () => [active(T0 - 90 * DAY)]);
+  whopStatus = 429;
+  const k = await signIn(known);
+  whopStatus = null;
+  const ks = k.cookies.rv_session ? await verifySessionToken(k.cookies.rv_session) : null;
+  const kttl = ks ? ks.exp - Math.floor(Date.now() / 1000) : 0;
+  pass(!!ks && kttl <= 3600 && kttl > 3500, `fix) Whop 429, a member by our records: let in with a ${Math.round(kttl / 60)} minute session`);
+  users.delete(known);
+}
+// paid in the last hour: a fourth "just bought" sign
+{
+  const pay = (id: string, minsAgo: number, extra: Record<string, unknown> = {}) => ({ id: "pay_x", status: "paid", product_id: prod, user: { id }, paid_at: new Date(Date.now() - minsAgo * 60e3).toISOString(), ...extra });
+  addUser("user_testPaid", 400 * DAY, () => []);
+  users.get("user_testPaid")!.payments = [pay("user_testPaid", 8)];
+  const r = await signIn("user_testPaid");
+  pass(r.to.endsWith("/finishing-purchase") && r.secs < 5, `fix) old account, no cookie, paid 8 minutes ago, not listed yet: ${new URL(r.to).pathname} in ${r.secs.toFixed(1)} s`);
+  users.get("user_testPaid")!.payments = [pay("someone_else", 8), pay("user_testPaid", 8, { product_id: "prod_other" }), pay("user_testPaid", 8, { status: "failed" }), pay("user_testPaid", 120)];
+  const no = await paidInLastHour("user_testPaid");
+  pass(!no, `fix) payment sign ignores a stranger's payment, another product, a failed payment and one 2 hours old (${no})`);
+}
+// an upgrade Whop hasn't switched on yet: the hub sends to the waiting screen
+{
+  addUser("user_testUpgrade", 400 * DAY, () => [{ id: "mem_new", product_id: prod, status: "drafted", created_at: new Date(Date.now() - 3 * 60e3).toISOString() }, { id: "mem_old", product_id: prod, status: "canceled", cancel_at_period_end: false, created_at: new Date(Date.now() - 100 * DAY).toISOString() }]);
+  addUser("user_testOldEnded2", 400 * DAY, () => [{ id: "mem_old", product_id: prod, status: "canceled", cancel_at_period_end: false, created_at: new Date(Date.now() - 100 * DAY).toISOString() }]);
+  const a = await dashboardAccess("user_testUpgrade");
+  const b = await dashboardAccess("user_testOldEnded2");
+  pass(a === "ended_recent" && b === "ended", `fix) hub re-check: a membership made 3 minutes ago -> ${a} (waiting screen); an old ended one -> ${b} (ended page)`);
+}
+// the purchase mark is cleared after a finished sign in
+{
+  const r = await signIn("user_testMember", "rv_recent_purchase=1");
+  pass(r.cookies.rv_recent_purchase === "" && r.cookies.rv_pending_purchase === "", `fix) a finished sign in clears the purchase mark and any waiting pass`);
 }
 
 pass(blockedWrites >= 0, `  Supabase writes attempted and blocked (never sent): ${blockedWrites}; fake Whop calls: ${whopCalls}`);

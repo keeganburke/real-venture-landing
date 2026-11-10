@@ -137,11 +137,24 @@ export async function GET(request: NextRequest) {
       return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=whop_error`));
     }
   }
+  // Whop rate limited our key (429). Anyone can cause that by hammering our
+  // public routes, so it is not a free pass: someone our records show as a
+  // member gets the usual 1 hour session; anyone else gets the "Finishing
+  // your purchase" screen, which lets them in the moment Whop answers.
+  let rateLimitedButKnown = false;
+  if (access.kind === "error" && access.rateLimited) {
+    if (await hadMembership(whopUserId)) {
+      rateLimitedButKnown = true;
+    } else {
+      console.error("[WHOP_GATE_RATE_LIMITED] login: Whop rate limited our key, no member record: waiting screen", { whopUserId });
+      access = { kind: "none", tries: access.tries, recentBuyer: true };
+    }
+  }
   // let in because Whop could not answer: a 1 hour session, so they are
   // checked again soon instead of holding a week long pass
   const sessionTtl = access.kind === "error" || untrustedButKnown ? 60 * 60 : SESSION_TTL_SECONDS;
   if (access.kind === "error") {
-    logLetInOnError("login", whopUserId, access);
+    logLetInOnError(rateLimitedButKnown ? "login (rate limited, known member)" : "login", whopUserId, access);
   } else if ((access.kind === "ended" || access.kind === "none") && access.recentBuyer) {
     // just bought, Whop doesn't list it yet: the waiting screen. The pass in
     // the cookie only lets /api/auth/whop/purchase-status keep checking; it
@@ -165,7 +178,8 @@ export async function GET(request: NextRequest) {
 
   const response = await completeLogin(whopUserId, oldestCreatedAtMs, sessionTtl, (path) => NextResponse.redirect(`${origin}${path}`));
   if (!response) return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=whop_error`));
-  // a finished sign in leaves no waiting pass behind
+  // a finished sign in leaves no waiting pass or purchase mark behind
   response.cookies.set(PENDING_COOKIE_NAME, "", { maxAge: 0, path: "/" });
+  response.cookies.set(RECENT_PURCHASE_COOKIE, "", { maxAge: 0, path: "/" });
   return clearOAuthCookies(response);
 }

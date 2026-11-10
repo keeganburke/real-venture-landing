@@ -41,7 +41,10 @@ export type WhopAccess =
   // config: our own setup is wrong (a missing env var, or Whop said 400, 401,
   // 403 or 404 to our key), not a Whop outage. Still lets people in (a broken
   // key must never lock out every paying member) but is logged loudly.
-  | { kind: "error"; reason: string; config?: boolean };
+  // rateLimited: Whop said 429 to our key. Anyone can cause that by
+  // hammering our public routes that use the same key, so the login does NOT
+  // treat it as a free pass (see the callback).
+  | { kind: "error"; reason: string; config?: boolean; rateLimited?: boolean };
 
 const KNOWN_STATUSES: ReadonlySet<string> = new Set(["active", "trialing", "completed", "past_due", "canceled", "expired", "drafted"]);
 
@@ -103,7 +106,7 @@ export async function readWhopAccess(whopUserId: string, opts: { timeoutMs?: num
         cache: "no-store",
         signal: AbortSignal.timeout(Math.min(opts.timeoutMs ?? READ_TIMEOUT_MS, left)),
       });
-      if (!res.ok) return { kind: "error", reason: `whop http ${res.status}`, config: CONFIG_HTTP.has(res.status) };
+      if (!res.ok) return { kind: "error", reason: `whop http ${res.status}`, config: CONFIG_HTTP.has(res.status), rateLimited: res.status === 429 };
       const page = await res.json();
       if (!page || !Array.isArray(page.data)) return { kind: "error", reason: "whop answer had no data list" };
       all.push(...(page.data as unknown[]).filter((m): m is Record<string, unknown> => !!m && typeof m === "object"));
@@ -252,7 +255,10 @@ export function rememberMember(whopUserId: string, now = Date.now()): void {
   memberUntil.set(whopUserId, now + MEMBER_TTL_MS);
 }
 
-export async function dashboardAccess(whopUserId: string, now = Date.now()): Promise<"member" | "ended" | "none" | "error"> {
+// "ended_recent": ended, but one of their memberships is under an hour old
+// (an upgrade or rejoin Whop hasn't switched on yet): the waiting screen,
+// not the ended page.
+export async function dashboardAccess(whopUserId: string, now = Date.now()): Promise<"member" | "ended" | "ended_recent" | "none" | "error"> {
   const until = memberUntil.get(whopUserId);
   if (until !== undefined && until > now) return "member";
   let access = await readWhopAccess(whopUserId, { timeoutMs: 5000 });
@@ -273,6 +279,7 @@ export async function dashboardAccess(whopUserId: string, now = Date.now()): Pro
     memberUntil.delete(whopUserId);
   }
   if (access.kind === "error") logLetInOnError("dashboard", whopUserId, access);
+  if (access.kind === "ended" && access.newestOwnCreatedAtMs !== null && now - access.newestOwnCreatedAtMs < RECENT_MS) return "ended_recent";
   return access.kind;
 }
 
@@ -322,9 +329,43 @@ export async function whopAccountCreatedAtMs(whopUserId: string, timeoutMs = 400
   }
 }
 
+const PAID_STATUSES: ReadonlySet<string> = new Set(["paid", "succeeded"]);
+
+/** True if Whop shows a paid payment by this user for the product in the
+    last hour. Read only; the user filter is checked on every row. */
+export async function paidInLastHour(whopUserId: string, now = Date.now(), timeoutMs = 4000): Promise<boolean> {
+  const apiKey = process.env.WHOP_API_KEY;
+  const companyId = process.env.WHOP_COMPANY_ID;
+  const productId = process.env.WHOP_PRODUCT_ID;
+  if (!apiKey || !companyId || !productId || !whopUserId) return false;
+  try {
+    const params = new URLSearchParams({ account_id: companyId, user_id: whopUserId, first: "10" });
+    const res = await fetch(`https://api.whop.com/api/v1/payments?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json", "Api-Version-Date": WHOP_API_VERSION_DATE },
+      cache: "no-store",
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok) return false;
+    const page = (await res.json()) as { data?: unknown } | null;
+    const rows = Array.isArray(page?.data) ? (page.data as Record<string, unknown>[]) : [];
+    return rows.some((p) => {
+      if (!p || typeof p !== "object") return false;
+      const user = p.user as { id?: unknown } | undefined;
+      if ((user?.id ?? p.user_id) !== whopUserId) return false;
+      if (p.product_id !== productId) return false;
+      if (!PAID_STATUSES.has(String(p.status))) return false;
+      const at = parseCreatedAtMs(p.paid_at) ?? parseCreatedAtMs(p.created_at);
+      return at !== null && now - at < RECENT_MS && at <= now + 60_000;
+    });
+  } catch {
+    return false;
+  }
+}
+
 /** True if the person most likely bought in the last hour: they came to sign
     in from the page checkout sends buyers to (the cookie), one of their own
-    memberships was made in the last hour, or their Whop account was. */
+    memberships was made in the last hour, their Whop account was, or Whop
+    shows a paid payment from them in the last hour. */
 export async function looksLikeRecentBuyer(
   whopUserId: string,
   access: WhopAccess,
@@ -334,5 +375,6 @@ export async function looksLikeRecentBuyer(
   if (opts.cameFromCheckout) return true;
   if (access.kind === "ended" && access.newestOwnCreatedAtMs !== null && now - access.newestOwnCreatedAtMs < RECENT_MS) return true;
   const created = await whopAccountCreatedAtMs(whopUserId);
-  return created !== null && now - created < RECENT_MS && created <= now + 60_000;
+  if (created !== null && now - created < RECENT_MS && created <= now + 60_000) return true;
+  return paidInLastHour(whopUserId, now);
 }

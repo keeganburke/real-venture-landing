@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PENDING_COOKIE_NAME, SESSION_COOKIE_NAME, SESSION_TTL_SECONDS, verifyPendingToken, verifySessionToken } from "@/lib/session";
-import { hubAllowlisted, readWhopAccess, rememberMember } from "@/lib/whop-access";
+import { hubAllowlisted, readWhopAccess, RECENT_PURCHASE_COOKIE, rememberMember } from "@/lib/whop-access";
 import { completeLogin } from "@/lib/whop-login";
 
 // What /finishing-purchase asks every few seconds: "has Whop listed my
@@ -59,5 +59,6 @@ export async function GET(request: NextRequest) {
   const response = await completeLogin(whopUserId, oldest, SESSION_TTL_SECONDS, (path) => answer({ status: "ready", next: path }));
   if (!response) return answer({ status: "waiting" });
   response.cookies.set(PENDING_COOKIE_NAME, "", { maxAge: 0, path: "/" });
+  response.cookies.set(RECENT_PURCHASE_COOKIE, "", { maxAge: 0, path: "/" });
   return response;
 }
