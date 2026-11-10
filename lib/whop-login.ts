@@ -51,7 +51,9 @@ export async function completeLogin(
   sessionTtl: number,
   respond: (path: "/dashboard" | "/onboarding") => NextResponse,
 ): Promise<NextResponse | null> {
-  await stampProfile(whopUserId);
+  // the stamp never holds up a sign in by more than 4 seconds (the login
+  // has a 60 second limit and may already have waited on Whop)
+  await Promise.race([stampProfile(whopUserId), new Promise<void>((r) => setTimeout(r, 4000))]);
 
   const sessionToken = await createSessionToken(whopUserId, sessionTtl);
   if (!sessionToken) return null;

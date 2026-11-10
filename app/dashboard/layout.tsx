@@ -33,7 +33,7 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
     // never a turn away, the "Finishing your purchase" screen keeps checking.
     // Sessions made before this fix have no iat, so they are never "recent".
     const signedInRecently = typeof session.iat === "number" && Date.now() / 1000 - session.iat < 60 * 60;
-    if (access === "ended_recent" || ((access === "ended" || access === "none") && signedInRecently)) redirect("/finishing-purchase");
+    if (access === "wait" || access === "ended_recent" || ((access === "ended" || access === "none") && signedInRecently)) redirect("/finishing-purchase");
     if (access === "ended") redirect("/membership-ended");
     if (access === "none") redirect("/login?auth=denied");
   }

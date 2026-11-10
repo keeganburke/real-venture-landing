@@ -22,6 +22,8 @@ const T0 = Date.now();
 type FakeUser = { accountCreatedMs: number; rows: (now: number) => Record<string, unknown>[]; payments?: Record<string, unknown>[] };
 const users = new Map<string, FakeUser>();
 let whopStatus: number | null = null; // force an HTTP status for the memberships list
+let whopStatusSeq: number[] = []; // or a sequence of them, one per memberships read
+let paymentsStatus: number | null = null;
 let currentSub = "";
 
 globalThis.fetch = (async (input: any, init: any = {}) => {
@@ -37,6 +39,7 @@ globalThis.fetch = (async (input: any, init: any = {}) => {
       return u ? Response.json({ id, created_at: new Date(u.accountCreatedMs).toISOString() }) : new Response("{}", { status: 404 });
     }
     if (url.pathname === "/api/v1/memberships") {
+      if (whopStatusSeq.length) return new Response("{}", { status: whopStatusSeq.shift()! });
       if (whopStatus) return new Response("{}", { status: whopStatus });
       const id = url.searchParams.get("user_id") ?? "";
       const u = users.get(id);
@@ -44,6 +47,7 @@ globalThis.fetch = (async (input: any, init: any = {}) => {
     }
     if (url.pathname.startsWith("/api/v1/memberships/")) return new Response("{}", { status: 404 });
     if (url.pathname === "/api/v1/payments") {
+      if (paymentsStatus) return new Response("{}", { status: paymentsStatus });
       const id = url.searchParams.get("user_id") ?? "";
       return Response.json({ data: users.get(id)?.payments ?? [], page_info: { has_next_page: false } });
     }
@@ -222,7 +226,7 @@ console.log = quietLog;
   whopStatus = null;
   pass(r.to.endsWith("/finishing-purchase") && !r.cookies.rv_session && !!r.cookies.rv_pending_purchase && rateLines === 1, `fix) Whop 429, no member record: ${new URL(r.to).pathname} (no session, waits for Whop), ${rateLines} WHOP_GATE_RATE_LIMITED line`);
   // someone our records show as a member (read only: one real profile id)
-  const { data } = await createAdminClient().from("member_profiles").select("whop_user_id").not("intake_completed_at", "is", null).limit(1).maybeSingle();
+  const { data } = await createAdminClient().from("member_profiles").select("whop_user_id").not("whop_tier", "is", null).not("whop_plan_id", "is", null).limit(1).maybeSingle();
   const known = data?.whop_user_id as string;
   addUser(known, 400 * DAY, () => [active(T0 - 90 * DAY)]);
   whopStatus = 429;
@@ -256,6 +260,27 @@ console.log = quietLog;
 {
   const r = await signIn("user_testMember", "rv_recent_purchase=1");
   pass(r.cookies.rv_recent_purchase === "" && r.cookies.rv_pending_purchase === "", `fix) a finished sign in clears the purchase mark and any waiting pass`);
+}
+
+// ---------------- review round 2 fixes
+{
+  // a 429 then a 503 on the retry is still a rate limit: no free pass
+  addUser("user_testRate503", 400 * DAY, () => [active(T0)]);
+  whopStatusSeq = [429, 503];
+  const r = await signIn("user_testRate503");
+  whopStatusSeq = [];
+  pass(r.to.endsWith("/finishing-purchase") && !r.cookies.rv_session, `fix2) 429 then 503, no member record: ${new URL(r.to).pathname}, no session`);
+  // the hub re-check under a 429: no record -> waiting screen, not let in
+  whopStatus = 429;
+  const d = await dashboardAccess("user_testRate503");
+  whopStatus = null;
+  pass(d === "wait", `fix2) hub re-check under a 429, no member record: ${d} (waiting screen)`);
+  // Whop's payments list can't be read: a waiting screen, never "Wrong email"
+  addUser("user_testPayDown", 400 * DAY, () => []);
+  paymentsStatus = 500;
+  const p = await signIn("user_testPayDown");
+  paymentsStatus = null;
+  pass(p.to.endsWith("/finishing-purchase") && p.secs < 10, `fix2) payments list unreadable, nothing listed: ${new URL(p.to).pathname} in ${p.secs.toFixed(1)} s`);
 }
 
 pass(blockedWrites >= 0, `  Supabase writes attempted and blocked (never sent): ${blockedWrites}; fake Whop calls: ${whopCalls}`);

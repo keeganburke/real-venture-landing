@@ -184,9 +184,12 @@ export async function waitForWhopAccess(
   // one error alone (a rate limit, a blip) is not enough to let someone in:
   // ask once more before treating Whop as down
   if (access.kind === "error" && Date.now() + 1000 < deadlineAt) {
+    const wasRateLimited = Boolean(access.rateLimited);
     await sleep(1000);
     tries++;
     access = await read();
+    // a 429 then a timeout is still a rate limit (likely while being flooded)
+    if (access.kind === "error" && wasRateLimited) access = { ...access, rateLimited: true };
   }
   if (access.kind === "member" || access.kind === "error" || access.kind === "untrusted") return { ...access, tries };
   let definite: WhopAccess = access;
@@ -203,18 +206,21 @@ export async function waitForWhopAccess(
   return { ...definite, tries };
 }
 
-/** True if this person has been a member before by our own records: a saved
-    plan tier or a finished intake. Used only when Whop's answer can't be
-    trusted, so a real member can still sign in while a stranger can't. */
+/** True if this person has been a member before by our own records: a plan
+    tier and plan id stamped from Whop's own membership rows at sign in
+    (lib/whop-login.ts). Nothing a signed in person can submit writes these
+    (a finished intake does NOT count: anyone with a session can save one).
+    Used only when Whop's answer can't be trusted or Whop rate limits us, so a
+    real member can still get in while a stranger can't. */
 export async function hadMembership(whopUserId: string): Promise<boolean> {
   try {
     const { data, error } = await createAdminClient()
       .from("member_profiles")
-      .select("whop_tier, intake_completed_at")
+      .select("whop_tier, whop_plan_id")
       .eq("whop_user_id", whopUserId)
       .maybeSingle();
     if (error || !data) return false;
-    return Boolean(data.whop_tier || data.intake_completed_at);
+    return Boolean(data.whop_tier && data.whop_plan_id);
   } catch {
     return false;
   }
@@ -258,7 +264,10 @@ export function rememberMember(whopUserId: string, now = Date.now()): void {
 // "ended_recent": ended, but one of their memberships is under an hour old
 // (an upgrade or rejoin Whop hasn't switched on yet): the waiting screen,
 // not the ended page.
-export async function dashboardAccess(whopUserId: string, now = Date.now()): Promise<"member" | "ended" | "ended_recent" | "none" | "error"> {
+// "wait": Whop rate limited us or answered with strangers' rows, and our own
+// records don't show this person as a member: the waiting screen (which lets
+// them in the moment Whop answers), not a free pass.
+export async function dashboardAccess(whopUserId: string, now = Date.now()): Promise<"member" | "ended" | "ended_recent" | "none" | "error" | "wait"> {
   const until = memberUntil.get(whopUserId);
   if (until !== undefined && until > now) return "member";
   let access = await readWhopAccess(whopUserId, { timeoutMs: 5000 });
@@ -269,8 +278,14 @@ export async function dashboardAccess(whopUserId: string, now = Date.now()): Pro
     access = await readWhopAccess(whopUserId, { timeoutMs: 5000 });
   }
   if ((access.kind === "ended" || access.kind === "none") && (await hubAllowlisted(whopUserId))) return "member";
-  if (access.kind === "untrusted") {
-    console.error("[whop-access] dashboard re-check untrusted, letting in (the session came from a passed login)", { whopUserId });
+  if (access.kind === "untrusted" || (access.kind === "error" && access.rateLimited)) {
+    const known = await hadMembership(whopUserId);
+    const what = access.kind === "untrusted" ? "strangers' rows (user filter ignored?)" : "rate limited";
+    if (!known) {
+      console.error(`[WHOP_GATE_RATE_LIMITED] dashboard: ${what}, no member record: waiting screen`, { whopUserId });
+      return "wait";
+    }
+    console.error(`[whop-access] dashboard re-check ${what}, member by our records: letting in`, { whopUserId });
     return "error";
   }
   if (access.kind === "member") {
@@ -333,11 +348,19 @@ const PAID_STATUSES: ReadonlySet<string> = new Set(["paid", "succeeded"]);
 
 /** True if Whop shows a paid payment by this user for the product in the
     last hour. Read only; the user filter is checked on every row. */
-export async function paidInLastHour(whopUserId: string, now = Date.now(), timeoutMs = 4000): Promise<boolean> {
+function idOf(value: unknown): string | null {
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object" && typeof (value as { id?: unknown }).id === "string") return (value as { id: string }).id;
+  return null;
+}
+
+/** null means Whop couldn't be asked (the caller treats that as "maybe just
+    bought": a waiting screen is safer than "Wrong email"). */
+export async function paidInLastHour(whopUserId: string, now = Date.now(), timeoutMs = 4000): Promise<boolean | null> {
   const apiKey = process.env.WHOP_API_KEY;
   const companyId = process.env.WHOP_COMPANY_ID;
   const productId = process.env.WHOP_PRODUCT_ID;
-  if (!apiKey || !companyId || !productId || !whopUserId) return false;
+  if (!apiKey || !companyId || !productId || !whopUserId) return null;
   try {
     const params = new URLSearchParams({ account_id: companyId, user_id: whopUserId, first: "10" });
     const res = await fetch(`https://api.whop.com/api/v1/payments?${params.toString()}`, {
@@ -345,20 +368,19 @@ export async function paidInLastHour(whopUserId: string, now = Date.now(), timeo
       cache: "no-store",
       signal: AbortSignal.timeout(timeoutMs),
     });
-    if (!res.ok) return false;
+    if (!res.ok) return null;
     const page = (await res.json()) as { data?: unknown } | null;
     const rows = Array.isArray(page?.data) ? (page.data as Record<string, unknown>[]) : [];
     return rows.some((p) => {
       if (!p || typeof p !== "object") return false;
-      const user = p.user as { id?: unknown } | undefined;
-      if ((user?.id ?? p.user_id) !== whopUserId) return false;
-      if (p.product_id !== productId) return false;
+      if ((idOf(p.user) ?? idOf(p.user_id)) !== whopUserId) return false;
+      if ((idOf(p.product_id) ?? idOf(p.product)) !== productId) return false;
       if (!PAID_STATUSES.has(String(p.status))) return false;
       const at = parseCreatedAtMs(p.paid_at) ?? parseCreatedAtMs(p.created_at);
       return at !== null && now - at < RECENT_MS && at <= now + 60_000;
     });
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -374,7 +396,8 @@ export async function looksLikeRecentBuyer(
   const now = opts.now ?? Date.now();
   if (opts.cameFromCheckout) return true;
   if (access.kind === "ended" && access.newestOwnCreatedAtMs !== null && now - access.newestOwnCreatedAtMs < RECENT_MS) return true;
-  const created = await whopAccountCreatedAtMs(whopUserId);
+  // both asked at once (4 s each at most) to stay inside the login's time
+  const [created, paid] = await Promise.all([whopAccountCreatedAtMs(whopUserId), paidInLastHour(whopUserId, now)]);
   if (created !== null && now - created < RECENT_MS && created <= now + 60_000) return true;
-  return paidInLastHour(whopUserId, now);
+  return paid !== false;
 }
