@@ -1,8 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSessionToken, SESSION_COOKIE_NAME, sessionCookieOptions } from "../../../../../lib/session";
-import { setIntakeCookie } from "../../../../../lib/intake-cookie";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { getWhopMemberDetail } from "@/lib/whop-member-detail";
+import { createPendingToken, PENDING_COOKIE_NAME, pendingCookieOptions, SESSION_COOKIE_NAME, SESSION_TTL_SECONDS } from "../../../../../lib/session";
+import { isAdmin } from "@/lib/admin-allowlist";
+import {
+  hadMembership,
+  hubAllowlisted,
+  logLetInOnError,
+  looksLikeRecentBuyer,
+  RECENT_PURCHASE_COOKIE,
+  waitForWhopAccess,
+  type WhopAccess,
+} from "@/lib/whop-access";
+import { completeLogin } from "@/lib/whop-login";
+
+// the membership check can wait up to about 20 seconds for a brand new
+// purchase to show up on Whop; leave room for it and the token exchange
+export const maxDuration = 60;
+
+// someone turned away keeps no session from an earlier sign in
+function clearSession(response: NextResponse): NextResponse {
+  response.cookies.set(SESSION_COOKIE_NAME, "", { maxAge: 0, path: "/" });
+  return response;
+}
 
 function clearOAuthCookies(response: NextResponse): NextResponse {
   const clear = { maxAge: 0, path: "/" };
@@ -11,72 +29,12 @@ function clearOAuthCookies(response: NextResponse): NextResponse {
   return response;
 }
 
-// Admin read via WHOP_API_KEY, never the OAuth client secret or the user's
-// access token (spec 6.14). Plain fetch stands in for the SDK's
-// memberships.list per spec section 5, matching its wire format: plural
-// array params (user_ids, product_ids, statuses) with company_id singular;
-// a non-empty data array means an active membership. The gate is
-// product-based, not plan-based: any membership on the membership product
-// counts, so newly launched plans grant access without a deploy. Status
-// "completed" is included because one-time and lifetime purchases finish as
-// completed and stay that way; scoping to the single membership product
-// keeps unrelated one-time purchases from granting access.
-// Existing members skip onboarding: memberships created before this instant
-// (9:30 PM Pacific, Aug 28 2026) bypass the tour + intake entirely.
-const ONBOARDING_CUTOFF = new Date("2026-08-29T04:30:00Z");
-
-// Strict created_at parse. Anything dubious returns null so the routing
-// defaults to onboarding (a numeric unix-seconds value would otherwise
-// parse as 1970 and wrongly bypass a brand-new member).
-function parseCreatedAtMs(value: unknown): number | null {
-  let ms: number | null = null;
-  if (typeof value === "string") {
-    const parsed = new Date(value).getTime();
-    ms = Number.isNaN(parsed) ? null : parsed;
-  } else if (typeof value === "number" && Number.isFinite(value)) {
-    ms = value < 1e12 ? value * 1000 : value;
-  }
-  if (ms === null || ms < Date.UTC(2020, 0, 1)) return null;
-  return ms;
-}
-
-async function getWhopMembership(
-  whopUserId: string
-): Promise<{ active: boolean; oldestCreatedAtMs: number | null }> {
-  const productId = process.env.WHOP_PRODUCT_ID;
-  const companyId = process.env.WHOP_COMPANY_ID;
-  if (!productId || !companyId) return { active: false, oldestCreatedAtMs: null };
-
-  try {
-    const params = new URLSearchParams({ company_id: companyId });
-    params.append("user_ids", whopUserId);
-    params.append("product_ids", productId);
-    params.append("statuses", "active");
-    params.append("statuses", "trialing");
-    params.append("statuses", "completed");
-
-    const res = await fetch(`https://api.whop.com/api/v1/memberships?${params.toString()}`, {
-      headers: {
-        Authorization: `Bearer ${process.env.WHOP_API_KEY ?? ""}`,
-        Accept: "application/json",
-      },
-      cache: "no-store",
-    });
-    if (!res.ok) return { active: false, oldestCreatedAtMs: null };
-    const page = await res.json();
-    const rows: Record<string, unknown>[] = (Array.isArray(page?.data) ? page.data : []).filter(
-      (m: unknown): m is Record<string, unknown> => !!m && typeof m === "object"
-    );
-    let oldest: number | null = null;
-    for (const row of rows) {
-      const ms = parseCreatedAtMs(row.created_at);
-      if (ms !== null && (oldest === null || ms < oldest)) oldest = ms;
-    }
-    return { active: rows.length > 0, oldestCreatedAtMs: oldest };
-  } catch {
-    return { active: false, oldestCreatedAtMs: null };
-  }
-}
+// The membership gate lives in lib/whop-access.ts (shared with the dashboard
+// layout): the safe single-user read with an owner check. Any membership on
+// the membership product that is active, trialing, completed or past_due lets
+// the person in; a Whop error or timeout also lets them in (logged), so an
+// outage never locks out a paying member. The onboarding routing and the
+// profile stamp are in lib/whop-login.ts (shared with the purchase check).
 
 export async function GET(request: NextRequest) {
   // Every redirect and the token-exchange redirect_uri derive from the host the
@@ -101,6 +59,7 @@ export async function GET(request: NextRequest) {
   let accessToken: string;
   try {
     const tokenRes = await fetch("https://api.whop.com/oauth/token", {
+      signal: AbortSignal.timeout(10_000),
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -130,6 +89,7 @@ export async function GET(request: NextRequest) {
   let whopUserId: string;
   try {
     const userinfoRes = await fetch("https://api.whop.com/oauth/userinfo", {
+      signal: AbortSignal.timeout(10_000),
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     if (!userinfoRes.ok) {
@@ -144,81 +104,83 @@ export async function GET(request: NextRequest) {
     return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=whop_error`));
   }
 
-  // Whop's memberships list is eventually consistent right after checkout.
-  // Retry once with a 1.5s delay before denying (spec 6.7).
-  let membership = await getWhopMembership(whopUserId);
-  if (!membership.active) {
-    await new Promise((r) => setTimeout(r, 1500));
-    membership = await getWhopMembership(whopUserId);
+  // Whop's memberships list is eventually consistent right after checkout, so
+  // "ended" and "none" are asked again for up to about 20 seconds before they
+  // are believed (lib/whop-access.ts). A Whop error lets the person in.
+  // Someone who most likely just bought (came from the post checkout page,
+  // or their membership or Whop account is under an hour old) doesn't wait
+  // here: they go to "Finishing your purchase", which keeps checking for 2
+  // minutes and never shows "Wrong email".
+  const cameFromCheckout = request.cookies.get(RECENT_PURCHASE_COOKIE)?.value === "1";
+  // admins skip the gate (the dashboard re-check skips them too)
+  let access = isAdmin(whopUserId)
+    ? ({ kind: "member", oldestCreatedAtMs: null, tries: 0 } as WhopAccess & { tries: number; recentBuyer?: boolean })
+    : await waitForWhopAccess(whopUserId, {
+        isRecentBuyer: async (a) => !(await hubAllowlisted(whopUserId)) && (await looksLikeRecentBuyer(whopUserId, a, { cameFromCheckout })),
+      });
+  // the Discord "never kick" list and anyone with a staff role in the Discord
+  // (Owner, Founder, Group Coach, Underwriter, Moderator) keep the hub
+  // without a membership on the product
+  if ((access.kind === "ended" || access.kind === "none") && !access.recentBuyer && (await hubAllowlisted(whopUserId))) {
+    console.log("[whop/callback] no membership, staff or never-kick list: letting in", { whopUserId });
+    access = { kind: "member", oldestCreatedAtMs: null, tries: access.tries };
   }
-
-  if (!membership.active) {
-    return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=denied`));
-  }
-
-  // Non-blocking: stamp whop_* fields onto member_profiles so admin
-  // dashboards and cohort features have real data from first login.
-  // If Whop API hiccups, log and continue - backfill script is the
-  // safety net. NEVER block login on this.
-  try {
-    const detail = await getWhopMemberDetail(whopUserId);
-    if (detail) {
-      const admin = createAdminClient();
-      const { error: profileError } = await admin
-        .from("member_profiles")
-        .upsert(
-          {
-            whop_user_id: whopUserId,
-            whop_display_name: detail.whopDisplayName,
-            whop_username: detail.whopUsername,
-            whop_tier: detail.whopTier,
-            whop_plan_id: detail.whopPlanId,
-            whop_joined_at: detail.whopJoinedAt,
-          },
-          { onConflict: "whop_user_id" },
-        );
-      if (profileError) {
-        console.error(
-          "[whop-callback] member_profiles upsert failed",
-          profileError,
-        );
-      }
+  // Whop answered with strangers' rows (the user filter ignored, the original
+  // bug): someone our own records show as a member before gets a 1 hour
+  // session; anyone else is asked to try again in a minute (not let in)
+  let untrustedButKnown = false;
+  if (access.kind === "untrusted") {
+    if (await hadMembership(whopUserId)) {
+      untrustedButKnown = true;
+      console.error("[whop/callback] Whop answer untrusted, known member: letting in for 1 hour", { whopUserId });
+    } else {
+      console.error("[whop/callback] Whop answer untrusted, no member record: try again", { whopUserId });
+      return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=whop_error`));
     }
-  } catch (err) {
-    console.error("[whop-callback] whop detail stamp failed", err);
   }
-
-  const sessionToken = await createSessionToken(whopUserId);
-  if (!sessionToken) {
-    return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=whop_error`));
+  // Whop rate limited our key (429). Anyone can cause that by hammering our
+  // public routes, so it is not a free pass: someone our records show as a
+  // member gets the usual 1 hour session; anyone else gets the "Finishing
+  // your purchase" screen, which lets them in the moment Whop answers.
+  let rateLimitedButKnown = false;
+  if (access.kind === "error" && access.rateLimited) {
+    if (await hadMembership(whopUserId)) {
+      rateLimitedButKnown = true;
+    } else {
+      console.error("[WHOP_GATE_RATE_LIMITED] login: Whop rate limited our key, no member record: waiting screen", { whopUserId });
+      access = { kind: "none", tries: access.tries, recentBuyer: true };
+    }
   }
-
-  // Existing members (oldest membership before the cutoff) skip onboarding.
-  // Missing or unparseable created_at defaults to onboarding.
-  const { oldestCreatedAtMs } = membership;
-  let decision: "bypass" | "onboard" | "onboard_default" = "onboard_default";
-  if (oldestCreatedAtMs !== null) {
-    decision = oldestCreatedAtMs < ONBOARDING_CUTOFF.getTime() ? "bypass" : "onboard";
+  // let in because Whop could not answer: a 1 hour session, so they are
+  // checked again soon instead of holding a week long pass
+  const sessionTtl = access.kind === "error" || untrustedButKnown ? 60 * 60 : SESSION_TTL_SECONDS;
+  if (access.kind === "error") {
+    logLetInOnError(rateLimitedButKnown ? "login (rate limited, known member)" : "login", whopUserId, access);
+  } else if ((access.kind === "ended" || access.kind === "none") && access.recentBuyer) {
+    // just bought, Whop doesn't list it yet: the waiting screen. The pass in
+    // the cookie only lets /api/auth/whop/purchase-status keep checking; it
+    // is not a session and opens nothing.
+    const pending = await createPendingToken(whopUserId);
+    if (!pending) return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=whop_error`));
+    console.log("[whop/callback] purchase not listed yet, finishing screen", { whopUserId, kind: access.kind, tries: access.tries, cameFromCheckout });
+    const response = clearSession(clearOAuthCookies(NextResponse.redirect(`${origin}/finishing-purchase`)));
+    response.cookies.set(PENDING_COOKIE_NAME, pending, pendingCookieOptions());
+    return response;
+  } else if (access.kind === "ended") {
+    // owned memberships, none granting access: the friendly win back page
+    console.log("[whop/callback] membership ended", { whopUserId, tries: access.tries });
+    return clearSession(clearOAuthCookies(NextResponse.redirect(`${origin}/membership-ended`)));
+  } else if (access.kind === "none") {
+    // nothing on the product: usually the wrong Whop account (unchanged screen)
+    console.log("[whop/callback] no membership on this account", { whopUserId, tries: access.tries });
+    return clearSession(clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=denied`)));
   }
-  console.log("[whop/callback] Onboarding routing", {
-    whopUserId,
-    membershipCreatedAt: oldestCreatedAtMs === null ? null : new Date(oldestCreatedAtMs).toISOString(),
-    cutoff: ONBOARDING_CUTOFF.toISOString(),
-    decision,
-  });
+  const oldestCreatedAtMs = access.kind === "member" ? access.oldestCreatedAtMs : null;
 
-  if (decision === "bypass") {
-    const now = new Date().toISOString();
-    const response = NextResponse.redirect(`${origin}/dashboard`);
-    response.cookies.set(SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions());
-    // Mark intake complete so no later code path pulls them into onboarding.
-    const signed = await setIntakeCookie(response, { completedAt: now, tourCompletedAt: now });
-    if (signed) return clearOAuthCookies(response);
-    // Could not sign the intake cookie; send through onboarding instead of
-    // letting the dashboard gate bounce them in a loop.
-  }
-
-  const response = NextResponse.redirect(`${origin}/onboarding`);
-  response.cookies.set(SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions());
+  const response = await completeLogin(whopUserId, oldestCreatedAtMs, sessionTtl, (path) => NextResponse.redirect(`${origin}${path}`));
+  if (!response) return clearOAuthCookies(NextResponse.redirect(`${origin}/login?auth=whop_error`));
+  // a finished sign in leaves no waiting pass or purchase mark behind
+  response.cookies.set(PENDING_COOKIE_NAME, "", { maxAge: 0, path: "/" });
+  response.cookies.set(RECENT_PURCHASE_COOKIE, "", { maxAge: 0, path: "/" });
   return clearOAuthCookies(response);
 }

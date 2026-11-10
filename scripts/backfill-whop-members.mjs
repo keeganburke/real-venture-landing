@@ -100,7 +100,9 @@ async function fetchAllMemberships() {
   let after = null;
   for (let page = 1; page <= MAX_PAGES; page++) {
     const params = new URLSearchParams({ company_id: env.WHOP_COMPANY_ID, per: String(PAGE_SIZE) });
-    params.set("product_ids", WHOP_PRODUCT_ID);
+    // SINGULAR product_id: the plural product_ids filter is ignored by the
+    // key's API version (it returns every product's memberships)
+    params.set("product_id", WHOP_PRODUCT_ID);
     if (after) params.set("after", after);
     const res = await fetch(`https://api.whop.com/api/v1/memberships?${params}`, { headers: WHOP_HEADERS });
     if (!res.ok) {
@@ -109,7 +111,8 @@ async function fetchAllMemberships() {
     }
     const body = await res.json();
     const rows = Array.isArray(body?.data) ? body.data : [];
-    all.push(...rows);
+    // and filtered here too, in case a filter is ignored again
+    all.push(...rows.filter((m) => (m.product_id ?? m.product?.id ?? WHOP_PRODUCT_ID) === WHOP_PRODUCT_ID));
     const info = body?.page_info ?? {};
     process.stdout.write(`  page ${page}: ${rows.length} rows (running total ${all.length})\n`);
     if (!info.has_next_page || !info.end_cursor) break;

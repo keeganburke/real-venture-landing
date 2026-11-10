@@ -1,3 +1,5 @@
+import { rowOwner, rowProduct, WHOP_API_VERSION_DATE } from "@/app/api/whop/whop-membership";
+
 // Server-only: one Whop memberships lookup that yields everything the
 // dashboard needs about the caller: tier, plan, and the embedded Whop user
 // profile (name, username, email, photo). Never import in client components.
@@ -84,26 +86,40 @@ export async function getWhopMemberSummary(whopUserId: string): Promise<WhopMemb
   if (!productId || !companyId || !whopUserId) return EMPTY;
 
   try {
-    const params = new URLSearchParams({ company_id: companyId });
-    params.append("user_ids", whopUserId);
-    params.append("product_ids", productId);
-    params.append("statuses", "active");
-    params.append("statuses", "trialing");
-    params.append("statuses", "completed");
+    // SINGULAR user_id / product_id with the pinned API version, the same read
+    // the cancel and pause routes use (app/api/whop/whop-membership.ts). The
+    // plural user_ids / product_ids / statuses filters are ignored by the key's
+    // API version: checked again 2026-11-09, they returned the company's 20
+    // newest memberships, 20 different owners, none of them the caller's, so
+    // every Profile showed the highest plan among the newest sign ups.
+    const params = new URLSearchParams({ company_id: companyId, user_id: whopUserId, product_id: productId, first: "50" });
 
     const res = await fetch(`https://api.whop.com/api/v1/memberships?${params.toString()}`, {
       headers: {
         Authorization: `Bearer ${process.env.WHOP_API_KEY ?? ""}`,
         Accept: "application/json",
+        "Api-Version-Date": WHOP_API_VERSION_DATE,
       },
       cache: "no-store",
     });
     if (!res.ok) return EMPTY;
 
     const page = await res.json();
-    const rows: Record<string, unknown>[] = (Array.isArray(page?.data) ? page.data : []).filter(
+    const all: Record<string, unknown>[] = (Array.isArray(page?.data) ? page.data : []).filter(
       (m: unknown): m is Record<string, unknown> => !!m && typeof m === "object"
     );
+    // A row for another user means the filter was ignored again: show nothing
+    // rather than someone else's plan.
+    if (all.some((m) => rowOwner(m) !== null && rowOwner(m) !== whopUserId)) {
+      console.error("whop-member: foreign user in memberships read (user_id filter ignored)");
+      return EMPTY;
+    }
+    // Same statuses as before (active, trialing, completed), now filtered here.
+    const rows = all.filter((m) => {
+      const product = rowProduct(m);
+      if (product !== null && product !== productId) return false;
+      return m.status === "active" || m.status === "trialing" || m.status === "completed";
+    });
 
     const summary: WhopMemberSummary = { ...EMPTY };
     for (const row of rows) {
