@@ -8,7 +8,7 @@ import { NextRequest } from "next/server";
 import { GET as callback } from "../app/api/auth/whop/callback/route";
 import { GET as purchaseStatus } from "../app/api/auth/whop/purchase-status/route";
 import { createPendingToken, verifyPendingToken, verifySessionToken, createSessionToken } from "../lib/session";
-import { readWhopAccess, waitForWhopAccess, paidInLastHour, dashboardAccess } from "../lib/whop-access";
+import { readWhopAccess, waitForWhopAccess, paidInLastHour, dashboardAccess, hubStaffByDiscord, resetStaffCacheForTests } from "../lib/whop-access";
 import { createAdminClient } from "../lib/supabase/admin";
 
 const prod = process.env.WHOP_PRODUCT_ID!;
@@ -24,11 +24,29 @@ const users = new Map<string, FakeUser>();
 let whopStatus: number | null = null; // force an HTTP status for the memberships list
 let whopStatusSeq: number[] = []; // or a sequence of them, one per memberships read
 let paymentsStatus: number | null = null;
+// the fake Discord server: members and their roles; and Whop's own Discord
+// link (memberships?external_account=discord_<id>)
+const COACH_ROLE = "1520606504338853979";
+const fakeGuild: { user: { id: string; bot?: boolean }; roles: string[] }[] = [
+  { user: { id: "900000000000000001" }, roles: [COACH_ROLE] },
+  { user: { id: "900000000000000002" }, roles: ["111"] },
+  { user: { id: "900000000000000003" }, roles: [COACH_ROLE] },
+];
+const discordExt = new Map<string, Record<string, unknown>[]>();
+let discordStatus: number | null = null;
+let discordCalls = 0;
 let currentSub = "";
 
 globalThis.fetch = (async (input: any, init: any = {}) => {
   const url = new URL(typeof input === "string" ? input : input.url);
   const method = String(init.method ?? (typeof input === "object" && input?.method ? input.method : "GET")).toUpperCase();
+  if (url.hostname === "discord.com") {
+    discordCalls++;
+    if (method !== "GET") throw new Error("test: a Discord write was attempted");
+    if (discordStatus) return new Response("{}", { status: discordStatus });
+    if (/\/guilds\/[^/]+\/members$/.test(url.pathname)) return Response.json(fakeGuild);
+    return new Response("{}", { status: 404 });
+  }
   if (url.hostname === "api.whop.com") {
     whopCalls++;
     if (url.pathname === "/oauth/token") return Response.json({ access_token: "fake" });
@@ -41,6 +59,8 @@ globalThis.fetch = (async (input: any, init: any = {}) => {
     if (url.pathname === "/api/v1/memberships") {
       if (whopStatusSeq.length) return new Response("{}", { status: whopStatusSeq.shift()! });
       if (whopStatus) return new Response("{}", { status: whopStatus });
+      const ext = url.searchParams.get("external_account");
+      if (ext) return Response.json({ data: discordExt.get(ext.replace(/^discord_/, "")) ?? [], page_info: { has_next_page: false } });
       const id = url.searchParams.get("user_id") ?? "";
       const u = users.get(id);
       return Response.json({ data: u ? u.rows(Date.now()) : [], page_info: { has_next_page: false } });
@@ -281,6 +301,37 @@ console.log = quietLog;
   const p = await signIn("user_testPayDown");
   paymentsStatus = null;
   pass(p.to.endsWith("/finishing-purchase") && p.secs < 10, `fix2) payments list unreadable, nothing listed: ${new URL(p.to).pathname} in ${p.secs.toFixed(1)} s`);
+}
+
+// ---------------- staff roles in the Discord
+{
+  const ended = (id: string) => [{ id: "mem_old", product_id: prod, status: "canceled", cancel_at_period_end: false, created_at: new Date(Date.now() - 300 * DAY).toISOString() }];
+  addUser("user_testStaffCoach", 400 * DAY, () => ended("x"));
+  addUser("user_testNotStaff", 400 * DAY, () => ended("x"));
+  addUser("user_testTwoOwners", 400 * DAY, () => ended("x"));
+  // Whop ties coach 1 to user_testStaffCoach; the non-staff Discord member to
+  // user_testNotStaff; coach 3 to two different Whop users (never trusted)
+  discordExt.set("900000000000000001", [{ id: "mem_a", user_id: "user_testStaffCoach", product_id: prod, status: "canceled" }]);
+  discordExt.set("900000000000000002", [{ id: "mem_b", user_id: "user_testNotStaff", product_id: prod, status: "canceled" }]);
+  discordExt.set("900000000000000003", [{ id: "mem_c", user_id: "user_testTwoOwners", product_id: prod, status: "canceled" }, { id: "mem_d", user_id: "user_someoneelse", product_id: prod, status: "active" }]);
+  resetStaffCacheForTests();
+  const s1 = await signIn("user_testStaffCoach");
+  const ss = s1.cookies.rv_session ? await verifySessionToken(s1.cookies.rv_session) : null;
+  pass(!!ss && !s1.to.includes("membership-ended") && !s1.to.includes("denied"), `staff) Group Coach whose membership ended, tied through Whop's Discord link: let in (${new URL(s1.to).pathname})`);
+  const s2 = await signIn("user_testNotStaff");
+  pass(s2.to.endsWith("/membership-ended"), `staff) a Discord member without a staff role, membership ended: ${new URL(s2.to).pathname}`);
+  const s3 = await hubStaffByDiscord("user_testTwoOwners");
+  pass(!s3, `staff) a coach's Discord that Whop ties to two Whop accounts is not trusted (${s3})`);
+  const before = discordCalls;
+  await hubStaffByDiscord("user_testStaffCoach");
+  await hubStaffByDiscord("user_testNotStaff");
+  pass(discordCalls === before, `staff) the staff list is kept 10 minutes (${discordCalls - before} more Discord reads for 2 checks)`);
+  resetStaffCacheForTests();
+  discordStatus = 500;
+  const s4 = await signIn("user_testStaffCoach");
+  discordStatus = null;
+  pass(s4.to.endsWith("/membership-ended"), `staff) Discord down: the staff check says no, normal answer (${new URL(s4.to).pathname}), no crash`);
+  resetStaffCacheForTests();
 }
 
 pass(blockedWrites >= 0, `  Supabase writes attempted and blocked (never sent): ${blockedWrites}; fake Whop calls: ${whopCalls}`);

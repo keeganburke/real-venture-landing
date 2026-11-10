@@ -226,11 +226,17 @@ export async function hadMembership(whopUserId: string): Promise<boolean> {
   }
 }
 
-/** Admins, plus the people on the Discord "never kick" list (staff, coaches,
-    guests: discord_kick_allowlist, matched through discord_connections). They
-    keep the hub without a membership on the product. */
+/** Admins, the people on the Discord "never kick" list
+    (discord_kick_allowlist, matched through discord_connections), and anyone
+    holding a staff role in the Discord (hubStaffByDiscord). They keep the hub
+    without a membership on the product. */
 export async function hubAllowlisted(whopUserId: string): Promise<boolean> {
   if (isAdmin(whopUserId)) return true;
+  if (await neverKickListed(whopUserId)) return true;
+  return hubStaffByDiscord(whopUserId);
+}
+
+async function neverKickListed(whopUserId: string): Promise<boolean> {
   try {
     const supabase = createAdminClient();
     const { data: links, error } = await supabase.from("discord_connections").select("discord_user_id").eq("whop_user_id", whopUserId);
@@ -400,4 +406,119 @@ export async function looksLikeRecentBuyer(
   const [created, paid] = await Promise.all([whopAccountCreatedAtMs(whopUserId), paidInLastHour(whopUserId, now)]);
   if (created !== null && now - created < RECENT_MS && created <= now + 60_000) return true;
   return paid !== false;
+}
+
+// ---------------------------------------------------------------------------
+// Staff by Discord role. The five staff roles (Owner, Founder, Group Coach,
+// Underwriter, Moderator): the same ids lib/discord-kick.ts never kicks.
+// Guest is not staff and gets no hub from its role.
+const STAFF_ROLE_IDS: readonly string[] = [
+  "1268122306107150400", // Owner
+  "1520610290067308625", // Founder
+  "1520606504338853979", // Group Coach
+  "1461080076056789024", // Real Venture Underwriter
+  "1268122373681451053", // Moderator
+];
+export function staffRoleIds(): Set<string> {
+  return new Set(STAFF_ROLE_IDS);
+}
+
+// The Whop accounts of everyone holding a staff role, built from the Discord
+// member list and two proofs that a Discord account and a Whop account belong
+// to the same person: the hub's own link (discord_connections, written by
+// the Discord connect sign in) or Whop's own Discord link (memberships with
+// external_account=discord_<id>, only when it names exactly one Whop user).
+// Read only (Discord, Supabase and Whop GETs). Kept 10 minutes per server.
+// Any failure means "not staff" (the person gets the normal answer), logged.
+const STAFF_TTL_MS = 10 * 60 * 1000;
+const STAFF_BUILD_BUDGET_MS = 8000;
+let staffCache: { until: number; whopIds: Set<string> } | null = null;
+let staffBuilding: Promise<Set<string> | null> | null = null;
+
+async function buildStaffWhopIds(): Promise<Set<string> | null> {
+  const token = process.env.DISCORD_BOT_TOKEN;
+  const guild = process.env.DISCORD_GUILD_ID;
+  const apiKey = process.env.WHOP_API_KEY;
+  const companyId = process.env.WHOP_COMPANY_ID;
+  const productId = process.env.WHOP_PRODUCT_ID;
+  if (!token || !guild || !apiKey || !companyId || !productId) return null;
+  const deadline = Date.now() + STAFF_BUILD_BUDGET_MS;
+  const left = () => Math.max(500, deadline - Date.now());
+  const staffRoles = staffRoleIds();
+  // 1. Discord: everyone holding a staff role
+  const staffDiscordIds: string[] = [];
+  let after = "0";
+  for (let page = 0; page < 20; page++) {
+    const res = await fetch(`https://discord.com/api/v10/guilds/${guild}/members?limit=1000&after=${after}`, {
+      headers: { Authorization: `Bot ${token}` },
+      cache: "no-store",
+      signal: AbortSignal.timeout(left()),
+    });
+    if (!res.ok) throw new Error(`discord members http ${res.status}`);
+    const members = (await res.json()) as { user?: { id?: string; bot?: boolean }; roles?: string[] }[];
+    for (const m of members) {
+      if (m.user?.id && !m.user.bot && (m.roles ?? []).some((r) => staffRoles.has(r))) staffDiscordIds.push(m.user.id);
+    }
+    if (members.length < 1000) break;
+    after = members[members.length - 1]?.user?.id ?? after;
+  }
+  const whopIds = new Set<string>();
+  if (staffDiscordIds.length === 0) return whopIds;
+  // 2. the hub's own link
+  const { data: links, error } = await createAdminClient()
+    .from("discord_connections")
+    .select("discord_user_id, whop_user_id")
+    .in("discord_user_id", staffDiscordIds);
+  if (error) throw new Error(`discord_connections read failed: ${error.message}`);
+  const linked = new Set<string>();
+  for (const l of links ?? []) {
+    if (typeof l.whop_user_id === "string" && l.whop_user_id) whopIds.add(l.whop_user_id);
+    if (typeof l.discord_user_id === "string") linked.add(l.discord_user_id);
+  }
+  // 3. Whop's own Discord link, for staff the hub never linked
+  await Promise.all(
+    staffDiscordIds
+      .filter((id) => !linked.has(id))
+      .map(async (discordId) => {
+        const params = new URLSearchParams({ company_id: companyId, external_account: `discord_${discordId}`, first: "50" });
+        const res = await fetch(`https://api.whop.com/api/v1/memberships?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json", "Api-Version-Date": WHOP_API_VERSION_DATE },
+          cache: "no-store",
+          signal: AbortSignal.timeout(left()),
+        });
+        if (!res.ok) return;
+        const page = (await res.json()) as { data?: unknown } | null;
+        const rows = Array.isArray(page?.data) ? (page.data as Record<string, unknown>[]) : [];
+        const owners = new Set(rows.filter((m) => rowProduct(m) === productId).map((m) => rowOwner(m)).filter((o): o is string => typeof o === "string"));
+        // exactly one Whop user, or nothing (Whop ignoring the filter would
+        // show many owners: never trusted)
+        if (owners.size === 1) whopIds.add([...owners][0]);
+      }),
+  );
+  return whopIds;
+}
+
+/** True if this Whop account belongs to someone holding a staff role in the
+    Discord. Never throws; any failure is "no". */
+export async function hubStaffByDiscord(whopUserId: string, now = Date.now()): Promise<boolean> {
+  if (staffCache && staffCache.until > now) return staffCache.whopIds.has(whopUserId);
+  if (!staffBuilding) {
+    staffBuilding = buildStaffWhopIds()
+      .catch((err) => {
+        console.error("[whop-access] staff list unavailable, staff roles not counted this time", { reason: err instanceof Error ? err.message : String(err) });
+        return null;
+      })
+      .finally(() => {
+        staffBuilding = null;
+      });
+  }
+  const ids = await staffBuilding;
+  if (!ids) return false;
+  staffCache = { until: Date.now() + STAFF_TTL_MS, whopIds: ids };
+  return ids.has(whopUserId);
+}
+
+/** Tests only: forget the staff list. */
+export function resetStaffCacheForTests(): void {
+  staffCache = null;
 }

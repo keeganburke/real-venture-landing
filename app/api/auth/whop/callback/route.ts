@@ -118,10 +118,11 @@ export async function GET(request: NextRequest) {
     : await waitForWhopAccess(whopUserId, {
         isRecentBuyer: async (a) => !(await hubAllowlisted(whopUserId)) && (await looksLikeRecentBuyer(whopUserId, a, { cameFromCheckout })),
       });
-  // staff, coaches and guests on the Discord "never kick" list keep the hub
+  // the Discord "never kick" list and anyone with a staff role in the Discord
+  // (Owner, Founder, Group Coach, Underwriter, Moderator) keep the hub
   // without a membership on the product
   if ((access.kind === "ended" || access.kind === "none") && !access.recentBuyer && (await hubAllowlisted(whopUserId))) {
-    console.log("[whop/callback] no membership, on the never-kick list: letting in", { whopUserId });
+    console.log("[whop/callback] no membership, staff or never-kick list: letting in", { whopUserId });
     access = { kind: "member", oldestCreatedAtMs: null, tries: access.tries };
   }
   // Whop answered with strangers' rows (the user filter ignored, the original
