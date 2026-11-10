@@ -8,8 +8,9 @@ export const metadata: Metadata = {
 // memberships have all ended (lib/whop-access.ts). Not an error: a calm way
 // back in. Same card and buttons as /login (app/globals.css, lp-login).
 // Rejoin opens the pricing on the homepage (/?pricing=1, the same link as
-// the login page's "Join"); "Refresh" runs the Whop sign in again, which
-// waits for a brand new purchase to show up.
+// the login page's "Join"); "Refresh" runs the Whop sign in again marked as
+// "I just paid" (?purchase=1), so a purchase Whop doesn't list yet gets the
+// "Finishing your purchase" screen instead of this page again.
 export default function MembershipEndedPage() {
   return (
     <div className="wrap">
@@ -29,7 +30,7 @@ export default function MembershipEndedPage() {
           </a>
           <p className="lp-login-join">
             Already paid? It can take a minute to show up.{" "}
-            <a href="/api/auth/whop/start">Refresh</a>
+            <a href="/api/auth/whop/start?purchase=1">Refresh</a>
           </p>
           <p className="lp-login-join">
             Signed in with a different Whop account than the one you paid with?{" "}

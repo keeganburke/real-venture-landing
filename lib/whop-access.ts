@@ -17,10 +17,12 @@
 //           role. The user's own row counts even if strangers' rows came back.
 //   ended   the user owns memberships on the product, none of them granting
 //   none    the user owns nothing on the product (often the wrong Whop account)
-//   error   Whop could not answer (timeout, HTTP error, missing config) or
-//           answered with strangers' rows and none of the user's own live
-//           ones. The login lets the person in with a 1 hour session and logs
-//           it: a Whop outage must never lock out a paying member.
+//   untrusted  Whop answered with strangers' rows and none of the user's
+//           own live ones (the user filter ignored again): see the callers.
+//   error   Whop could not answer (timeout, HTTP error, missing config).
+//           The login lets the person in with a 1 hour session and logs it
+//           (logLetInOnError): a Whop outage, or a broken key on our side,
+//           must never lock out a paying member.
 
 import { rowOwner, rowProduct, WHOP_API_VERSION_DATE } from "@/app/api/whop/whop-membership";
 import { isAdmin } from "@/lib/admin-allowlist";
@@ -28,19 +30,27 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export type WhopAccess =
   | { kind: "member"; oldestCreatedAtMs: number | null }
-  | { kind: "ended" }
+  // newestOwnCreatedAtMs: the newest of the user's own memberships, any
+  // status (a membership made in the last hour means a purchase in progress)
+  | { kind: "ended"; newestOwnCreatedAtMs: number | null }
   | { kind: "none" }
   // Whop answered, but with strangers' rows and none of the caller's own live
   // ones: the user filter was ignored again (the original bug). Not an outage,
   // so not a free pass: see the callers.
   | { kind: "untrusted" }
-  | { kind: "error"; reason: string };
+  // config: our own setup is wrong (a missing env var, or Whop said 400, 401,
+  // 403 or 404 to our key), not a Whop outage. Still lets people in (a broken
+  // key must never lock out every paying member) but is logged loudly.
+  | { kind: "error"; reason: string; config?: boolean };
 
 const KNOWN_STATUSES: ReadonlySet<string> = new Set(["active", "trialing", "completed", "past_due", "canceled", "expired", "drafted"]);
 
 export const LIVE_STATUSES: ReadonlySet<string> = new Set(["active", "trialing", "completed", "past_due"]);
 
 const READ_TIMEOUT_MS = 8000;
+// Whop answers these to a bad key, a key without the right permission, or a
+// wrong company or product id: our setup, not their outage
+const CONFIG_HTTP: ReadonlySet<number> = new Set([400, 401, 403, 404]);
 const MAX_PAGES = 5;
 
 // Strict created_at parse. Anything dubious returns null so onboarding routing
@@ -76,7 +86,7 @@ export async function readWhopAccess(whopUserId: string, opts: { timeoutMs?: num
   const productId = process.env.WHOP_PRODUCT_ID;
   const companyId = process.env.WHOP_COMPANY_ID;
   const apiKey = process.env.WHOP_API_KEY;
-  if (!productId || !companyId || !apiKey) return { kind: "error", reason: "missing whop config" };
+  if (!productId || !companyId || !apiKey) return { kind: "error", reason: "missing whop env var", config: true };
   if (!whopUserId) return { kind: "error", reason: "missing user id" };
   const now = opts.now ?? Date.now();
   try {
@@ -93,7 +103,7 @@ export async function readWhopAccess(whopUserId: string, opts: { timeoutMs?: num
         cache: "no-store",
         signal: AbortSignal.timeout(Math.min(opts.timeoutMs ?? READ_TIMEOUT_MS, left)),
       });
-      if (!res.ok) return { kind: "error", reason: `whop http ${res.status}` };
+      if (!res.ok) return { kind: "error", reason: `whop http ${res.status}`, config: CONFIG_HTTP.has(res.status) };
       const page = await res.json();
       if (!page || !Array.isArray(page.data)) return { kind: "error", reason: "whop answer had no data list" };
       all.push(...(page.data as unknown[]).filter((m): m is Record<string, unknown> => !!m && typeof m === "object"));
@@ -126,7 +136,13 @@ export async function readWhopAccess(whopUserId: string, opts: { timeoutMs?: num
       console.error("[whop-access] strangers' rows in a single user read (user_id filter ignored?)", { whopUserId });
       return { kind: "untrusted" };
     }
-    return own.length > 0 ? { kind: "ended" } : { kind: "none" };
+    if (own.length === 0) return { kind: "none" };
+    let newest: number | null = null;
+    for (const m of own) {
+      const ms = parseCreatedAtMs(m.created_at);
+      if (ms !== null && (newest === null || ms > newest)) newest = ms;
+    }
+    return { kind: "ended", newestOwnCreatedAtMs: newest };
   } catch (err) {
     const reason = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError") ? "whop timed out" : `whop read threw: ${err instanceof Error ? err.message : String(err)}`;
     return { kind: "error", reason };
@@ -145,8 +161,17 @@ const WAIT_DEADLINE_MS = 25_000;
     (Whop down) is returned at once, and callers let the person in. */
 export async function waitForWhopAccess(
   whopUserId: string,
-  opts: { steps?: readonly number[]; timeoutMs?: number; sleep?: (ms: number) => Promise<void>; deadlineMs?: number } = {},
-): Promise<WhopAccess & { tries: number }> {
+  opts: {
+    steps?: readonly number[];
+    timeoutMs?: number;
+    sleep?: (ms: number) => Promise<void>;
+    deadlineMs?: number;
+    // asked on the first definite "ended" or "none" and again at the end: if
+    // it says this is someone who just bought, stop waiting here and answer
+    // at once with recentBuyer set (the caller shows "Finishing your purchase")
+    isRecentBuyer?: (access: WhopAccess) => Promise<boolean>;
+  } = {},
+): Promise<WhopAccess & { tries: number; recentBuyer?: boolean }> {
   const steps = opts.steps ?? WAIT_STEPS_MS;
   const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const deadlineAt = Date.now() + (opts.deadlineMs ?? WAIT_DEADLINE_MS);
@@ -162,6 +187,7 @@ export async function waitForWhopAccess(
   }
   if (access.kind === "member" || access.kind === "error" || access.kind === "untrusted") return { ...access, tries };
   let definite: WhopAccess = access;
+  if (opts.isRecentBuyer && (await opts.isRecentBuyer(definite))) return { ...definite, tries, recentBuyer: true };
   for (const ms of steps) {
     if (Date.now() + ms >= deadlineAt) break;
     await sleep(ms);
@@ -170,6 +196,7 @@ export async function waitForWhopAccess(
     if (access.kind === "member" || access.kind === "untrusted") return { ...access, tries };
     if (access.kind !== "error") definite = access;
   }
+  if (opts.isRecentBuyer && (await opts.isRecentBuyer(definite))) return { ...definite, tries, recentBuyer: true };
   return { ...definite, tries };
 }
 
@@ -217,6 +244,14 @@ const MEMBER_TTL_MS = 10 * 60 * 1000;
 const MAX_ENTRIES = 5000;
 const memberUntil = new Map<string, number>();
 
+/** Keep a fresh "member" answer for the dashboard (also used by the
+    purchase status check, so the hub doesn't ask Whop again a second later
+    and catch a slow server that hasn't listed the purchase yet). */
+export function rememberMember(whopUserId: string, now = Date.now()): void {
+  if (memberUntil.size >= MAX_ENTRIES) memberUntil.clear();
+  memberUntil.set(whopUserId, now + MEMBER_TTL_MS);
+}
+
 export async function dashboardAccess(whopUserId: string, now = Date.now()): Promise<"member" | "ended" | "none" | "error"> {
   const until = memberUntil.get(whopUserId);
   if (until !== undefined && until > now) return "member";
@@ -233,11 +268,71 @@ export async function dashboardAccess(whopUserId: string, now = Date.now()): Pro
     return "error";
   }
   if (access.kind === "member") {
-    if (memberUntil.size >= MAX_ENTRIES) memberUntil.clear();
-    memberUntil.set(whopUserId, now + MEMBER_TTL_MS);
+    rememberMember(whopUserId, now);
   } else {
     memberUntil.delete(whopUserId);
   }
-  if (access.kind === "error") console.error("[whop-access] dashboard re-check unavailable, letting in", { whopUserId, reason: access.reason });
+  if (access.kind === "error") logLetInOnError("dashboard", whopUserId, access);
   return access.kind;
+}
+
+// ---------------------------------------------------------------------------
+// Letting someone in because Whop could not answer. One log line per event.
+// Our own config errors get a fixed tag, WHOP_GATE_CONFIG_ERROR: the number
+// of log lines with that tag (Vercel logs, search the tag) is the count of
+// people let in because our Whop setup was broken. The count printed in the
+// line is per server instance only.
+let configErrorCount = 0;
+let outageCount = 0;
+export function logLetInOnError(where: string, whopUserId: string, access: { reason: string; config?: boolean }): void {
+  if (access.config) {
+    configErrorCount++;
+    console.error(
+      `[WHOP_GATE_CONFIG_ERROR] ${where}: our Whop setup is broken (${access.reason}). Letting this person in for 1 hour without a membership check. Check WHOP_API_KEY, WHOP_COMPANY_ID and WHOP_PRODUCT_ID. Count on this server: ${configErrorCount}`,
+      { whopUserId },
+    );
+  } else {
+    outageCount++;
+    console.error(`[WHOP_GATE_OUTAGE] ${where}: Whop could not answer (${access.reason}). Letting this person in for 1 hour. Count on this server: ${outageCount}`, { whopUserId });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// "Did this person just buy?" Used only to choose between the "Finishing your
+// purchase" screen and a turn away; it never lets anyone into the hub.
+export const RECENT_MS = 60 * 60 * 1000;
+export const RECENT_PURCHASE_COOKIE = "rv_recent_purchase";
+
+/** When the Whop account was made, or null if Whop can't say. Read only. */
+export async function whopAccountCreatedAtMs(whopUserId: string, timeoutMs = 4000): Promise<number | null> {
+  const apiKey = process.env.WHOP_API_KEY;
+  if (!apiKey || !whopUserId) return null;
+  try {
+    const res = await fetch(`https://api.whop.com/api/v1/users/${encodeURIComponent(whopUserId)}`, {
+      headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json", "Api-Version-Date": WHOP_API_VERSION_DATE },
+      cache: "no-store",
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok) return null;
+    const user = (await res.json()) as Record<string, unknown> | null;
+    if (!user || user.id !== whopUserId) return null;
+    return parseCreatedAtMs(user.created_at);
+  } catch {
+    return null;
+  }
+}
+
+/** True if the person most likely bought in the last hour: they came to sign
+    in from the page checkout sends buyers to (the cookie), one of their own
+    memberships was made in the last hour, or their Whop account was. */
+export async function looksLikeRecentBuyer(
+  whopUserId: string,
+  access: WhopAccess,
+  opts: { cameFromCheckout: boolean; now?: number },
+): Promise<boolean> {
+  const now = opts.now ?? Date.now();
+  if (opts.cameFromCheckout) return true;
+  if (access.kind === "ended" && access.newestOwnCreatedAtMs !== null && now - access.newestOwnCreatedAtMs < RECENT_MS) return true;
+  const created = await whopAccountCreatedAtMs(whopUserId);
+  return created !== null && now - created < RECENT_MS && created <= now + 60_000;
 }

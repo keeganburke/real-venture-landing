@@ -1,5 +1,28 @@
 import { createHash, randomBytes } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { RECENT_PURCHASE_COOKIE } from "@/lib/whop-access";
+
+// True if this sign in starts from the page checkout sends buyers to
+// (/login?justpurchased=1, or Whop's checkout redirect with a payment id),
+// or from a "I already paid" link (?purchase=1). Only changes which waiting
+// screen the callback shows if Whop doesn't list the membership yet; it
+// never lets anyone in.
+function startedAfterPurchase(request: NextRequest, origin: string): boolean {
+  if (request.nextUrl.searchParams.get("purchase") === "1") return true;
+  const referer = request.headers.get("referer");
+  if (!referer) return false;
+  let ref: URL;
+  try {
+    ref = new URL(referer);
+  } catch {
+    return false;
+  }
+  if (ref.origin !== origin || ref.pathname !== "/login") return false;
+  const p = ref.searchParams;
+  const status = p.get("status") ?? p.get("checkout_status");
+  if (status === "failed" || status === "canceled" || status === "cancelled") return false;
+  return p.get("justpurchased") === "1" || Boolean(p.get("payment") ?? p.get("payment_id") ?? p.get("receipt_id"));
+}
 
 export async function GET(request: NextRequest) {
   // redirect_uri must be built from the host the browser is actually on, not
@@ -35,6 +58,9 @@ export async function GET(request: NextRequest) {
   };
   response.cookies.set("whop_oauth_state", state, cookieOpts);
   response.cookies.set("whop_code_verifier", codeVerifier, cookieOpts);
+  if (startedAfterPurchase(request, origin)) {
+    response.cookies.set(RECENT_PURCHASE_COOKIE, "1", { ...cookieOpts, maxAge: 60 * 60 });
+  }
 
   return response;
 }

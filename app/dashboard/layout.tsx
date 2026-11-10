@@ -29,6 +29,11 @@ export default async function DashboardLayout({ children }: LayoutProps<"/dashbo
   if (!isAdmin(session.whopUserId)) {
     // (the never-kick list is checked inside dashboardAccess)
     const access = await dashboardAccess(session.whopUserId);
+    // signed in under an hour ago (a brand new buyer finishing onboarding):
+    // never a turn away, the "Finishing your purchase" screen keeps checking.
+    // Sessions made before this fix have no iat, so they are never "recent".
+    const signedInRecently = typeof session.iat === "number" && Date.now() / 1000 - session.iat < 60 * 60;
+    if ((access === "ended" || access === "none") && signedInRecently) redirect("/finishing-purchase");
     if (access === "ended") redirect("/membership-ended");
     if (access === "none") redirect("/login?auth=denied");
   }
